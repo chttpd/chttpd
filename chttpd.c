@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/timerfd.h>
+
 #include <microhttpd.h>
 #include <clog.h>
 #include <carrow.h>
@@ -105,6 +106,7 @@ main() {
         &request_handler,
         NULL,
         MHD_OPTION_END);
+    
     if (d == NULL) {
         ERROR("Could not start daemon on port %d.\n", port);
         return 1;
