@@ -1,4 +1,21 @@
 // Copyright 2023 Vahid Mardani
+/*
+ * This file is part of chttpd.
+ *  chttpd is free software: you can redistribute it and/or modify it under 
+ *  the terms of the GNU General Public License as published by the Free 
+ *  Software Foundation, either version 3 of the License, or (at your option) 
+ *  any later version.
+ *  
+ *  chttpd is distributed in the hope that it will be useful, but WITHOUT ANY 
+ *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS 
+ *  FOR A PARTICULAR PURPOSE. See the GNU General Public License for more 
+ *  details.
+ *  
+ *  You should have received a copy of the GNU General Public License along 
+ *  with chttpd. If not, see <https://www.gnu.org/licenses/>. 
+ *  
+ *  Author: Vahid Mardani <vahid.mardani@gmail.com>
+ */
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/timerfd.h>
@@ -20,16 +37,9 @@ typedef struct carrow_microhttpd {
 
 
 static enum MHD_Result
-request_handler(
-    void *cls,
-    struct MHD_Connection *connection,
-    const char *url,
-    const char *method,
-    const char *version,
-    const char *upload_data,
-    size_t *upload_data_size,
-    void **req_cls
-) {
+request_handler(void *cls, struct MHD_Connection *connection, const char *url,
+        const char *method, const char *version, const char *upload_data,
+        size_t *upload_data_size, void **req_cls) {
     struct MHD_Response *response;
     enum MHD_Result ret;
 
@@ -48,10 +58,8 @@ request_handler(
 
 
 static void
-httpserverA(
-    struct carrow_microhttpd_coro *self,
-    struct carrow_microhttpd *state
-) {
+httpserverA(struct carrow_microhttpd_coro *self,
+        struct carrow_microhttpd *state) {
     fd_set rs;
     fd_set ws;
     fd_set es;
@@ -79,7 +87,7 @@ httpserverA(
                     CORO_REJECT("MHD_run failed.");
                 }
 
-                break;  // only one fd we are interested in
+                break;
             }
         }
     }
@@ -98,15 +106,9 @@ main() {
     port = 8080;
     clog_verbosity = CLOG_DEBUG;
 
-    d = MHD_start_daemon(
-        MHD_USE_DEBUG,
-        port,
-        NULL,
-        NULL,
-        &request_handler,
-        NULL,
-        MHD_OPTION_END);
-    
+    d = MHD_start_daemon(MHD_USE_DEBUG, port, NULL, NULL, &request_handler,
+            NULL, MHD_OPTION_END);
+
     if (d == NULL) {
         ERROR("Could not start daemon on port %d.\n", port);
         return 1;
