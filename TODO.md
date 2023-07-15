@@ -1,3 +1,4 @@
-- CMake
- - static link libmicrohttpd
- - static link carrow.
++ CMake
+ + static link libmicrohttpd.
+ + static link carrow.
++ Manifest
