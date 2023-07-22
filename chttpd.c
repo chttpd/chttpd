@@ -190,7 +190,7 @@ main(int argc, char *argv[]) {
     }
 
     daemon_addr.sin_family = AF_INET;
-    daemon_addr.sin_port = htons(port);;
+    daemon_addr.sin_port = htons(port);
     daemon_addr.sin_addr.s_addr = inet_addr(bind_addr);
 
     d = MHD_start_daemon (MHD_USE_ERROR_LOG, 0, NULL, NULL, &request_handler,
