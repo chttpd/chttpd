@@ -18,12 +18,33 @@
  */
 #include <stdlib.h>
 #include <unistd.h>
-#include <getopt.h>
+#include <argp.h>
 #include <arpa/inet.h>
 
 #include <microhttpd.h>
 #include <clog.h>
 #include <carrow.h>
+
+#include "manifest.h"
+
+
+const char *argp_program_version = CHTTPD_VERSION;
+const char *argp_program_bug_address = "<vahid.mardani@gmail.com>";
+static char doc[] = "Nonblocking IO HTTP server using Carrow.";
+static char args_doc[] = "";
+
+
+static struct argp_option options[] = {
+    {"port",  'p', "PORT",         0,  "Produce verbose output"},
+    {"bind",  'b', "BIND ADDRESS", 0,  "Specify asdfas"},
+    {0}
+};
+
+
+struct arguments {
+    char bind_addr[32];
+    int port;
+};
 
 
 typedef struct carrow_microhttpd {
@@ -105,15 +126,6 @@ parse_bind_addr(const char *bind_addr_arg, char *bind_addr, int *port) {
 
 
 static void
-cli_help(void) {
-    INFO("Usage: chttpd [OPTIONS]");
-    INFO(" -p, --port              Specify the chttpd listening port");
-    INFO(" -b, --bind              Specify the chttpd bind address");
-    INFO(" -h, --help              Display this help text");
-}
-
-
-static void
 httpserverA(struct carrow_microhttpd_coro *self,
         struct carrow_microhttpd *state) {
     fd_set rs;
@@ -154,54 +166,56 @@ httpserverA(struct carrow_microhttpd_coro *self,
 }
 
 
+static error_t
+parse_opt(int key, char *arg, struct argp_state *state) {
+  struct arguments *arguments = state->input;
+
+  switch (key) {
+    case 'p':
+      parse_port(arg, &arguments->port);
+      break;
+    case 'b':
+      parse_bind_addr(arg, arguments->bind_addr, &arguments->port);
+      break;
+    default:
+      return ARGP_ERR_UNKNOWN;
+    }
+  return 0;
+}
+
+
+static struct argp argp = { options, parse_opt, args_doc, doc };
+
+
 int
 main(int argc, char *argv[]) {
     struct MHD_Daemon *d;
-    int port = 8080;
-    char bind_addr[32] = "127.0.0.1";
-    int opt;
     struct sockaddr_in daemon_addr;
+    struct arguments arguments;
+
+    /* Default values. */
+    arguments.port = 8080;
+    strcpy(arguments.bind_addr, "127.0.0.1");
+
+    argp_parse(&argp, argc, argv, 0, 0, &arguments);
+
     memset(&daemon_addr, 0, sizeof(struct sockaddr_in));
 
     clog_verbosity = CLOG_DEBUG;
 
-    static struct option options[] = {
-        {"help", no_argument, NULL, 'h'},
-        {"port", required_argument, 0, 'p'},
-        {"bind", required_argument, 0, 'b'},
-        {NULL, 0, NULL, 0}
-    };
-
-    while ((opt = getopt_long(argc, argv, "hp:b:", options, NULL)) != -1) {
-        switch (opt) {
-            case 'p':
-                parse_port(optarg, &port);
-                break;
-            case 'b':
-                parse_bind_addr(optarg, bind_addr, &port);
-                break;
-            case 'h':
-                cli_help();
-                return 1;
-            default:
-                cli_help();
-                return 1;
-        }
-    }
-
     daemon_addr.sin_family = AF_INET;
-    daemon_addr.sin_port = htons(port);
-    daemon_addr.sin_addr.s_addr = inet_addr(bind_addr);
+    daemon_addr.sin_port = htons(arguments.port);
+    daemon_addr.sin_addr.s_addr = inet_addr(arguments.bind_addr);
 
     d = MHD_start_daemon(MHD_USE_ERROR_LOG, 0, NULL, NULL, &request_handler,
             NULL, MHD_OPTION_SOCK_ADDR, &daemon_addr, MHD_OPTION_END);
 
     if (d == NULL) {
-        ERROR("Could not start daemon on port %d.\n", port);
+        ERROR("Could not start daemon on port %d.\n", arguments.port);
         return 1;
     }
 
-    INFO("Listening on port %d...\n", port);
+    INFO("Listening on port %d...\n", arguments.port);
 
     struct carrow_microhttpd state = {
         .daemon = d
