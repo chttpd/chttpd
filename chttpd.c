@@ -106,10 +106,10 @@ parse_bind_addr(const char *bind_addr_arg, char *bind_addr, int *port) {
 
 static void
 cli_help(void) {
-	INFO("Usage: chttpd [OPTIONS]");
-	INFO(" -p, --port              Specify the chttpd listening port");
-	INFO(" -b, --bind              Specify the chttpd bind address");
-	INFO(" -h, --help              Display this help text");
+    INFO("Usage: chttpd [OPTIONS]");
+    INFO(" -p, --port              Specify the chttpd listening port");
+    INFO(" -b, --bind              Specify the chttpd bind address");
+    INFO(" -h, --help              Display this help text");
 }
 
 
@@ -193,7 +193,7 @@ main(int argc, char *argv[]) {
     daemon_addr.sin_port = htons(port);
     daemon_addr.sin_addr.s_addr = inet_addr(bind_addr);
 
-    d = MHD_start_daemon (MHD_USE_ERROR_LOG, 0, NULL, NULL, &request_handler,
+    d = MHD_start_daemon(MHD_USE_ERROR_LOG, 0, NULL, NULL, &request_handler,
             NULL, MHD_OPTION_SOCK_ADDR, &daemon_addr, MHD_OPTION_END);
 
     if (d == NULL) {
