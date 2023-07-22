@@ -58,6 +58,61 @@ request_handler(void *cls, struct MHD_Connection *connection, const char *url,
 }
 
 
+void
+parse_port(const char *port_arg, int *port) {
+    bool is_valid = true;
+
+    for (int i = 0; i < strlen(port_arg); i++) {
+        if (port_arg[i] < '0' || port_arg[i] > '9') {
+            is_valid = false;
+            break;
+        }
+    }
+
+    if (is_valid == false) {
+        ERROR("Invalid port number: %s\n", port_arg);
+        exit(EXIT_FAILURE);
+    }
+
+    *port = atoi(port_arg);
+}
+
+
+void
+parse_bind_addr(const char *bind_addr_arg, char *bind_addr, int *port) {
+    int colon_pos = -1;
+
+    if (strcmp(bind_addr_arg, "localhost") == 0) {
+        bind_addr_arg = "127.0.0.1";
+    }
+
+    for (int i = 0; i < strlen(bind_addr_arg); i++) {
+        if (bind_addr_arg[i] == ':') {
+            colon_pos = i;
+            break;
+        }
+    }
+
+    if (colon_pos == -1) {
+        strcpy(bind_addr, bind_addr_arg);
+    } else {
+        strncpy(bind_addr, bind_addr_arg, colon_pos);
+        bind_addr[colon_pos] = '\0';
+
+        parse_port(bind_addr_arg + colon_pos + 1, port);
+    }
+}
+
+
+static void
+cli_help(void) {
+	INFO("Usage: chttpd [OPTIONS]");
+	INFO(" -p, --port              Specify the chttpd listening port");
+	INFO(" -b, --bind              Specify the chttpd bind address");
+	INFO(" -h, --help              Display this help text");
+}
+
+
 static void
 httpserverA(struct carrow_microhttpd_coro *self,
         struct carrow_microhttpd *state) {
@@ -99,67 +154,25 @@ httpserverA(struct carrow_microhttpd_coro *self,
 }
 
 
-void
-parse_port(const char *port_arg, int *port) {
-    bool is_valid = true;
-
-    for (int i = 0; i < strlen(port_arg); i++) {
-        if (port_arg[i] < '0' || port_arg[i] > '9') {
-            is_valid = false;
-            break;
-        }
-    }
-
-    if (is_valid == false) {
-        ERROR("Invalid port number: %s\n", port_arg);
-        exit(EXIT_FAILURE);
-    }
-
-    *port = atoi(port_arg);
-}
-
-
-void
-parse_bind_addr(const char *bind_addr_arg, char *bind_addr, int *port) {
-    int colon_pos = -1;
-
-    for (int i = 0; i < strlen(bind_addr_arg); i++) {
-        if (bind_addr_arg[i] == ':') {
-            colon_pos = i;
-            break;
-        }
-    }
-
-    if (colon_pos == -1) {
-        strcpy(bind_addr, bind_addr_arg);
-    } else {
-        strncpy(bind_addr, bind_addr_arg, colon_pos);
-        bind_addr[colon_pos] = '\0';
-
-        parse_port(bind_addr_arg + colon_pos + 1, port);
-    }
-}
-
-
-
-
 int
 main(int argc, char *argv[]) {
     struct MHD_Daemon *d;
-    struct sockaddr_in addr;
     int port = 8080;
-    char bind_addr[32] = "localhost";
+    char bind_addr[32] = "127.0.0.1";
     int opt;
+    struct sockaddr_in daemon_addr;
+    memset(&daemon_addr, 0, sizeof(struct sockaddr_in));
 
     clog_verbosity = CLOG_DEBUG;
 
     static struct option options[] = {
+        {"help", no_argument, NULL, 'h'},
         {"port", required_argument, 0, 'p'},
         {"bind", required_argument, 0, 'b'},
-        {0, 0, 0, 0}
+        {NULL, 0, NULL, 0}
     };
 
-    while ((opt = getopt_long(argc, argv, "p:b:", options, NULL)) != -1) {
+    while ((opt = getopt_long(argc, argv, "hp:b:", options, NULL)) != -1) {
         switch (opt) {
             case 'p':
                 parse_port(optarg, &port);
@@ -167,26 +180,21 @@ main(int argc, char *argv[]) {
             case 'b':
                 parse_bind_addr(optarg, bind_addr, &port);
                 break;
+            case 'h':
+                cli_help();
+                return 1;
             default:
-                ERROR("Usage: %s [--port port] [--bind bind_address]\n",
-                        argv[0]);
+                cli_help();
                 return 1;
         }
     }
-    
-    /* NOTE: Cli has been configured, Continue your work on applying port and
-       address to MHD daemon.
 
-    socklen_t addr_len = sizeof(addr);
-    memset (&addr, 0, sizeof(addr));
-    addr.sin_family = AF_INET;
-    addr.sin_port = port;
-    inet_pton(AF_INET, "127.0.0.1", &addr.sin_addr); */
+    daemon_addr.sin_family = AF_INET;
+    daemon_addr.sin_port = htons(port);;
+    daemon_addr.sin_addr.s_addr = inet_addr(bind_addr);
 
-    d = MHD_start_daemon(MHD_USE_DEBUG, port, NULL, NULL, &request_handler,
-            NULL, MHD_OPTION_END);
-            // NULL, MHD_OPTION_SOCK_ADDR, &addr, MHD_OPTION_END);
-
+    d = MHD_start_daemon (MHD_USE_ERROR_LOG, 0, NULL, NULL, &request_handler,
+            NULL, MHD_OPTION_SOCK_ADDR, &daemon_addr, MHD_OPTION_END);
 
     if (d == NULL) {
         ERROR("Could not start daemon on port %d.\n", port);
