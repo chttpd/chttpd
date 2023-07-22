@@ -35,8 +35,8 @@ static char args_doc[] = "";
 
 
 static struct argp_option options[] = {
-    {"port",  'p', "PORT",         0,  "Produce verbose output"},
-    {"bind",  'b', "BIND ADDRESS", 0,  "Specify asdfas"},
+    {"port",  'p', "PORT",         0,  "Specify chttpd listening port"},
+    {"bind",  'b', "BIND ADDRESS", 0,  "Specify chttpd binding address"},
     {0}
 };
 
