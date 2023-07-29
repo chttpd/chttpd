@@ -8,7 +8,7 @@ project(chttpd
 configure_file(manifest.h.in manifest.h)
 
 
-add_executable(chttpd chttpd.c)
+add_executable(chttpd chttpd.c routes.c handlers.c)
 target_link_libraries(
     chttpd
     PUBLIC

@@ -24,6 +24,8 @@
 #include <clog.h>
 #include <carrow.h>
 
+#include "routes.h"
+#include "handlers.h"
 
 typedef struct carrow_microhttpd {
     struct MHD_Daemon *daemon;
@@ -40,18 +42,23 @@ static enum MHD_Result
 request_handler(void *cls, struct MHD_Connection *connection, const char *url,
         const char *method, const char *version, const char *upload_data,
         size_t *upload_data_size, void **req_cls) {
+    extern struct Route routing_table[];
     struct MHD_Response *response;
     enum MHD_Result ret;
 
-    response = MHD_create_response_from_buffer(
-        strlen(url),
-        (void *) url,
-        MHD_RESPMEM_PERSISTENT);
-    ret = MHD_queue_response(
-        connection,
-        MHD_HTTP_OK,
-        response);
+    // TODO: Use direct access via hashmap instead of looping.
+    int i;
+    for (i = 0; routing_table[i].url != NULL; i++) {
+        if (strcmp(url, routing_table[i].url) == 0 &&
+                strcmp(method, routing_table[i].method) == 0) {
+            return routing_table[i].handler(connection);
+        }
+    }
 
+    const char *not_found = "Not found";
+    response = MHD_create_response_from_buffer(
+        strlen(not_found), (void *) not_found, MHD_RESPMEM_PERSISTENT);
+    ret = MHD_queue_response(connection, MHD_HTTP_NOT_FOUND, response);
     MHD_destroy_response(response);
     return ret;
 }
