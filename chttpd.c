@@ -24,12 +24,10 @@
 #include <clog.h>
 #include <carrow.h>
 
-#include "routes.h"
-#include "handlers.h"
-
 
 typedef struct carrow_microhttpd {
     struct MHD_Daemon *daemon;
+    struct MHD_Connection *connection;
 } carrow_microhttpd;
 
 
@@ -37,6 +35,59 @@ typedef struct carrow_microhttpd {
 #define CARROW_ENTITY carrow_microhttpd
 #include <carrow_generic.h>
 #include <carrow_generic.c>
+
+
+struct Route {
+    const char *url;
+    const char *method;
+    void (*handler)(struct carrow_microhttpd_coro *self,
+            struct carrow_microhttpd *state);
+};
+
+
+void
+handle_hello(struct carrow_microhttpd_coro *self,
+        struct carrow_microhttpd *state) {
+    const char *msg = "Hello, world!";
+    struct MHD_Response *response = MHD_create_response_from_buffer(
+        strlen(msg), (void *) msg, MHD_RESPMEM_PERSISTENT);
+    int ret = MHD_queue_response(state->connection, MHD_HTTP_OK, response);
+    MHD_destroy_response(response);
+}
+
+
+void
+handle_goodbye(struct carrow_microhttpd_coro *self,
+        struct carrow_microhttpd *state) {
+    const char *msg = "Goodbye, world!";
+    struct MHD_Response *response = MHD_create_response_from_buffer(
+        strlen(msg), (void *) msg, MHD_RESPMEM_PERSISTENT);
+    int ret = MHD_queue_response(state->connection, MHD_HTTP_OK, response);
+    MHD_destroy_response(response);
+}
+
+
+void
+handle_echo(struct carrow_microhttpd_coro *self,
+        struct carrow_microhttpd *state) {
+    const char *data = MHD_lookup_connection_value(state->connection,
+            MHD_GET_ARGUMENT_KIND, "data");
+    if (data == NULL) {
+        data = "No data provided";
+    }
+    struct MHD_Response *response = MHD_create_response_from_buffer(
+            strlen(data), (void *) data, MHD_RESPMEM_PERSISTENT);
+    int ret = MHD_queue_response(state->connection, MHD_HTTP_OK, response);
+    MHD_destroy_response(response);
+}
+
+
+struct Route routing_table[] = {
+    {"/hello", "GET", handle_hello},
+    {"/goodbye", "GET", handle_goodbye},
+    {"/echo", "GET", handle_echo},
+    {NULL, NULL, NULL}
+};
 
 
 static enum MHD_Result
@@ -52,7 +103,11 @@ request_handler(void *cls, struct MHD_Connection *connection, const char *url,
     for (i = 0; routing_table[i].url != NULL; i++) {
         if (strcmp(url, routing_table[i].url) == 0 &&
                 strcmp(method, routing_table[i].method) == 0) {
-            return routing_table[i].handler(connection);
+            struct carrow_microhttpd handler_state = {
+                .connection = connection
+            };
+            carrow_microhttpd_coro_create_and_run(routing_table[i].handler,
+                    &handler_state);
         }
     }
 
