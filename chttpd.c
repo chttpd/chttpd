@@ -40,11 +40,9 @@ typedef struct chttpd {
 
 
 typedef struct chandler {
-    struct MHD_Daemon *daemon;
     struct MHD_Connection *connection;
-    struct MHD_Response *response;
+    enum MHD_Result result;
     void *ptr;
-    int *processed;
 } chandler;
 
 
@@ -76,11 +74,16 @@ struct arguments {
 void
 handle_goodbye(struct chandler_coro *self,
         struct chandler *state) {
+    const char *msg = "Goodbye, world!";
+    struct MHD_Response *response;
+
     CORO_START;
 
-    const char *msg = "Goodbye, world!";
-    state->response = MHD_create_response_from_buffer(
-            strlen(msg), (void *) msg, MHD_RESPMEM_PERSISTENT);
+    response = MHD_create_response_from_buffer(strlen(msg), (void *) msg,
+            MHD_RESPMEM_PERSISTENT);
+    state->result = MHD_queue_response(state->connection, MHD_HTTP_OK,
+            response);
+    MHD_destroy_response(response);
 
     CORO_FINALLY;
     CORO_CLEANUP;
@@ -113,17 +116,10 @@ request_handler(void *cls, struct MHD_Connection *connection, const char *url,
                 strcmp(method, routing_table[i].method) == 0) {
             struct chandler *handler_state = malloc(sizeof(struct chandler));
             handler_state->connection = connection;
-            handler_state->response = NULL;
-
             chandler_coro_create_and_run(routing_table[i].handler,
                     handler_state);
-
-            ret = MHD_queue_response(handler_state->connection,
-                    MHD_HTTP_OK, handler_state->response);
-            MHD_destroy_response(handler_state->response);
-
             free(handler_state);
-            return ret;
+            return handler_state->result;
         }
     }
 
