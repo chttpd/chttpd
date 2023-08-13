@@ -28,6 +28,32 @@
 #include "manifest.h"
 
 
+typedef struct chttpd {
+    struct MHD_Daemon *daemon;
+} chttpd;
+
+
+#undef CARROW_ENTITY
+#define CARROW_ENTITY chttpd
+#include <carrow_generic.h>  // NOLINT
+#include <carrow_generic.c>  // NOLINT
+
+
+typedef struct chandler {
+    struct MHD_Daemon *daemon;
+    struct MHD_Connection *connection;
+    struct MHD_Response *response;
+    void *ptr;
+    int *processed;
+} chandler;
+
+
+#undef CARROW_ENTITY
+#define CARROW_ENTITY chandler
+#include <carrow_generic.h>  // NOLINT
+#include <carrow_generic.c>  // NOLINT
+
+
 const char *argp_program_version = CHTTPD_VERSION;
 const char *argp_program_bug_address = "<vahid.mardani@gmail.com>";
 static char doc[] = "Nonblocking IO HTTP server using Carrow.";
@@ -47,34 +73,69 @@ struct arguments {
 };
 
 
-typedef struct carrow_microhttpd {
-    struct MHD_Daemon *daemon;
-} carrow_microhttpd;
+void
+handle_goodbye(struct chandler_coro *self,
+        struct chandler *state) {
+    CORO_START;
+
+    const char *msg = "Goodbye, world!";
+    state->response = MHD_create_response_from_buffer(
+            strlen(msg), (void *) msg, MHD_RESPMEM_PERSISTENT);
+
+    CORO_FINALLY;
+    CORO_CLEANUP;
+}
 
 
-#undef CARROW_ENTITY
-#define CARROW_ENTITY carrow_microhttpd
-#include <carrow_generic.h>
-#include <carrow_generic.c>
+struct route {
+    const char *url;
+    const char *method;
+    void (*handler)(struct chandler_coro *self, struct chandler *state);
+};
+
+
+struct route routing_table[] = {
+    {"/goodbye", "GET", handle_goodbye},
+    {NULL, NULL, NULL}
+};
 
 
 static enum MHD_Result
 request_handler(void *cls, struct MHD_Connection *connection, const char *url,
         const char *method, const char *version, const char *upload_data,
         size_t *upload_data_size, void **req_cls) {
-    struct MHD_Response *response;
     enum MHD_Result ret;
 
-    response = MHD_create_response_from_buffer(
-        strlen(url),
-        (void *) url,
-        MHD_RESPMEM_PERSISTENT);
-    ret = MHD_queue_response(
-        connection,
-        MHD_HTTP_OK,
-        response);
+    // TODO: Use direct access via hashmap instead of looping.
+    int i;
+    for (i = 0; routing_table[i].url != NULL; i++) {
+        if (strcmp(url, routing_table[i].url) == 0 &&
+                strcmp(method, routing_table[i].method) == 0) {
+            struct chandler *handler_state = malloc(sizeof(struct chandler));
+            handler_state->connection = connection;
+            handler_state->response = NULL;
 
+            chandler_coro_create_and_run(routing_table[i].handler,
+                    handler_state);
+
+            ret = MHD_queue_response(handler_state->connection,
+                    MHD_HTTP_OK, handler_state->response);
+            MHD_destroy_response(handler_state->response);
+
+            free(handler_state);
+            return ret;
+        }
+    }
+
+
+    struct MHD_Response *response;
+    const char *not_found = "Not found";
+
+    response = MHD_create_response_from_buffer(strlen(not_found), (void *)
+            not_found, MHD_RESPMEM_PERSISTENT);
+    ret = MHD_queue_response(connection, MHD_HTTP_NOT_FOUND, response);
     MHD_destroy_response(response);
+
     return ret;
 }
 
@@ -126,8 +187,8 @@ parse_bind_addr(const char *bind_addr_arg, char *bind_addr, int *port) {
 
 
 static void
-httpserverA(struct carrow_microhttpd_coro *self,
-        struct carrow_microhttpd *state) {
+httpserverA(struct chttpd_coro *self,
+        struct chttpd *state) {
     fd_set rs;
     fd_set ws;
     fd_set es;
@@ -217,9 +278,9 @@ main(int argc, char *argv[]) {
 
     INFO("Listening on port %d...\n", arguments.port);
 
-    struct carrow_microhttpd state = {
+    struct chttpd state = {
         .daemon = d
     };
 
-    return carrow_microhttpd_forever(httpserverA, &state, NULL);
+    return chttpd_forever(httpserverA, &state, NULL);
 }
