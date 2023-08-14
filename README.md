@@ -33,3 +33,15 @@ pip install prettyc
 cd path/to/chttpd/build
 make lint
 ```
+
+
+## Tests
+
+### Dependencies
+- [cutest](https://github.com/pylover/cutest)
+
+### Running tests
+```bash
+cd path/to/chttpd/build
+make test
+```

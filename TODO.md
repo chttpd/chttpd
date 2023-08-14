@@ -13,6 +13,7 @@
 
 
 ## Low Priority
+- GCov
 - Profile using Valgrind
 - make cpack
 - make test

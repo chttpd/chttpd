@@ -3,7 +3,6 @@ list(APPEND examples
 )
 set(profilerules ${examples})
 list(TRANSFORM profilerules PREPEND profile_)
-add_custom_target(profile DEPENDS ${profilerules})
 
 
 foreach (t IN LISTS examples) 
