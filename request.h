@@ -16,12 +16,18 @@
  *
  *  Author: Vahid Mardani <vahid.mardani@gmail.com>
  */
-#include <clog.h>
-#include <carrow.h>
+#ifndef REQUEST_H_
+#define REQUEST_H_
 
-#include "chttpd.h"
+
+typedef struct request {
+    void *backref;
+} request;
 
 
 #undef CARROW_ENTITY
-#define CARROW_ENTITY chttpd
-#include <carrow_generic.c>  // NOLINT
+#define CARROW_ENTITY request
+#include <carrow_generic.h>  // NOLINT
+
+
+#endif  // REQUEST_H_

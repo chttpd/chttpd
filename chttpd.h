@@ -16,12 +16,17 @@
  *
  *  Author: Vahid Mardani <vahid.mardani@gmail.com>
  */
-#include <clog.h>
-#include <carrow.h>
+#ifndef CHTTPD_H_
+#define CHTTPD_H_
 
-#include "chttpd.h"
+
+typedef struct chttpd {
+} chttpd;
 
 
 #undef CARROW_ENTITY
 #define CARROW_ENTITY chttpd
-#include <carrow_generic.c>  // NOLINT
+#include <carrow_generic.h>  // NOLINT
+
+
+#endif  // CHTTPD_H_

@@ -5,6 +5,11 @@ project(chttpd
 )
 
 
+# Suppress the warning: Policy CMP0076 is not set: target_sources() command 
+# converts relative paths to absolute. 
+cmake_policy(SET CMP0076 NEW)
+
+
 configure_file(manifest.h.in manifest.h)
 include_directories(
     ${PROJECT_SOURCE_DIR}
@@ -12,13 +17,16 @@ include_directories(
 )
 
 
-add_executable(chttpd chttpd.c)
-target_link_libraries(
-    chttpd
+add_library(chttpd)
+target_sources(chttpd
+    PUBLIC chttpd.c
+    INTERFACE chttpd.h
+    PRIVATE request.c
+)
+target_link_libraries(chttpd
     PUBLIC
     carrow
     clog
-    microhttpd
 )
 
 

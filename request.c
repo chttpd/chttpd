@@ -19,9 +19,9 @@
 #include <clog.h>
 #include <carrow.h>
 
-#include "chttpd.h"
+#include "request.h"
 
 
 #undef CARROW_ENTITY
-#define CARROW_ENTITY chttpd
+#define CARROW_ENTITY request
 #include <carrow_generic.c>  // NOLINT
