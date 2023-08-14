@@ -1,2 +1,3 @@
 - Profile using Valgrind
 - make install
+- Buffsize should be multiple of pagesize. if not, raise error

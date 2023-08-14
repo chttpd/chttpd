@@ -16,25 +16,22 @@
  *
  *  Author: Vahid Mardani <vahid.mardani@gmail.com>
  */
-#ifndef CHTTPD_H_
-#define CHTTPD_H_
+#ifndef EXAMPLES_ADDR_H_
+#define EXAMPLES_ADDR_H_
 
 
-typedef struct chttpd {
-    const char *bindaddr;
-    unsigned short bindport;
-    int backlog;
-    size_t buffsize;
-} chttpd;
+#include <arpa/inet.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netinet/ip.h>
 
 
-#undef CARROW_ENTITY
-#define CARROW_ENTITY chttpd
-#include <carrow_generic.h>  // NOLINT
+int
+sockaddr_parse(struct sockaddr *saddr, const char *addr, unsigned short port);
 
 
-void
-chttpdA(struct chttpd_coro *self, struct chttpd *state);
+char *
+sockaddr_dump(struct sockaddr *addr);
 
 
-#endif  // CHTTPD_H_
+#endif  // EXAMPLES_ADDR_H_

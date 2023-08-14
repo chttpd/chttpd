@@ -20,7 +20,16 @@
 #define REQUEST_H_
 
 
+#include <sys/socket.h>
+
+#include <mrb.h>
+
+
 typedef struct request {
+    int fd;
+    struct sockaddr localaddr;
+    struct sockaddr remoteaddr;
+    mrb_t buff;
     void *backref;
 } request;
 
@@ -28,6 +37,10 @@ typedef struct request {
 #undef CARROW_ENTITY
 #define CARROW_ENTITY request
 #include <carrow_generic.h>  // NOLINT
+
+
+void
+requestA(struct request_coro *self, struct request *conn);
 
 
 #endif  // REQUEST_H_

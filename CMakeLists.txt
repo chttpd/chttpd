@@ -9,6 +9,9 @@ project(chttpd
 # converts relative paths to absolute. 
 cmake_policy(SET CMP0076 NEW)
 
+# TODO: handle debug flag
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -fms-extensions -D_GNU_SOURCE=1")
+
 
 configure_file(manifest.h.in manifest.h)
 include_directories(
@@ -22,11 +25,13 @@ target_sources(chttpd
     PUBLIC chttpd.c
     INTERFACE chttpd.h
     PRIVATE request.c
+            addr.c
 )
 target_link_libraries(chttpd
     PUBLIC
     carrow
     clog
+    mrb
 )
 
 

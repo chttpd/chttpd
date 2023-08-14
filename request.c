@@ -20,8 +20,72 @@
 #include <carrow.h>
 
 #include "request.h"
+#include "addr.h"
 
 
 #undef CARROW_ENTITY
 #define CARROW_ENTITY request
 #include <carrow_generic.c>  // NOLINT
+
+
+void
+requestA(struct request_coro *self, struct request *conn) {
+    ssize_t bytes;
+    struct mrb *buff = conn->buff;
+    CORO_START;
+    static int e = 0;
+    INFO("New conn: %s", sockaddr_dump(&conn->remoteaddr));
+
+    while (true) {
+        e = CET;
+
+        /* tcp write */
+        /* Write as mush as possible until EAGAIN */
+        while (!mrb_isempty(buff)) {
+            bytes = mrb_writeout(buff, conn->fd, mrb_used(buff));
+            if ((bytes == -1) && CMUSTWAIT()) {
+                e |= COUT;
+                break;
+            }
+            if (bytes == -1) {
+                CORO_REJECT("write(%d)", conn->fd);
+            }
+            if (bytes == 0) {
+                CORO_REJECT("write(%d) EOF", conn->fd);
+            }
+        }
+
+        /* tcp read */
+        /* Read as mush as possible until EAGAIN */
+        while (!mrb_isfull(buff)) {
+            bytes = mrb_readin(buff, conn->fd, mrb_available(buff));
+            if ((bytes == -1) && CMUSTWAIT()) {
+                e |= CIN;
+                break;
+            }
+            if (bytes == -1) {
+                CORO_REJECT("read(%d)", conn->fd);
+            }
+            if (bytes == 0) {
+                CORO_REJECT("read(%d) EOF", conn->fd);
+            }
+        }
+
+        /* reset errno and rewait events if neccessary */
+        errno = 0;
+        if (mrb_isempty(buff) || (e & COUT)) {
+            CORO_WAIT(conn->fd, e);
+        }
+    }
+
+    CORO_FINALLY;
+    if (conn->fd != -1) {
+        request_evloop_unregister(conn->fd);
+        close(conn->fd);
+    }
+    if (mrb_destroy(conn->buff)) {
+        ERROR("Cannot dispose buffers.");
+    }
+    free(conn);
+    CORO_END;
+}

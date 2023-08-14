@@ -6,6 +6,10 @@
 #include <chttpd.h>
 
 
+#define PAGESIZE 4096
+#define BUFFSIZE (PAGESIZE * 32768)
+
+
 int
 main() {
     clog_verbosity = CLOG_DEBUG;
@@ -14,5 +18,12 @@ main() {
         return EXIT_FAILURE;
     }
 
-    return EXIT_SUCCESS;
+    struct chttpd state = {
+        .bindaddr = "0.0.0.0",
+        .bindport = 3030,
+        .backlog = 2,
+        .buffsize = BUFFSIZE,
+    };
+
+    return chttpd_forever(chttpdA, &state, NULL);
 }
