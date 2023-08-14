@@ -20,7 +20,7 @@ main() {
 
     struct chttpd state = {
         .bindaddr = "0.0.0.0",
-        .bindport = 3030,
+        .bindport = 8080,
         .backlog = 2,
         .buffsize = BUFFSIZE,
     };
