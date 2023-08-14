@@ -20,6 +20,7 @@
 #include <carrow.h>
 
 #include "chttpd.h"
+#include "request.h"
 #include "addr.h"
 
 

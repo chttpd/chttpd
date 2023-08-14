@@ -65,6 +65,22 @@ typedef struct chttpd {
 #include <carrow_generic.h>  // NOLINT
 
 
+/* Helper Macros */
+#define CHTTPD_RESPONSE_FLUSH(req) while (chttpd_response_flush(req)) { \
+        if (CMUSTWAIT()) { \
+            CORO_WAIT((req)->fd, COUT); \
+            continue; \
+        } \
+        chttpd_response_close(req); \
+        CORO_CLEANUP; \
+    }
+
+
+#define CHTTPD_RESPONSE_FINALIZE(req) \
+    chttpd_response_finalize(req); \
+    CHTTPD_RESPONSE_FLUSH(req)
+
+
 void
 chttpdA(struct chttpd_coro *self, struct chttpd *state);
 

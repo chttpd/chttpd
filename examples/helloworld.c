@@ -37,31 +37,12 @@ indexA(struct chttpd_request_coro *self, struct chttpd_request* req) {
             "us-ascii");
 
     /* Send response header */
-    while (chttpd_response_flush(req)) {
-        if (CMUSTWAIT()) {
-            CORO_WAIT(req->fd, COUT);
-            continue;
-        }
+    CHTTPD_RESPONSE_FLUSH(req);
 
-        /* Connection error */
-        chttpd_response_close(req);
-        CORO_CLEANUP;
-    }
-
-    chttpd_response_body(req, "Foo, %s", "bar");
-    chttpd_response_finalize(req);
-
-    /* Send response body */
-    while (chttpd_response_flush(req)) {
-        if (CMUSTWAIT()) {
-            CORO_WAIT(req->fd, COUT);
-            continue;
-        }
-
-        /* Connection error */
-        chttpd_response_close(req);
-        CORO_CLEANUP;
-    }
+    chttpd_response_body(req, "Foo, #%d\n", 1);
+    chttpd_response_body(req, "Bar, #%d\n", 2);
+    chttpd_response_body(req, "Baz, #%d\n", 3);
+    CHTTPD_RESPONSE_FINALIZE(req);
 
     CORO_FINALLY;
     CORO_END;
