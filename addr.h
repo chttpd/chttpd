@@ -16,8 +16,8 @@
  *
  *  Author: Vahid Mardani <vahid.mardani@gmail.com>
  */
-#ifndef EXAMPLES_ADDR_H_
-#define EXAMPLES_ADDR_H_
+#ifndef ADDR_H_
+#define ADDR_H_
 
 
 #include <arpa/inet.h>
@@ -34,4 +34,4 @@ char *
 sockaddr_dump(struct sockaddr *addr);
 
 
-#endif  // EXAMPLES_ADDR_H_
+#endif  // ADDR_H_
