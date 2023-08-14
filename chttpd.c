@@ -107,10 +107,10 @@ static enum MHD_Result
 request_handler(void *cls, struct MHD_Connection *connection, const char *url,
         const char *method, const char *version, const char *upload_data,
         size_t *upload_data_size, void **req_cls) {
+    int i;
     enum MHD_Result ret;
 
     // TODO: Use direct access via hashmap instead of looping.
-    int i;
     for (i = 0; routing_table[i].url != NULL; i++) {
         if (strcmp(url, routing_table[i].url) == 0 &&
                 strcmp(method, routing_table[i].method) == 0) {
@@ -157,13 +157,14 @@ parse_port(const char *port_arg, int *port) {
 
 void
 parse_bind_addr(const char *bind_addr_arg, char *bind_addr, int *port) {
+    int i;
     int colon_pos = -1;
 
     if (strcmp(bind_addr_arg, "localhost") == 0) {
         bind_addr_arg = "127.0.0.1";
     }
 
-    for (int i = 0; i < strlen(bind_addr_arg); i++) {
+    for (i = 0; i < strlen(bind_addr_arg); i++) {
         if (bind_addr_arg[i] == ':') {
             colon_pos = i;
             break;
@@ -172,7 +173,8 @@ parse_bind_addr(const char *bind_addr_arg, char *bind_addr, int *port) {
 
     if (colon_pos == -1) {
         strcpy(bind_addr, bind_addr_arg);
-    } else {
+    }
+    else {
         strncpy(bind_addr, bind_addr_arg, colon_pos);
         bind_addr[colon_pos] = '\0';
 
@@ -239,7 +241,7 @@ parse_opt(int key, char *arg, struct argp_state *state) {
 }
 
 
-static struct argp argp = { options, parse_opt, args_doc, doc };
+static struct argp argp = {options, parse_opt, args_doc, doc};
 
 
 int
