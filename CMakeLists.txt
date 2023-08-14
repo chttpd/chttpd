@@ -37,6 +37,11 @@ target_link_libraries(chttpd
 )
 
 
+# Install
+install(TARGETS chttpd DESTINATION "lib")
+install(FILES chttpd.h DESTINATION "include")
+
+
 # Lint
 set(PRETTYC_FLAGS
     --recursive

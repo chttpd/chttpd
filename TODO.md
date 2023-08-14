@@ -1,5 +1,6 @@
 - Profile using Valgrind
-- make install
+- make cpack
+- make test
 - Buffsize should be multiple of pagesize. if not, raise error
 - Default handler
 - Wildcard route & URL parameters
