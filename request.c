@@ -31,6 +31,11 @@
 
 void
 requestA(struct chttpd_request_coro *self, struct chttpd_request *conn) {
+    /*
+    TODO:
+    - Wait for headers, then Parse them
+    - Find handler, otherwise 404
+    */
     ssize_t bytes;
     struct mrb *buff = conn->reqbuff;
     CORO_START;

@@ -60,4 +60,3 @@ chttpd_response_body(struct chttpd_request *req, const char *format, ...) {
     // TODO: implement
     return -1;
 }
-

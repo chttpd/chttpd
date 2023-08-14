@@ -1,9 +1,27 @@
+## High Priority
+- HTTP 1.1 vs 2.0
+  
+- Request parsing
+  * Verb
+  * Url
+  * Version
+  * Keep-alive
+  * Query string
+  * JSON form parsing
 - Wildcard route & URL parameters
+- Default handler
+
+
+## Low Priority
 - Profile using Valgrind
 - make cpack
 - make test
 - Buffsize should be multiple of pagesize. if not, raise error
-- Default handler
 - Separate buffer size options for request and response
 - Handle multiple requests with one connection using CORO_RESET and keep-alive
   header
+- gzip, deflate
+- URL formencodded 
+- Multipart
+- Cookie
+- ETag

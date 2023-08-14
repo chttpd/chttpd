@@ -42,6 +42,8 @@ indexA(struct chttpd_request_coro *self, struct chttpd_request* req) {
     chttpd_response_body(req, "Foo, #%d\n", 1);
     chttpd_response_body(req, "Bar, #%d\n", 2);
     chttpd_response_body(req, "Baz, #%d\n", 3);
+
+    chttpd_response_body(req, "{\"foo\": \"%s\"}", "Bar");
     CHTTPD_RESPONSE_FINALIZE(req);
 
     CORO_FINALLY;
