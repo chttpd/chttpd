@@ -36,6 +36,6 @@ make
 
 ```bash
 pip install prettyc
-cd path/to/carrow/build
+cd path/to/chttpd/build
 make lint
 ```
