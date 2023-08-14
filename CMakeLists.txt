@@ -6,6 +6,10 @@ project(chttpd
 
 
 configure_file(manifest.h.in manifest.h)
+include_directories(
+    ${PROJECT_SOURCE_DIR}
+    ${PROJECT_BINARY_DIR}
+)
 
 
 add_executable(chttpd chttpd.c)

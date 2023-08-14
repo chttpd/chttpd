@@ -1,19 +1,19 @@
 // Copyright 2023 Vahid Mardani
 /*
  * This file is part of chttpd.
- *  chttpd is free software: you can redistribute it and/or modify it under 
- *  the terms of the GNU General Public License as published by the Free 
- *  Software Foundation, either version 3 of the License, or (at your option) 
+ *  chttpd is free software: you can redistribute it and/or modify it under
+ *  the terms of the GNU General Public License as published by the Free
+ *  Software Foundation, either version 3 of the License, or (at your option)
  *  any later version.
- *  
- *  chttpd is distributed in the hope that it will be useful, but WITHOUT ANY 
- *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS 
- *  FOR A PARTICULAR PURPOSE. See the GNU General Public License for more 
+ *
+ *  chttpd is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ *  FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
  *  details.
- *  
- *  You should have received a copy of the GNU General Public License along 
- *  with chttpd. If not, see <https://www.gnu.org/licenses/>. 
- *  
+ *
+ *  You should have received a copy of the GNU General Public License along
+ *  with chttpd. If not, see <https://www.gnu.org/licenses/>.
+ *
  *  Author: Vahid Mardani <vahid.mardani@gmail.com>
  */
 #include <stdlib.h>
@@ -39,15 +39,15 @@ typedef struct chttpd {
 #include <carrow_generic.c>  // NOLINT
 
 
-typedef struct chandler {
+typedef struct request {
     struct MHD_Connection *connection;
     enum MHD_Result result;
     void *ptr;
-} chandler;
+} request;
 
 
 #undef CARROW_ENTITY
-#define CARROW_ENTITY chandler
+#define CARROW_ENTITY request
 #include <carrow_generic.h>  // NOLINT
 #include <carrow_generic.c>  // NOLINT
 
@@ -65,15 +65,15 @@ static struct argp_option options[] = {
 };
 
 
-struct arguments {
+struct options {
     char bind_addr[32];
     int port;
 };
 
 
 void
-handle_goodbye(struct chandler_coro *self,
-        struct chandler *state) {
+handle_goodbye(struct request_coro *self,
+        struct request *state) {
     const char *msg = "Goodbye, world!";
     struct MHD_Response *response;
 
@@ -93,7 +93,7 @@ handle_goodbye(struct chandler_coro *self,
 struct route {
     const char *url;
     const char *method;
-    void (*handler)(struct chandler_coro *self, struct chandler *state);
+    void (*handler)(struct request_coro *self, struct request *state);
 };
 
 
@@ -114,9 +114,9 @@ request_handler(void *cls, struct MHD_Connection *connection, const char *url,
     for (i = 0; routing_table[i].url != NULL; i++) {
         if (strcmp(url, routing_table[i].url) == 0 &&
                 strcmp(method, routing_table[i].method) == 0) {
-            struct chandler *handler_state = malloc(sizeof(struct chandler));
+            struct request *handler_state = malloc(sizeof(struct request));
             handler_state->connection = connection;
-            chandler_coro_create_and_run(routing_table[i].handler,
+            request_coro_create_and_run(routing_table[i].handler,
                     handler_state);
             free(handler_state);
             return handler_state->result;
@@ -127,8 +127,8 @@ request_handler(void *cls, struct MHD_Connection *connection, const char *url,
     struct MHD_Response *response;
     const char *not_found = "Not found";
 
-    response = MHD_create_response_from_buffer(strlen(not_found), (void *)
-            not_found, MHD_RESPMEM_PERSISTENT);
+    response = MHD_create_response_from_buffer(strlen(not_found),
+            (void *)not_found, MHD_RESPMEM_PERSISTENT);
     ret = MHD_queue_response(connection, MHD_HTTP_NOT_FOUND, response);
     MHD_destroy_response(response);
 
@@ -183,8 +183,7 @@ parse_bind_addr(const char *bind_addr_arg, char *bind_addr, int *port) {
 
 
 static void
-httpserverA(struct chttpd_coro *self,
-        struct chttpd *state) {
+httpserverA(struct chttpd_coro *self, struct chttpd *state) {
     fd_set rs;
     fd_set ws;
     fd_set es;
@@ -225,19 +224,19 @@ httpserverA(struct chttpd_coro *self,
 
 static error_t
 parse_opt(int key, char *arg, struct argp_state *state) {
-  struct arguments *arguments = state->input;
+    struct options *options = state->input;
 
-  switch (key) {
-    case 'p':
-      parse_port(arg, &arguments->port);
-      break;
-    case 'b':
-      parse_bind_addr(arg, arguments->bind_addr, &arguments->port);
-      break;
-    default:
-      return ARGP_ERR_UNKNOWN;
+    switch (key) {
+        case 'p':
+            parse_port(arg, &options->port);
+            break;
+        case 'b':
+            parse_bind_addr(arg, options->bind_addr, &options->port);
+            break;
+        default:
+            return ARGP_ERR_UNKNOWN;
     }
-  return 0;
+    return 0;
 }
 
 
@@ -248,31 +247,31 @@ int
 main(int argc, char *argv[]) {
     struct MHD_Daemon *d;
     struct sockaddr_in daemon_addr;
-    struct arguments arguments;
+    struct options options;
 
     /* Default values. */
-    arguments.port = 8080;
-    strcpy(arguments.bind_addr, "127.0.0.1");
+    options.port = 8080;
+    strcpy(options.bind_addr, "127.0.0.1");
 
-    argp_parse(&argp, argc, argv, 0, 0, &arguments);
+    argp_parse(&argp, argc, argv, 0, 0, &options);
 
     memset(&daemon_addr, 0, sizeof(struct sockaddr_in));
 
     clog_verbosity = CLOG_DEBUG;
 
     daemon_addr.sin_family = AF_INET;
-    daemon_addr.sin_port = htons(arguments.port);
-    daemon_addr.sin_addr.s_addr = inet_addr(arguments.bind_addr);
+    daemon_addr.sin_port = htons(options.port);
+    daemon_addr.sin_addr.s_addr = inet_addr(options.bind_addr);
 
     d = MHD_start_daemon(MHD_USE_ERROR_LOG, 0, NULL, NULL, &request_handler,
             NULL, MHD_OPTION_SOCK_ADDR, &daemon_addr, MHD_OPTION_END);
 
     if (d == NULL) {
-        ERROR("Could not start daemon on port %d.\n", arguments.port);
+        ERROR("Could not start daemon on port %d.\n", options.port);
         return 1;
     }
 
-    INFO("Listening on port %d...\n", arguments.port);
+    INFO("Listening on port %d...\n", options.port);
 
     struct chttpd state = {
         .daemon = d
