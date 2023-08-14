@@ -46,4 +46,10 @@ set(PRETTYC_FLAGS
 add_custom_target(lint
     COMMAND prettyc
     ${PRETTYC_FLAGS}
-)
+) 
+
+
+# Examples
+if (NOT DEFINED ENV{SKIP_EXAMPLES})
+add_subdirectory(examples)
+endif()
