@@ -23,6 +23,7 @@
 #include <sys/socket.h>
 
 #include <mrb.h>
+#include <carrow.h>
 
 
 typedef struct chttpd_request {

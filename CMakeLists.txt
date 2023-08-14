@@ -24,9 +24,10 @@ add_library(chttpd)
 target_sources(chttpd
     PUBLIC chttpd.c
     INTERFACE chttpd.h
-    PRIVATE request.c
-            addr.c
+    PRIVATE addr.c
             route.c
+            request.c
+            response.c
 )
 target_link_libraries(chttpd
     PUBLIC

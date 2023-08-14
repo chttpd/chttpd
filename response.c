@@ -16,31 +16,47 @@
  *
  *  Author: Vahid Mardani <vahid.mardani@gmail.com>
  */
-#ifndef CHTTPD_H_
-#define CHTTPD_H_
-
-
-#include "route.h"
-#include "request.h"
 #include "response.h"
 
 
-typedef struct chttpd {
-    const char *bindaddr;
-    unsigned short bindport;
-    int backlog;
-    size_t buffsize;
-    struct chttpd_route *routes;
-} chttpd;
+int
+chttpd_response_start(struct chttpd_request *req, const char *format, ...) {
+    // TODO: implement
+    return -1;
+}
 
 
-#undef CARROW_ENTITY
-#define CARROW_ENTITY chttpd
-#include <carrow_generic.h>  // NOLINT
+int
+chttpd_response_header(struct chttpd_request *req, const char *format, ...) {
+    // TODO: implement
+    return -1;
+}
 
 
-void
-chttpdA(struct chttpd_coro *self, struct chttpd *state);
+int
+chttpd_response_flush(struct chttpd_request *req) {
+    // TODO: implement
+    return -1;
+}
 
 
-#endif  // CHTTPD_H_
+int
+chttpd_response_close(struct chttpd_request *req) {
+    // TODO: implement
+    return -1;
+}
+
+
+int
+chttpd_response_finalize(struct chttpd_request *req) {
+    // TODO: implement
+    return -1;
+}
+
+
+int
+chttpd_response_body(struct chttpd_request *req, const char *format, ...) {
+    // TODO: implement
+    return -1;
+}
+
