@@ -123,7 +123,6 @@ request_handler(void *cls, struct MHD_Connection *connection, const char *url,
         }
     }
 
-
     struct MHD_Response *response;
     const char *not_found = "Not found";
 

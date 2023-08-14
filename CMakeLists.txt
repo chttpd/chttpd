@@ -20,3 +20,22 @@ target_link_libraries(
     clog
     microhttpd
 )
+
+
+# Lint
+set(PRETTYC_FLAGS
+    --recursive
+    --verbose=0
+    --repository=.
+    --extensions=c,h,in
+    --linelength=80
+    --headers=h,in
+    --includeorder=standardcfirst
+    --root=.
+    #--quiet
+    ${PROJECT_SOURCE_DIR}
+)
+add_custom_target(lint
+    COMMAND prettyc
+    ${PRETTYC_FLAGS}
+)

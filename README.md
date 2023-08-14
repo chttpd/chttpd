@@ -7,6 +7,7 @@ Nonblocking IO HTTP server using Carrow.
 - [Clog](https://github.com/pylover/clog)
 - [Microhttpd](http://www.gnu.org/software/libmicrohttpd/)
 
+
 ##### Ubuntu
 
 ```bash
@@ -22,7 +23,19 @@ cmake ..
 make
 ```
 
+
 ### Run
 ```bash
 ./chttpd
+```
+
+
+## Contribution
+
+### Lint
+
+```bash
+pip install prettyc
+cd path/to/carrow/build
+make lint
 ```
