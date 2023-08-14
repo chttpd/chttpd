@@ -24,14 +24,14 @@
 
 
 #undef CARROW_ENTITY
-#define CARROW_ENTITY request
+#define CARROW_ENTITY chttpd_request
 #include <carrow_generic.c>  // NOLINT
 
 
 void
-requestA(struct request_coro *self, struct request *conn) {
+requestA(struct chttpd_request_coro *self, struct chttpd_request *conn) {
     ssize_t bytes;
-    struct mrb *buff = conn->buff;
+    struct mrb *buff = conn->reqbuff;
     CORO_START;
     static int e = 0;
     INFO("New conn: %s", sockaddr_dump(&conn->remoteaddr));
@@ -80,10 +80,13 @@ requestA(struct request_coro *self, struct request *conn) {
 
     CORO_FINALLY;
     if (conn->fd != -1) {
-        request_evloop_unregister(conn->fd);
+        chttpd_request_evloop_unregister(conn->fd);
         close(conn->fd);
     }
-    if (mrb_destroy(conn->buff)) {
+    if (mrb_destroy(conn->reqbuff)) {
+        ERROR("Cannot dispose buffers.");
+    }
+    if (mrb_destroy(conn->respbuff)) {
         ERROR("Cannot dispose buffers.");
     }
     free(conn);

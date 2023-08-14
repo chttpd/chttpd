@@ -1,3 +1,6 @@
 - Profile using Valgrind
 - make install
 - Buffsize should be multiple of pagesize. if not, raise error
+- Default handler
+- Wildcard route & URL parameters
+- Separate buffer size options for request and response

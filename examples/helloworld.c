@@ -28,6 +28,52 @@
 #define BUFFSIZE (PAGESIZE * 32768)
 
 
+static void
+indexA(struct chttpd_request_coro *self, struct chttpd_request* req) {
+    CORO_START;
+
+    chttpd_response_start(req, "200 OK");
+    chttpd_response_header(req, "Content-Type: %s; charset=%s", "text/plain",
+            "us-ascii");
+
+    /* Send response header */
+    while (chttpd_response_flush(req)) {
+        if (CMUSTWAIT()) {
+            CORO_WAIT(req->fd, COUT);
+            continue;
+        }
+
+        /* Connection error */
+        chttpd_response_close(req);
+        CORO_CLEANUP;
+    }
+
+    chttpd_response_body(req, "Foo, %s", "bar");
+    chttpd_response_finalize(req);
+
+    /* Send response body */
+    while (chttpd_response_flush(req)) {
+        if (CMUSTWAIT()) {
+            CORO_WAIT(req->fd, COUT);
+            continue;
+        }
+
+        /* Connection error */
+        chttpd_response_close(req);
+        CORO_CLEANUP;
+    }
+
+    CORO_FINALLY;
+    CORO_END;
+}
+
+
+static struct chttpd_route routes[] = {
+    {"/", NULL, indexA},
+    {NULL, NULL, NULL}
+};
+
+
 int
 main() {
     clog_verbosity = CLOG_DEBUG;
@@ -41,6 +87,7 @@ main() {
         .bindport = 8080,
         .backlog = 2,
         .buffsize = BUFFSIZE,
+        .routes = routes,
     };
 
     return chttpd_forever(chttpdA, &state, NULL);

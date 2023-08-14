@@ -77,7 +77,7 @@ chttpdA(struct chttpd_coro *self, struct chttpd *state) {
         }
 
         /* New Connection */
-        struct request *c = malloc(sizeof(struct request));
+        struct chttpd_request *c = malloc(sizeof(struct chttpd_request));
         if (c == NULL) {
             CORO_REJECT("Out of memory");
         }
@@ -85,12 +85,55 @@ chttpdA(struct chttpd_coro *self, struct chttpd *state) {
         c->fd = connfd;
         c->localaddr = bindaddr;
         c->remoteaddr = connaddr;
-        c->buff = mrb_create(state->buffsize);
-        request_coro_create_and_run(requestA, c);
+        c->reqbuff = mrb_create(state->buffsize);
+        c->respbuff = mrb_create(state->buffsize);
+        chttpd_request_coro_create_and_run(requestA, c);
     }
 
     CORO_FINALLY;
-    close(fd);
     chttpd_evloop_unregister(fd);
+    close(fd);
     CORO_END;
+}
+
+
+int
+chttpd_response_start(struct chttpd_request *req, const char *format, ...) {
+    // TODO: implement
+    return -1;
+}
+
+
+int
+chttpd_response_header(struct chttpd_request *req, const char *format, ...) {
+    // TODO: implement
+    return -1;
+}
+
+
+int
+chttpd_response_flush(struct chttpd_request *req) {
+    // TODO: implement
+    return -1;
+}
+
+
+int
+chttpd_response_close(struct chttpd_request *req) {
+    // TODO: implement
+    return -1;
+}
+
+
+int
+chttpd_response_finalize(struct chttpd_request *req) {
+    // TODO: implement
+    return -1;
+}
+
+
+int
+chttpd_response_body(struct chttpd_request *req, const char *format, ...) {
+    // TODO: implement
+    return -1;
 }

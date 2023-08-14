@@ -20,11 +20,16 @@
 #define CHTTPD_H_
 
 
+#include "request.h"
+#include "route.h"
+
+
 typedef struct chttpd {
     const char *bindaddr;
     unsigned short bindport;
     int backlog;
     size_t buffsize;
+    struct chttpd_route *routes;
 } chttpd;
 
 
@@ -35,6 +40,30 @@ typedef struct chttpd {
 
 void
 chttpdA(struct chttpd_coro *self, struct chttpd *state);
+
+
+int
+chttpd_response_start(struct chttpd_request *req, const char *format, ...);
+
+
+int
+chttpd_response_header(struct chttpd_request *req, const char *format, ...);
+
+
+int
+chttpd_response_flush(struct chttpd_request *req);
+
+
+int
+chttpd_response_close(struct chttpd_request *req);
+
+
+int
+chttpd_response_finalize(struct chttpd_request *req);
+
+
+int
+chttpd_response_body(struct chttpd_request *req, const char *format, ...);
 
 
 #endif  // CHTTPD_H_

@@ -16,32 +16,20 @@
  *
  *  Author: Vahid Mardani <vahid.mardani@gmail.com>
  */
-#ifndef REQUEST_H_
-#define REQUEST_H_
+#ifndef ROUTE_H_
+#define ROUTE_H_
 
 
-#include <sys/socket.h>
+#include <carrow.h>
 
-#include <mrb.h>
-
-
-typedef struct chttpd_request {
-    int fd;
-    struct sockaddr localaddr;
-    struct sockaddr remoteaddr;
-    mrb_t reqbuff;
-    mrb_t respbuff;
-    void *backref;
-} chttpd_request;
+#include "request.h"
 
 
-#undef CARROW_ENTITY
-#define CARROW_ENTITY chttpd_request
-#include <carrow_generic.h>  // NOLINT
+struct chttpd_route {
+    const char *pattern;
+    const char *verb;
+    chttpd_request_corofunc handler;
+};
 
 
-void
-requestA(struct chttpd_request_coro *self, struct chttpd_request *req);
-
-
-#endif  // REQUEST_H_
+#endif  // ROUTE_H_

@@ -26,6 +26,7 @@ target_sources(chttpd
     INTERFACE chttpd.h
     PRIVATE request.c
             addr.c
+            route.c
 )
 target_link_libraries(chttpd
     PUBLIC
