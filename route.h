@@ -20,16 +20,4 @@
 #define ROUTE_H_
 
 
-#include <carrow.h>
-
-#include "request.h"
-
-
-struct chttpd_route {
-    const char *pattern;
-    const char *verb;
-    chttpd_request_corofunc handler;
-};
-
-
 #endif  // ROUTE_H_

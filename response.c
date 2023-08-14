@@ -16,6 +16,7 @@
  *
  *  Author: Vahid Mardani <vahid.mardani@gmail.com>
  */
+#include "chttpd.h"
 #include "response.h"
 
 

@@ -20,11 +20,37 @@
 #define CHTTPD_H_
 
 
-#include "route.h"
-#include "request.h"
-#include "response.h"
+#include <sys/socket.h>
+
+#include <mrb.h>
+#include <carrow.h>
 
 
+/* Request Types */
+typedef struct chttpd_request {
+    int fd;
+    struct sockaddr localaddr;
+    struct sockaddr remoteaddr;
+    mrb_t reqbuff;
+    mrb_t respbuff;
+    void *backref;
+} chttpd_request;
+
+
+#undef CARROW_ENTITY
+#define CARROW_ENTITY chttpd_request
+#include <carrow_generic.h>  // NOLINT
+
+
+/* Route Types */
+struct chttpd_route {
+    const char *pattern;
+    const char *verb;
+    chttpd_request_corofunc handler;
+};
+
+
+/* Core Types */
 typedef struct chttpd {
     const char *bindaddr;
     unsigned short bindport;
@@ -41,6 +67,30 @@ typedef struct chttpd {
 
 void
 chttpdA(struct chttpd_coro *self, struct chttpd *state);
+
+
+int
+chttpd_response_start(struct chttpd_request *req, const char *format, ...);
+
+
+int
+chttpd_response_header(struct chttpd_request *req, const char *format, ...);
+
+
+int
+chttpd_response_flush(struct chttpd_request *req);
+
+
+int
+chttpd_response_close(struct chttpd_request *req);
+
+
+int
+chttpd_response_finalize(struct chttpd_request *req);
+
+
+int
+chttpd_response_body(struct chttpd_request *req, const char *format, ...);
 
 
 #endif  // CHTTPD_H_

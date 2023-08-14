@@ -20,27 +20,6 @@
 #define REQUEST_H_
 
 
-#include <sys/socket.h>
-
-#include <mrb.h>
-#include <carrow.h>
-
-
-typedef struct chttpd_request {
-    int fd;
-    struct sockaddr localaddr;
-    struct sockaddr remoteaddr;
-    mrb_t reqbuff;
-    mrb_t respbuff;
-    void *backref;
-} chttpd_request;
-
-
-#undef CARROW_ENTITY
-#define CARROW_ENTITY chttpd_request
-#include <carrow_generic.h>  // NOLINT
-
-
 void
 requestA(struct chttpd_request_coro *self, struct chttpd_request *req);
 

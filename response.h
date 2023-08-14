@@ -20,31 +20,4 @@
 #define RESPONSE_H_
 
 
-#include "request.h"
-
-
-int
-chttpd_response_start(struct chttpd_request *req, const char *format, ...);
-
-
-int
-chttpd_response_header(struct chttpd_request *req, const char *format, ...);
-
-
-int
-chttpd_response_flush(struct chttpd_request *req);
-
-
-int
-chttpd_response_close(struct chttpd_request *req);
-
-
-int
-chttpd_response_finalize(struct chttpd_request *req);
-
-
-int
-chttpd_response_body(struct chttpd_request *req, const char *format, ...);
-
-
 #endif  // RESPONSE_H_
