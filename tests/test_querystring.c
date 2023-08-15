@@ -1,19 +1,102 @@
-#include <stdlib.h>
-
+// Copyright 2023 Vahid Mardani
+/*
+ * This file is part of chttpd.
+ *  chttpd is free software: you can redistribute it and/or modify it under
+ *  the terms of the GNU General Public License as published by the Free
+ *  Software Foundation, either version 3 of the License, or (at your option)
+ *  any later version.
+ *
+ *  chttpd is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ *  FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+ *  details.
+ *
+ *  You should have received a copy of the GNU General Public License along
+ *  with chttpd. If not, see <https://www.gnu.org/licenses/>.
+ *
+ *  Author: Vahid Mardani <vahid.mardani@gmail.com>
+ */
 #include <cutest.h>
+#include <clog.h>
+
+
+char*
+decode(char *encoded) {
+    size_t length = strlen(encoded);
+    size_t i;
+    size_t j;
+
+    char *decoded = malloc(length + 1);
+    if (decoded == NULL) {
+        ERROR("Memory allocation failed.");
+        exit(EXIT_FAILURE);
+    }
+
+    for (i = 0, j = 0; i < length; i++, j++) {
+        if (encoded[i] == '%') {
+            if (i + 2 < length) {
+                char hex_digits[3] = {encoded[i + 1], encoded[i + 2], '\0' };
+                int ascii_value = strtol(hex_digits, NULL, 16);
+                decoded[j] = (char)ascii_value;
+                i += 2;
+            }
+            else {
+                free(decoded);
+                exit(EXIT_FAILURE);
+            }
+        }
+        else if (encoded[i] == '+') {
+            decoded[j] = ' ';
+        }
+        else {
+            decoded[j] = encoded[i];
+        }
+    }
+
+    decoded[j] = '\0';
+    return decoded;
+}
 
 
 int
-qstok(char *query, char **saveptr, char **key, char **value);
+qstok(char *query, char **saveptr, char **key, char **value) {
+    if (query != NULL && *saveptr != NULL) {
+        // **saveptr must be null in the first try.
+        return -1;
+    }
+
+    if (*saveptr == NULL && query == NULL) {
+        // query is not provided to qstok.
+        return -1;
+    }
+
+    if (key == NULL || value == NULL) {
+        // key/value provided to qstok cannot be NULL.
+        return -1;
+    }
+
+    *key = strtok_r(query, "=", saveptr);
+    *value = strtok_r(NULL, "&", saveptr);
+
+    if (*key == NULL && *value == NULL) {
+        return 1;
+    }
+
+    *key = decode(*key);
+    *value = decode(*value);
+
+    return 0;
+}
 
 
 void
 test_querystring() {
-    char *saveptr;
-    const char *query = "foo=bar&baz=quux";
+    const char *query = "foo=bar&baz=qux";
+
     char *copy = malloc(strlen(query) + 1);
     strcpy(copy, query);
 
+    char *saveptr;
     char *key = NULL;
     char *value = NULL;
 
@@ -25,9 +108,9 @@ test_querystring() {
 
     eqint(0, qstok(NULL, &saveptr, &key, &value));
     eqint(3, strlen(key));
-    eqint(4, strlen(value));
+    eqint(3, strlen(value));
     eqstr("baz", key);
-    eqstr("quux", value);
+    eqstr("qux", value);
 
     eqint(1, qstok(NULL, &saveptr, &key, &value));
     free(copy);
@@ -36,11 +119,12 @@ test_querystring() {
 
 void
 test_querystring_error() {
-    const char *query = "foo=bar&baz=quux";
+    const char *query = "foo=bar&baz=qux";
+
     char *copy = malloc(strlen(query) + 1);
     strcpy(copy, query);
-    char *saveptr = copy;
 
+    char *saveptr = copy;
     char *key;
     char *value;
 
@@ -52,12 +136,39 @@ test_querystring_error() {
 }
 
 
+void
+test_querystring_url_encoded() {
+    const char *query = "foo%20bar=baz&qux=quux%21corge";
+
+    char *copy = malloc(strlen(query));
+    strcpy(copy, query);
+
+    char *saveptr;
+    char *key;
+    char *value;
+
+    eqint(0, qstok(copy, &saveptr, &key, &value));
+    eqint(7, strlen(key));
+    eqint(3, strlen(value));
+    eqstr("foo bar", key);
+    eqstr("baz", value);
+
+    eqint(0, qstok(NULL, &saveptr, &key, &value));
+    eqint(3, strlen(key));
+    eqint(10, strlen(value));
+    eqstr("qux", key);
+    eqstr("quux!corge", value);
+
+    eqint(1, qstok(NULL, &saveptr, &key, &value));
+    free(copy);
+}
+
+
 int
 main() {
     test_querystring();
     test_querystring_error();
+    test_querystring_url_encoded();
 
-    // TODO:
-    // test_querystring_encodded();
     return EXIT_SUCCESS;
 }
