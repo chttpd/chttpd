@@ -167,6 +167,4 @@ main() {
     test_querystring();
     test_querystring_error();
     test_querystring_url_encoded();
-
-    return EXIT_SUCCESS;
 }
