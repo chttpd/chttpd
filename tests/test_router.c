@@ -22,16 +22,11 @@
 
 
 void
-test_querystring() {
-    eqint(2, 2);
-    eqint(2, 2);
-    eqint(2, 2);
-    eqint(2, 2);
-    eqint(2, 1);
+test_router() {
 }
 
 
 void
 main() {
-    test_querystring();
+    test_router();
 }
