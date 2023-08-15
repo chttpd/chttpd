@@ -35,7 +35,7 @@ decode(char *encoded) {
     for (i = 0, j = 0; i < length; i++, j++) {
         if (encoded[i] == '%') {
             if (i + 2 < length) {
-                char hex_digits[3] = {encoded[i + 1], encoded[i + 2], '\0' };
+                char hex_digits[3] = {encoded[i + 1], encoded[i + 2], '\0'};
                 int ascii_value = strtol(hex_digits, NULL, 16);
                 decoded[j] = (char)ascii_value;
                 i += 2;
