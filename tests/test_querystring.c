@@ -127,6 +127,8 @@ test_querystring_error() {
     eqint(-1, qstok(NULL, &saveptr, &key, &value));
     eqint(-1, qstok(copy, &saveptr, NULL, &value));
     eqint(-1, qstok(copy, &saveptr, &key, NULL));
+
+    free(copy);
 }
 
 
