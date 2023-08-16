@@ -17,60 +17,53 @@
  *  Author: Vahid Mardani <vahid.mardani@gmail.com>
  */
 #include <cutest.h>
-#include <clog.h>
 
 
-char*
+int
 decode(char *encoded) {
     size_t length = strlen(encoded);
     size_t i;
     size_t j;
-
-    char *decoded = malloc(length + 1);
-    if (decoded == NULL) {
-        ERROR("Memory allocation failed.");
-        exit(EXIT_FAILURE);
-    }
 
     for (i = 0, j = 0; i < length; i++, j++) {
         if (encoded[i] == '%') {
             if (i + 2 < length) {
                 char hex_digits[3] = {encoded[i + 1], encoded[i + 2], '\0'};
                 int ascii_value = strtol(hex_digits, NULL, 16);
-                decoded[j] = (char)ascii_value;
+                encoded[j] = (char)ascii_value;
                 i += 2;
             }
             else {
-                free(decoded);
-                exit(EXIT_FAILURE);
+                encoded[j] = '\0';
+                return 1;
             }
         }
         else if (encoded[i] == '+') {
-            decoded[j] = ' ';
+            encoded[j] = ' ';
         }
         else {
-            decoded[j] = encoded[i];
+            encoded[j] = encoded[i];
         }
     }
 
-    decoded[j] = '\0';
-    return decoded;
+    encoded[j] = '\0';
+    return 0;
 }
 
 
 int
 qstok(char *query, char **saveptr, char **key, char **value) {
-    if (query != NULL && *saveptr != NULL) {
+    if ((query != NULL) && (*saveptr != NULL)) {
         // **saveptr must be null in the first try.
         return -1;
     }
 
-    if (*saveptr == NULL && query == NULL) {
+    if ((*saveptr == NULL) && (query == NULL)) {
         // query is not provided to qstok.
         return -1;
     }
 
-    if (key == NULL || value == NULL) {
+    if ((key == NULL) || (value == NULL)) {
         // key/value provided to qstok cannot be NULL.
         return -1;
     }
@@ -78,12 +71,13 @@ qstok(char *query, char **saveptr, char **key, char **value) {
     *key = strtok_r(query, "=", saveptr);
     *value = strtok_r(NULL, "&", saveptr);
 
-    if (*key == NULL && *value == NULL) {
+    if ((*key == NULL) && (*value == NULL)) {
         return 1;
     }
 
-    *key = decode(*key);
-    *value = decode(*value);
+    if ((decode(*key) != 0) || (decode(*value) != 0)) {
+        return -1;
+    }
 
     return 0;
 }
@@ -91,7 +85,7 @@ qstok(char *query, char **saveptr, char **key, char **value) {
 
 void
 test_querystring() {
-    const char *query = "foo=bar&baz=qux";
+    const char *query = "foo=bar&baz=quux";
 
     char *copy = malloc(strlen(query) + 1);
     strcpy(copy, query);
@@ -108,9 +102,9 @@ test_querystring() {
 
     eqint(0, qstok(NULL, &saveptr, &key, &value));
     eqint(3, strlen(key));
-    eqint(3, strlen(value));
+    eqint(4, strlen(value));
     eqstr("baz", key);
-    eqstr("qux", value);
+    eqstr("quux", value);
 
     eqint(1, qstok(NULL, &saveptr, &key, &value));
     free(copy);
@@ -119,7 +113,7 @@ test_querystring() {
 
 void
 test_querystring_error() {
-    const char *query = "foo=bar&baz=qux";
+    const char *query = "foo=bar&baz=quux";
 
     char *copy = malloc(strlen(query) + 1);
     strcpy(copy, query);
