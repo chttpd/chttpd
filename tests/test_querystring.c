@@ -20,7 +20,7 @@
 
 
 int
-decode(char *encoded) {
+qsdecode(char *encoded) {
     size_t length = strlen(encoded);
     size_t i;
     size_t j;
@@ -75,7 +75,7 @@ qstok(char *query, char **saveptr, char **key, char **value) {
         return 1;
     }
 
-    if ((decode(*key) != 0) || (decode(*value) != 0)) {
+    if ((qsdecode(*key) != 0) || (qsdecode(*value) != 0)) {
         return -1;
     }
 
