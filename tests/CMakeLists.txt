@@ -25,4 +25,3 @@ foreach (t IN LISTS testrules)
         COMMAND "valgrind" ${VALGRIND_FLAGS} ctest -R ${t}
     )
 endforeach()
-

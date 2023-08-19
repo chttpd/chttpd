@@ -16,6 +16,8 @@
  *
  *  Author: Vahid Mardani <vahid.mardani@gmail.com>
  */
+#include <stdlib.h>
+
 #include <cutest.h>
 
 
@@ -160,11 +162,9 @@ test_querystring_url_encoded() {
 }
 
 
-int
+void
 main() {
     test_querystring();
     test_querystring_error();
     test_querystring_url_encoded();
-
-    return EXIT_SUCCESS;
 }
