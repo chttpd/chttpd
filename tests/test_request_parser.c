@@ -45,7 +45,7 @@ headtok(char *headers, char **saveptr, char **key, char **value) {
     if ((*key == NULL) || (*value == NULL)) {
         return 1;
     }
-    
+
     while (((**key) == ' ') || ((**key) == '\r') || ((**key) == '\n')) {
         (*key)++;
     }
@@ -53,7 +53,7 @@ headtok(char *headers, char **saveptr, char **key, char **value) {
     while ((**value) == ' ' || ((**value) == '\r') || ((**value) == '\n')) {
         (*value)++;
     }
-    
+
     return 0;
 }
 
@@ -106,7 +106,7 @@ reqtok(char *request, char **saveptr, char **verb, char **path,
         return -1;
     }
 
-    
+
     return 0;
 }
 
@@ -137,7 +137,7 @@ test_headtok() {
 
     char *copy = malloc(strlen(request) + 1);
     strcpy(copy, request);
-    
+
     char *saveptr = NULL;
     char *key;
     char *value;
@@ -159,13 +159,13 @@ test_headtok() {
     eqint(strlen(key), 10);
     eqstr(value, "corge");
     eqint(strlen(value), 5);
-    
+
     eqint(0, headtok(NULL, &saveptr, &key, &value));
     eqstr(key, "Content-Length");
     eqint(strlen(key), 14);
     eqstr(value, "99");
     eqint(strlen(value), 2);
-    
+
     eqint(1, headtok(NULL, &saveptr, &key, &value));
 }
 
