@@ -164,8 +164,6 @@ requestA(struct chttpd_request_coro *self, struct chttpd_request *conn) {
             if (bytes == 0) {
                 CORO_REJECT("read(%d) EOF", conn->fd);
             }
-
-            
         }
 
         /* reset errno and rewait events if neccessary */

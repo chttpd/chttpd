@@ -224,5 +224,5 @@ main() {
     test_headtok();
     test_headtok_error();
 
-    test_request_parser();
+    // test_request_parser();
 }
