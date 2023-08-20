@@ -29,6 +29,95 @@
 #include <carrow_generic.c>  // NOLINT
 
 
+int
+headtok(char *headers, char **saveptr, char **key, char **value) {
+    if ((headers != NULL) && (*saveptr != NULL)) {
+        /* **saveptr must be null in the first try */
+        return -1;
+    }
+
+    if ((*saveptr == NULL) && (headers == NULL)) {
+        /* headers is not provided to headtok. */
+        return -1;
+    }
+
+    if ((key == NULL) || (value == NULL)) {
+        /* key/value provided to headtok cannot be NULL. */
+        return -1;
+    }
+
+    *key = strtok_r(headers, ":", saveptr);
+    *value = strtok_r(NULL, "\r\n", saveptr);
+
+    if ((*key == NULL) || (*value == NULL)) {
+        return 1;
+    }
+
+    while (((**key) == ' ') || ((**key) == '\r') || ((**key) == '\n')) {
+        (*key)++;
+    }
+
+    while ((**value) == ' ' || ((**value) == '\r') || ((**value) == '\n')) {
+        (*value)++;
+    }
+
+    return 0;
+}
+
+
+int
+reqtok(char *request, char **saveptr, char **verb, char **path,
+        char **version) {
+    char *token;
+
+    if (*saveptr != NULL) {
+        /* **saveptr must be null. */
+        return -1;
+    }
+
+    if (request == NULL) {
+        /* request is not provided to reqtok. */
+        return -1;
+    }
+
+    /* Parse the HTTP verb. */
+    token = strtok_r(request, " ", saveptr);
+    if (token != NULL) {
+        *verb = token;
+    }
+    else {
+        return -1;
+    }
+
+    /* Parse the URL. */
+    token = strtok_r(NULL, " ", saveptr);
+    if (token != NULL) {
+        *path = token;
+    }
+    else {
+        return -1;
+    }
+
+    /* Parse request body. */
+    token = strtok_r(NULL, "/", saveptr);
+    if (token != NULL) {
+        token = strtok_r(NULL, "\r\n", saveptr);
+        if (token != NULL) {
+            *version = token;
+        }
+        else {
+            return -1;
+        }
+    }
+    else {
+        return -1;
+    }
+
+
+    return 0;
+}
+
+
 void
 requestA(struct chttpd_request_coro *self, struct chttpd_request *conn) {
     /*
@@ -75,6 +164,8 @@ requestA(struct chttpd_request_coro *self, struct chttpd_request *conn) {
             if (bytes == 0) {
                 CORO_REJECT("read(%d) EOF", conn->fd);
             }
+
+            
         }
 
         /* reset errno and rewait events if neccessary */

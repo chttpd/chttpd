@@ -21,6 +21,20 @@
 #include <cutest.h>
 
 
+struct header {
+    char *key;
+    char *value;
+}
+
+
+struct request {
+    char *verb;
+    char *path;
+    char *versoin;
+    struct header **headers;
+}
+
+
 int
 headtok(char *headers, char **saveptr, char **key, char **value) {
     if ((headers != NULL) && (*saveptr != NULL)) {
@@ -209,4 +223,6 @@ main() {
     test_reqtok_error();
     test_headtok();
     test_headtok_error();
+
+    test_request_parser();
 }
