@@ -131,6 +131,18 @@ test_reqtok() {
 
 
 void
+test_reqtok_error() {
+    char request[] = "POST /api/users HTTP//1.1\r\n";
+    char *saveptr;
+    char *verb;
+    char *path;
+    char *version;
+
+    eqint(-1, reqtok(request, &saveptr, &verb, &path, &version));
+}
+
+
+void
 test_headtok() {
     const char *request = "Host: foo.bar\r\nContent-Type: baz/qux\r\n"
         "Connection: corge\r\nContent-Length: 99\r\n";
@@ -171,9 +183,31 @@ test_headtok() {
 
 
 void
+test_headtok_error() {
+    const char *request = "Host: foo.bar\r\nContent-Type:: baz/qux\r\n"
+        "Connection: corge\r\nContent-Length: 99\r\n";
+
+    char *copy = malloc(strlen(request) + 1);
+    strcpy(copy, request);
+
+    char *saveptr = NULL;
+    char *key;
+    char *value;
+
+    eqint(0, headtok(copy, &saveptr, &key, &value));
+    eqint(-1, headtok(copy, &saveptr, &key, &value));
+    saveptr = copy;
+    eqint(-1, headtok(copy, &saveptr, &key, &value));
+    saveptr = NULL;
+    eqint(-1, headtok(NULL, &saveptr, NULL, &value));
+    eqint(-1, headtok(NULL, &saveptr, &key, NULL));
+}
+
+
+void
 main() {
     test_reqtok();
-    // test_reqtok_error();
+    test_reqtok_error();
     test_headtok();
-    // test_headtok_error();
+    test_headtok_error();
 }
