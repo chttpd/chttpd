@@ -19,7 +19,6 @@
 #include <stdlib.h>
 
 #include <cutest.h>
-#include <clog.h>
 
 
 int
