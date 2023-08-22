@@ -47,7 +47,6 @@ indexA(struct chttpd_request_coro *self, struct chttpd_request* req) {
     CHTTPD_RESPONSE_FINALIZE(req);
 
     CORO_FINALLY;
-    CORO_END;
 }
 
 
