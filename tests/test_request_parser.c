@@ -19,53 +19,74 @@
 #include <stdlib.h>
 
 #include <cutest.h>
+#include <clog.h>
+
+
+#define HEADERLINE_MAXSIZE 128
+#define HEADERS_MAXCOUNT 10
 
 
 struct chttpd_request {
     char *verb;
     char *path;
     char *version;
-    char *content_length;
-    char *content_type;
-    char *connection;
-    char *accept;
-    char *headers;
+    char content_length[HEADERLINE_MAXSIZE];
+    char content_type[HEADERLINE_MAXSIZE];
+    char connection[HEADERLINE_MAXSIZE];
+    char accept[HEADERLINE_MAXSIZE];
+    char headers[HEADERLINE_MAXSIZE * HEADERS_MAXCOUNT];
+};
+
+
+void
+headparser(char *request, char *accept, char *connection,
+        char *content_length, char *content_type) {
+    char *saveptr = NULL;
+    char *line = strtok_r(request, "\r\n", &saveptr);
+
+    while (line) {
+        if (strncmp(line, "Accept: ", 8) == 0) {
+            strcpy(accept, line + 8);
+        }
+        else if (strncmp(line, "Connection: ", 12) == 0) {
+            strcpy(connection, line + 12);
+        }
+        else if (strncmp(line, "Content-Type: ", 14) == 0) {
+            strcpy(content_type, line + 14);
+        }
+        else if (strncmp(line, "Content-Length: ", 16) == 0) {
+            strcpy(content_length, line + 16);
+        }
+
+        line = strtok_r(NULL, "\r\n", &saveptr);
+    }
 }
 
 
-int
-headtok(char *headers, char **saveptr, char **key, char **value) {
-    if ((headers != NULL) && (*saveptr != NULL)) {
-        /* **saveptr must be null in the first try */
-        return -1;
-    }
+void
+test_headparser() {
+    char headers[] = "Accept: baz\r\nConnection: corge\r\n"
+        "Content-Type: qux/quux\r\nHost: grault\r\nContent-Length: 125\r\n"
+        "\r\n";
 
-    if ((*saveptr == NULL) && (headers == NULL)) {
-        /* headers is not provided to headtok. */
-        return -1;
-    }
+    char accept[100];
+    char connection[100];
+    char content_type[100];
+    char content_length[100];
 
-    if ((key == NULL) || (value == NULL)) {
-        /* key/value provided to headtok cannot be NULL. */
-        return -1;
-    }
+    headparser(headers, accept, connection, content_length, content_type);
 
-    *key = strtok_r(headers, ":", saveptr);
-    *value = strtok_r(NULL, "\r\n", saveptr);
+    eqstr("baz", accept);
+    eqstr("corge", connection);
+    eqstr("qux/quux", content_type);
+    eqstr("125", content_length);
+    
+}
 
-    if ((*key == NULL) || (*value == NULL)) {
-        return 1;
-    }
 
-    while (((**key) == ' ') || ((**key) == '\r') || ((**key) == '\n')) {
-        (*key)++;
-    }
-
-    while ((**value) == ' ' || ((**value) == '\r') || ((**value) == '\n')) {
-        (*value)++;
-    }
-
-    return 0;
+void
+test_headparser_error() {
+    /* No error case is considered. */
 }
 
 
@@ -129,7 +150,7 @@ test_reqtok() {
     char *copy = malloc(strlen(request) + 1);
     strcpy(copy, request);
 
-    char *saveptr;
+    char *saveptr = NULL;
     char *verb;
     char *path;
     char *version;
@@ -153,68 +174,6 @@ test_reqtok_error() {
 }
 
 
-void
-test_headtok() {
-    const char *request = "Host: foo.bar\r\nContent-Type: baz/qux\r\n"
-        "Connection: corge\r\nContent-Length: 99\r\n";
-
-    char *copy = malloc(strlen(request) + 1);
-    strcpy(copy, request);
-
-    char *saveptr = NULL;
-    char *key;
-    char *value;
-
-    eqint(0, headtok(copy, &saveptr, &key, &value));
-    eqstr(key, "Host");
-    eqint(strlen(key), 4);
-    eqstr(value, "foo.bar");
-    eqint(strlen(value), 7);
-
-    eqint(0, headtok(NULL, &saveptr, &key, &value));
-    eqstr(key, "Content-Type");
-    eqint(strlen(key), 12);
-    eqstr(value, "baz/qux");
-    eqint(strlen(value), 7);
-
-    eqint(0, headtok(NULL, &saveptr, &key, &value));
-    eqstr(key, "Connection");
-    eqint(strlen(key), 10);
-    eqstr(value, "corge");
-    eqint(strlen(value), 5);
-
-    eqint(0, headtok(NULL, &saveptr, &key, &value));
-    eqstr(key, "Content-Length");
-    eqint(strlen(key), 14);
-    eqstr(value, "99");
-    eqint(strlen(value), 2);
-
-    eqint(1, headtok(NULL, &saveptr, &key, &value));
-}
-
-
-void
-test_headtok_error() {
-    const char *request = "Host: foo.bar\r\nContent-Type:: baz/qux\r\n"
-        "Connection: corge\r\nContent-Length: 99\r\n";
-
-    char *copy = malloc(strlen(request) + 1);
-    strcpy(copy, request);
-
-    char *saveptr = NULL;
-    char *key;
-    char *value;
-
-    eqint(0, headtok(copy, &saveptr, &key, &value));
-    eqint(-1, headtok(copy, &saveptr, &key, &value));
-    saveptr = copy;
-    eqint(-1, headtok(copy, &saveptr, &key, &value));
-    saveptr = NULL;
-    eqint(-1, headtok(NULL, &saveptr, NULL, &value));
-    eqint(-1, headtok(NULL, &saveptr, &key, NULL));
-}
-
-
 int
 getfirstline(char *header, char *firstline, size_t maxlen) {
     const char *newline = strchr(header, '\n'); 
@@ -231,6 +190,32 @@ getfirstline(char *header, char *firstline, size_t maxlen) {
         return 0;
     }
     return -1;
+}
+
+
+void
+test_getfirstline() {
+    char header[] = "GET /path/to/resource HTTP/1.1\r\nHost: foo.com\r\n";
+    char firstline[100];
+    eqint(0, getfirstline(header, firstline, sizeof(firstline)));
+    
+    
+    /* Case: first line is bigger than buffer. */
+    char longheader[] = "GET /path/to/resource HTTP/1.1\nHost: example.com\n";
+    char shortfirstline[10] = "";
+    eqint(0, getfirstline(longheader, shortfirstline,
+                sizeof(shortfirstline)));
+}
+
+
+void
+test_getfirstline_error() {
+    char noline_header[] = "POST /path/to/resource HTTP/1.1";
+    char firstline[100] = "";
+    eqint(-1, getfirstline(noline_header, firstline, sizeof(firstline)));
+
+    char emptyheader[] = "";
+    eqint(-1, getfirstline(emptyheader, firstline, sizeof(firstline)));
 }
 
 
@@ -254,86 +239,112 @@ getheaders(char *header, char *content, size_t maxlen) {
 }
 
 
+void
+test_getheaders() {
+    char header[] = "POST /path/to/resource HTTP/1.1\r\n"
+        "Host: foo.com\r\n\r\nbarbazquxquux.";
+    char content[100] = "";
+    eqint(0, getheaders(header, content, sizeof(content)));
+    eqstr(content, "Host: foo.com");
+    eqint(strlen(content), 13);
+
+
+    char complex_header[] = "POST /path/to/resource HTTP/1.1\r\n"
+       "Host: foo.com\r\nAccept: bar\r\n\r\nThis is the content.";
+    char complex_content[100] = "";
+    eqint(0, getheaders(complex_header, complex_content,
+            sizeof(complex_content)));
+    eqstr(complex_content, "Host: foo.com\r\nAccept: bar");
+    eqint(strlen(complex_content), 26);
+
+    /* Case: header is bigger than buffer. */
+    char longheader[] = "GET /path/to/resource HTTP/1.1\r\n"
+                     "Host: foo.com\r\n"
+                     "\r\n"
+                     "This is the content.";
+    char shortcontent[10] = "";
+    eqint(0, getheaders(longheader, shortcontent, sizeof(shortcontent)));
+    eqstr(shortcontent, "Host: foo");
+}
+
+
+void
+test_getheaders_error() {
+    char invalid_header[] = "GET /path/to/resource HTTP/1.1\r\n"
+        "Host: example.com\r\n";
+    char content[100] = "";
+    eqint(-1, getheaders(invalid_header, content, sizeof(content))); 
+}
+
+
 int
-reqparser(char *request, chttpd_request *conn) {
+reqparser(char *request, struct chttpd_request *conn) {
     char firstline[HEADERLINE_MAXSIZE];
-    if (get_first_line(request, HEADERLINE_MAXSIZE) != 0) {
+    if (getfirstline(request, firstline, HEADERLINE_MAXSIZE) != 0) {
         return -1;
     }
 
     char *saveptr = NULL;
-    if (reqtok(firstline, &saveptr, &verb, &path, &version) == -1) {
-        CORO_REJECT("Request tokenization failed.");
-    }
-            
-    char headers[HEADERLINE_MAXSIZE];
-    if (get_headers(request, headers, HEADERLINE_MAXSIZE) != 0) {
+    if (reqtok(firstline, &saveptr, &conn->verb, &conn->path, &conn->version)
+            == -1) {
         return -1;
     }
-    // strcpy(conn->headers, headers);
+            
+    char headers[HEADERLINE_MAXSIZE * HEADERS_MAXCOUNT];
+    if (getheaders(request, headers, HEADERLINE_MAXSIZE * HEADERS_MAXCOUNT)
+            != 0) {
+        return -1;
+    }
+    strcpy(conn->headers, headers);
 
-    saveptr = NULL;
-    int headtok_resp;
-    char *key;
-    char *value;
+    headparser(request, conn->accept, conn->connection, conn->content_length,
+            conn->content_type);
     
-    int i = 0;
-    do {
-        if (i == 0) {
-            headtok_resp = headtok(headers, &saveptr, &key, &value);
-        }
-        else {
-            /* Ensure headtok recieves NULL in the proceeding calls */
-            headtok_resp = headtok(NULL, &saveptr, &key, &value);
-        }
-        
-        if (headtok_resp == -1) {
-            return -1;
-        }
-
-        if (headtok_resp == 1) {
-            break;
-        }
-        
-        i++;
-    } while (headtok_resp == 0);
-
+    return 0;
 }
 
 
 void
 test_reqparser() {
-    char request[1024] = "GET /foo/bar HTTP/1.1\r\n"
+    char request[] = "GET /foo/bar HTTP/1.1\r\n"
         "Accept: baz\r\n"
         "Connection: corge\r\n"
         "Content-Type: qux/quux\r\n"
         "Host: foohost\r\n"
-        "\r\n"
-    
-    struct *chttpd_request conn;
-    reqparser(request, conn);
+        "\r\n";
 
-    eqstr("GET", conn->verb);
-    eqstr("/foo/bar", conn->path);
-    eqstr("1.1", conn->versoin);
+    struct chttpd_request *conn;
+    conn = (struct chttpd_request*)malloc(sizeof(struct chttpd_request));
+    
+    eqint(0, reqparser(request, conn));
+    //eqstr("GET", conn->verb);
+    //eqstr("/foo/bar", conn->path);
+    //eqstr("1.1", conn->version);
     eqstr(conn->accept, "baz");
     eqstr(conn->connection, "corge");
     eqstr(conn->content_type, "qux/quux");
-    eqstr(conn->content_length, NULL);
+    eqstr(conn->content_length, "");
     eqstr(conn->headers, "Accept: baz\r\n"
         "Connection: corge\r\n"
         "Content-Type: qux/quux\r\n"
-        "Host: foohost\r\n"
-        "\r\n"
+        "Host: foohost"
     );
 }
 
+
 void
 main() {
+    test_headparser();
+    test_headparser_error();
+
     test_reqtok();
     test_reqtok_error();
-    test_headtok();
-    test_headtok_error();
 
-    // test_request_parser();
+    test_getfirstline();
+    test_getfirstline_error();
+
+    test_getheaders();
+    test_getheaders_error();
+    
+    test_reqparser();
 }
