@@ -29,7 +29,7 @@
 #include <carrow_generic.c>  // NOLINT
 
 
-#define REQ_SIZE 1024 * 10
+#define READ_SIZE 1024
 
 
 int
@@ -122,41 +122,6 @@ reqtok(char *request, char **saveptr, char **verb, char **path,
 
 
 void
-get_first_line(const char* header, char* first_line, size_t max_length) {
-    const char* newline_pos = strchr(header, '\n'); // Find the position of the first newline character
-    if (newline_pos != NULL) {
-        size_t chars_to_copy = newline_pos - header;
-        if (chars_to_copy > max_length - 1) {
-            chars_to_copy = max_length - 1; // Limit the number of characters copied to fit the destination string
-        }
-        strncpy(first_line, header, chars_to_copy);
-        first_line[chars_to_copy] = '\0'; // Null-terminate the copied string
-    }
-}
-
-
-void
-get_headers(const char* header, char* content, size_t max_length) {
-     // Find the position after the first "\r\n"
-    const char* start_pos = strstr(header, "\r\n") + 2;
-
-    // Find the position of the first "\r\n\r\n"
-    const char* end_pos = strstr(header, "\r\n\r\n"); 
-
-    if (start_pos != NULL && end_pos != NULL) {
-        size_t chars_to_copy = end_pos - start_pos;
-        if (chars_to_copy > max_length - 1) {
-            // Limit the number of characters copied to fit the destination
-            chars_to_copy = max_length - 1;
-        }
-        strncpy(content, start_pos, chars_to_copy);
-        // NULL-terminate the copied string
-        content[chars_to_copy] = '\0';
-    }
-}
-
-
-void
 requestA(struct chttpd_request_coro *self, struct chttpd_request *conn) {
     /*
     TODO:
@@ -204,61 +169,46 @@ requestA(struct chttpd_request_coro *self, struct chttpd_request *conn) {
             }
         }
 
-        char request[REQ_SIZE];
-        while (!mrb_isempty(buff)) {
-            mrb_get(buff, request, REQ_SIZE);
 
-            char *headerend = strstr(request, "\r\n\r\n");
-            if (headerend == NULL) {
+        //"POST / HTTP/1.1\r\n"
+        //"Content-Type: application/json\r\n"
+        //"Connetion: keep-alive\r\n"
+        //"\r\n"
+        //"foo=bar&baz=qux"
+        char request[READ_SIZE];
+        
+        while (!mrb_isempty(buff)) {
+            mrb_get(buff, request, READ_SIZE);
+            //for (int i = 0; request[i] != '\0'; i++) {
+            //   printf("ASCII code of '%c': %d\n", request[i], request[i]);
+            //}
+
+            char *end_header = strstr(request, "\r\n");
+            INFO("%s", end_header);
+            if (end_header == NULL) {
                 continue;
             }
 
-            /* request parser */
-
-            /* Tokenize verb, path, and version. */
+            char copy[READ_SIZE];
+            strcpy(copy, request);
             char *saveptr = NULL;
             char *verb;
             char *path;
-            char *version; 
-
-            int max_length = 1024;
-            char firstline[1024];
-            get_first_line(request, firstline, max_length);
-
-            if (reqtok(firstline, &saveptr, &verb, &path, &version) == -1) {
-                CORO_REJECT("Request tokenization failed.");
-            }
-
+            char *version;
             
-            char headers[1024];
-            get_headers(request, headers, 1024);
-            int headtok_resp;
-            char *key;
-            char *value;
-            saveptr = NULL;
+            int res_preqtok = reqtok(copy, &saveptr, &verb, &path,
+                    &version);
+            // check resp_reqtok;
+            INFO("verb: %s, path: %s, version: %s", verb, path, version);
+
+            INFO("%s", request);
+
+            //char *headers = strncpy(request, first_newline, header_end - first_newline);
             
-            headtok_resp = headtok(headers, &saveptr, &key, &value);
-            if (headtok_resp == -1) {
-                CORO_REJECT("h");
-            }
-
-
-            int i;
-            do {
-                headtok_resp = headtok(NULL, &saveptr, &key, &value);
-                
-                if (headtok_resp == -1) {
-                    CORO_REJECT("Headers tokenization failed.");
-                }
-
-                if (headtok_resp == 1) {
-                    break;
-                }
-                
-                INFO("%d, %s, %s", __LINE__, key, value);
-                
-                i++;
-            } while (headtok_resp == 0);
+            //INFO("%s", headers);
+            //*saveptr = NULL;
+            //while (headtok(headers, &) == 0) {
+            //}
         }
 
         

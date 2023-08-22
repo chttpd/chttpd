@@ -21,17 +21,15 @@
 #include <cutest.h>
 
 
-struct header {
-    char *key;
-    char *value;
-}
-
-
-struct request {
+struct chttpd_request {
     char *verb;
     char *path;
-    char *versoin;
-    struct header **headers;
+    char *version;
+    char *content_length;
+    char *content_type;
+    char *connection;
+    char *accept;
+    char *headers;
 }
 
 
@@ -216,6 +214,119 @@ test_headtok_error() {
     eqint(-1, headtok(NULL, &saveptr, &key, NULL));
 }
 
+
+int
+getfirstline(char *header, char *firstline, size_t maxlen) {
+    const char *newline = strchr(header, '\n'); 
+    
+    if (newline != NULL) {
+        size_t copy_chars = newline - header;
+        
+        if (copy_chars > maxlen - 1) {
+            copy_chars = maxlen - 1;
+        }
+
+        strncpy(firstline, header, copy_chars);
+        firstline[copy_chars] = '\0';    
+        return 0;
+    }
+    return -1;
+}
+
+
+int
+getheaders(char *header, char *content, size_t maxlen) {
+    const char *start = strstr(header, "\r\n") + 2;
+    const char *end = strstr(header, "\r\n\r\n"); 
+
+    if (start != NULL && end != NULL) {
+        size_t copy_chars = end - start;
+
+        if (copy_chars > maxlen - 1) {
+            copy_chars = maxlen - 1;
+        }
+
+        strncpy(content, start, copy_chars);
+        content[copy_chars] = '\0';
+        return 0;
+    }
+    return -1;
+}
+
+
+int
+reqparser(char *request, chttpd_request *conn) {
+    char firstline[HEADERLINE_MAXSIZE];
+    if (get_first_line(request, HEADERLINE_MAXSIZE) != 0) {
+        return -1;
+    }
+
+    char *saveptr = NULL;
+    if (reqtok(firstline, &saveptr, &verb, &path, &version) == -1) {
+        CORO_REJECT("Request tokenization failed.");
+    }
+            
+    char headers[HEADERLINE_MAXSIZE];
+    if (get_headers(request, headers, HEADERLINE_MAXSIZE) != 0) {
+        return -1;
+    }
+    // strcpy(conn->headers, headers);
+
+    saveptr = NULL;
+    int headtok_resp;
+    char *key;
+    char *value;
+    
+    int i = 0;
+    do {
+        if (i == 0) {
+            headtok_resp = headtok(headers, &saveptr, &key, &value);
+        }
+        else {
+            /* Ensure headtok recieves NULL in the proceeding calls */
+            headtok_resp = headtok(NULL, &saveptr, &key, &value);
+        }
+        
+        if (headtok_resp == -1) {
+            return -1;
+        }
+
+        if (headtok_resp == 1) {
+            break;
+        }
+        
+        i++;
+    } while (headtok_resp == 0);
+
+}
+
+
+void
+test_reqparser() {
+    char request[1024] = "GET /foo/bar HTTP/1.1\r\n"
+        "Accept: baz\r\n"
+        "Connection: corge\r\n"
+        "Content-Type: qux/quux\r\n"
+        "Host: foohost\r\n"
+        "\r\n"
+    
+    struct *chttpd_request conn;
+    reqparser(request, conn);
+
+    eqstr("GET", conn->verb);
+    eqstr("/foo/bar", conn->path);
+    eqstr("1.1", conn->versoin);
+    eqstr(conn->accept, "baz");
+    eqstr(conn->connection, "corge");
+    eqstr(conn->content_type, "qux/quux");
+    eqstr(conn->content_length, NULL);
+    eqstr(conn->headers, "Accept: baz\r\n"
+        "Connection: corge\r\n"
+        "Content-Type: qux/quux\r\n"
+        "Host: foohost\r\n"
+        "\r\n"
+    );
+}
 
 void
 main() {

@@ -93,5 +93,4 @@ chttpdA(struct chttpd_coro *self, struct chttpd *state) {
     CORO_FINALLY;
     chttpd_evloop_unregister(fd);
     close(fd);
-    CORO_END;
 }

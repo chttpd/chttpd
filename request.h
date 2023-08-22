@@ -20,6 +20,9 @@
 #define REQUEST_H_
 
 
+#define BUFF_READSIZE 1024
+
+
 void
 requestA(struct chttpd_request_coro *self, struct chttpd_request *req);
 
