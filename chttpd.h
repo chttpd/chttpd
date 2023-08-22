@@ -26,12 +26,6 @@
 #include <carrow.h>
 
 
-struct header {
-    char *key;
-    char *value;
-};
-
-
 /* Request Types */
 typedef struct chttpd_request {
     int fd;
@@ -40,10 +34,6 @@ typedef struct chttpd_request {
     mrb_t reqbuff;
     mrb_t respbuff;
     void *backref;
-    char *content_type;
-    char *content_length;
-    char *connection;
-    char *accept;
 } chttpd_request;
 
 
