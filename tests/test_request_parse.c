@@ -36,9 +36,18 @@ struct chttpd_request {
 
 void
 trim(char *str) {
-    while ((*str == ' ') || (*str == '\t')) {
-        INFO("got here");
-        str++;
+    int i = 0;
+    int j = 0;
+    
+    while (str[i] != '\0' && (str[i] == ' ' || str[i] == '\t')) {
+        i++;
+    }
+
+    if (i > 0) {
+        while (str[i] != '\0') {
+            str[j++] = str[i++];
+        }
+        str[j] = '\0';
     }
 }
 
@@ -112,18 +121,16 @@ test_request_parse() {
     eqstr("GET", conn.verb);
     eqstr("/foo/bar", conn.path);
     eqstr("1.1", conn.version);
-    eqstr(conn.accept, " baz");
-    eqstr(conn.connection, " corge");
-    eqstr(conn.content_type, " qux/quux");
+    eqstr(conn.accept, "baz");
+    eqstr(conn.connection, "corge");
+    eqstr(conn.content_type, "qux/quux");
     eqint(124, conn.content_length);
-    INFO(conn.httpheader);
     //eqstr(conn.httpheader, "Accept: baz\r\n"
     //        "Connection: corge\r\nContent-Type: qux/quux\r\nHost: foohost");
 }
 
 // TODO:
 // 1. Fix httpheader and httpheader_count 
-// 2. Implement trim
 
 void
 main() {
