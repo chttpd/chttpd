@@ -31,7 +31,7 @@ target_sources(chttpd
 )
 target_link_libraries(chttpd
     PUBLIC
-    carrow
+    caio
     clog
     mrb
 )

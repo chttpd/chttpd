@@ -20,8 +20,11 @@
 #define REQUEST_H_
 
 
+#include <caio.h>
+
+
 void
-requestA(struct chttpd_request_coro *self, struct chttpd_request *req);
+requestA(struct caio_task *self, struct chttpd_request *req);
 
 
 #endif  // REQUEST_H_

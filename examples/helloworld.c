@@ -29,7 +29,7 @@
 
 
 static void
-indexA(struct chttpd_request_coro *self, struct chttpd_request* req) {
+indexA(struct caio_task *self, struct chttpd_request* req) {
     CORO_START;
 
     chttpd_response_start(req, "200 OK");
