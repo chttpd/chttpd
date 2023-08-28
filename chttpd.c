@@ -16,24 +16,20 @@
  *
  *  Author: Vahid Mardani <vahid.mardani@gmail.com>
  */
+#include <unistd.h>
 #include <sys/socket.h>
 
 #include <clog.h>
 #include <mrb.h>
-#include <carrow.h>
+#include <caio.h>
 
 #include "chttpd.h"
 #include "request.h"
 #include "addr.h"
 
 
-#undef CARROW_ENTITY
-#define CARROW_ENTITY chttpd
-#include <carrow_generic.c>  // NOLINT
-
-
 void
-chttpdA(struct chttpd_coro *self, struct chttpd *state) {
+chttpdA(struct caio_task *self, struct chttpd *state) {
     socklen_t addrlen = sizeof(struct sockaddr);
     struct sockaddr bindaddr;
     struct sockaddr connaddr;
@@ -67,8 +63,8 @@ chttpdA(struct chttpd_coro *self, struct chttpd *state) {
 
     while (true) {
         connfd = accept4(fd, &connaddr, &addrlen, SOCK_NONBLOCK);
-        if ((connfd == -1) && CMUSTWAIT()) {
-            CORO_WAIT(fd, CIN | CET);
+        if ((connfd == -1) && CORO_MUSTWAITFD()) {
+            CORO_WAITFD(fd, CAIO_IN | CAIO_ET);
             continue;
         }
 
@@ -91,7 +87,6 @@ chttpdA(struct chttpd_coro *self, struct chttpd *state) {
     }
 
     CORO_FINALLY;
-    chttpd_evloop_unregister(fd);
+    caio_evloop_unregister(fd);
     close(fd);
-    CORO_END;
 }

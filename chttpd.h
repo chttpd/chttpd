@@ -23,46 +23,36 @@
 #include <sys/socket.h>
 
 #include <mrb.h>
-#include <carrow.h>
+#include <caio.h>
 
 
 /* Request Types */
-typedef struct chttpd_request {
+struct chttpd_request {
     int fd;
     struct sockaddr localaddr;
     struct sockaddr remoteaddr;
     mrb_t reqbuff;
     mrb_t respbuff;
     void *backref;
-} chttpd_request;
-
-
-#undef CARROW_ENTITY
-#define CARROW_ENTITY chttpd_request
-#include <carrow_generic.h>  // NOLINT
+};
 
 
 /* Route Types */
 struct chttpd_route {
     const char *pattern;
     const char *verb;
-    chttpd_request_corofunc handler;
+    caio_coro handler;
 };
 
 
 /* Core Types */
-typedef struct chttpd {
+struct chttpd {
     const char *bindaddr;
     unsigned short bindport;
     int backlog;
     size_t buffsize;
     struct chttpd_route *routes;
-} chttpd;
-
-
-#undef CARROW_ENTITY
-#define CARROW_ENTITY chttpd
-#include <carrow_generic.h>  // NOLINT
+};
 
 
 /* Helper Macros */
@@ -72,7 +62,6 @@ typedef struct chttpd {
             continue; \
         } \
         chttpd_response_close(req); \
-        CORO_CLEANUP; \
     }
 
 
@@ -82,7 +71,7 @@ typedef struct chttpd {
 
 
 void
-chttpdA(struct chttpd_coro *self, struct chttpd *state);
+chttpdA(struct caio_task *self, struct chttpd *state);
 
 
 int

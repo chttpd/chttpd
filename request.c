@@ -24,13 +24,8 @@
 #include "addr.h"
 
 
-#undef CARROW_ENTITY
-#define CARROW_ENTITY chttpd_request
-#include <carrow_generic.c>  // NOLINT
-
-
 void
-requestA(struct chttpd_request_coro *self, struct chttpd_request *conn) {
+requestA(struct caio_task *self, struct chttpd_request *conn) {
     /*
     TODO:
     - Wait for headers, then Parse them
@@ -50,7 +45,7 @@ requestA(struct chttpd_request_coro *self, struct chttpd_request *conn) {
         while (!mrb_isempty(buff)) {
             bytes = mrb_writeout(buff, conn->fd, mrb_used(buff));
             if ((bytes == -1) && CMUSTWAIT()) {
-                e |= COUT;
+                e |= CAIO_OUT;
                 break;
             }
             if (bytes == -1) {
@@ -66,7 +61,7 @@ requestA(struct chttpd_request_coro *self, struct chttpd_request *conn) {
         while (!mrb_isfull(buff)) {
             bytes = mrb_readin(buff, conn->fd, mrb_available(buff));
             if ((bytes == -1) && CMUSTWAIT()) {
-                e |= CIN;
+                e |= CAIO_IN;
                 break;
             }
             if (bytes == -1) {
@@ -80,7 +75,7 @@ requestA(struct chttpd_request_coro *self, struct chttpd_request *conn) {
         /* reset errno and rewait events if neccessary */
         errno = 0;
         if (mrb_isempty(buff) || (e & COUT)) {
-            CORO_WAIT(conn->fd, e);
+            CORO_WAITFD(conn->fd, e);
         }
     }
 
@@ -96,5 +91,4 @@ requestA(struct chttpd_request_coro *self, struct chttpd_request *conn) {
         ERROR("Cannot dispose buffers.");
     }
     free(conn);
-    CORO_END;
 }
