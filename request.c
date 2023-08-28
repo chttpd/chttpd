@@ -16,6 +16,8 @@
  *
  *  Author: Vahid Mardani <vahid.mardani@gmail.com>
  */
+#include <unistd.h>
+
 #include <clog.h>
 #include <carrow.h>
 
@@ -96,7 +98,7 @@ requestA(struct caio_task *self, struct chttpd_request *conn) {
 
     CORO_FINALLY;
     if (conn->fd != -1) {
-        chttpd_request_evloop_unregister(conn->fd);
+        caio_evloop_unregister(conn->fd);
         close(conn->fd);
     }
     if (mrb_destroy(conn->reqbuff)) {
