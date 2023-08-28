@@ -28,7 +28,7 @@
 #define BUFFSIZE (PAGESIZE * 32768)
 
 
-static void
+static ASYNC
 indexA(struct caio_task *self, struct chttpd_request* req) {
     CORO_START;
 
@@ -51,18 +51,14 @@ indexA(struct caio_task *self, struct chttpd_request* req) {
 
 
 static struct chttpd_route routes[] = {
-    {"/", NULL, indexA},
-    {NULL, NULL, NULL}
+    CHTTPD_ROUTE("/", NULL, indexA),
+    CHTTPD_ROUTE(NULL, NULL, NULL)
 };
 
 
 int
 main() {
     clog_verbosity = CLOG_DEBUG;
-
-    if (carrow_handleinterrupts()) {
-        return EXIT_FAILURE;
-    }
 
     struct chttpd state = {
         .bindaddr = "0.0.0.0",
@@ -72,5 +68,5 @@ main() {
         .routes = routes,
     };
 
-    return chttpd_forever(chttpdA, &state, NULL);
+    return chttpd_forever(&state, 3);
 }

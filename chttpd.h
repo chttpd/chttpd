@@ -56,6 +56,7 @@ struct chttpd {
 
 
 /* Helper Macros */
+#define CHTTPD_ROUTE(p, v, h) {(p), (v), (caio_coro)h}
 #define CHTTPD_RESPONSE_FLUSH(req) while (chttpd_response_flush(req)) { \
         if (CMUSTWAIT()) { \
             CORO_WAIT((req)->fd, COUT); \
@@ -70,7 +71,7 @@ struct chttpd {
     CHTTPD_RESPONSE_FLUSH(req)
 
 
-void
+ASYNC
 chttpdA(struct caio_task *self, struct chttpd *state);
 
 
@@ -96,6 +97,10 @@ chttpd_response_finalize(struct chttpd_request *req);
 
 int
 chttpd_response_body(struct chttpd_request *req, const char *format, ...);
+
+
+int
+chttpd_forever(struct chttpd *state, int maxconn);
 
 
 #endif  // CHTTPD_H_

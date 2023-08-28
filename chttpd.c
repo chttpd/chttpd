@@ -28,7 +28,7 @@
 #include "addr.h"
 
 
-void
+ASYNC
 chttpdA(struct caio_task *self, struct chttpd *state) {
     socklen_t addrlen = sizeof(struct sockaddr);
     struct sockaddr bindaddr;
@@ -83,10 +83,16 @@ chttpdA(struct caio_task *self, struct chttpd *state) {
         c->remoteaddr = connaddr;
         c->reqbuff = mrb_create(state->buffsize);
         c->respbuff = mrb_create(state->buffsize);
-        chttpd_request_coro_create_and_run(requestA, c);
+        CAIO_RUN(requestA, c);
     }
 
     CORO_FINALLY;
     caio_evloop_unregister(fd);
     close(fd);
+}
+
+
+int
+chttpd_forever(struct chttpd *state, int maxconn) {
+    return CAIO(chttpdA, state, maxconn + 1);
 }
