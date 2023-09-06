@@ -74,6 +74,21 @@ requestA(struct caio_task *self, struct chttpd_request *conn) {
             }
         }
 
+        char request[REQ_SIZE];
+        while (!mrb_isempty(buff)) {
+            mrb_get(buff, request, REQ_SIZE);
+
+            char *headerend = strstr(request, "\r\n\r\n");
+            if (headerend == NULL) {
+                continue;
+            }
+
+            /* request parser goes here */
+            // reqparser(request, conn);
+        }
+
+        
+
         /* reset errno and rewait events if neccessary */
         errno = 0;
         if (mrb_isempty(buff) || (e & COUT)) {
@@ -94,3 +109,4 @@ requestA(struct caio_task *self, struct chttpd_request *conn) {
     }
     free(conn);
 }
+

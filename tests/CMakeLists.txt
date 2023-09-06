@@ -3,7 +3,7 @@ include(CTest)
 list(APPEND testrules
     querystring
     # router
-    # request parser
+    request_parser
 
 )
 list(TRANSFORM testrules PREPEND test_)
