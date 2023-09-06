@@ -16,26 +16,12 @@
  *
  *  Author: Vahid Mardani <vahid.mardani@gmail.com>
  */
-#ifndef REQUEST_H_
-#define REQUEST_H_
+#ifndef CONNECTION_H_
+#define CONNECTION_H_
 
 
-#include <caio.h>
+ASYNC
+connectionA(struct caio_task *self, struct chttpd_connection *conn);
 
 
-void
-requestA(struct caio_task *self, struct chttpd_request *req);
-
-
-/** read a request from connection
- * Return value
- * -1 on error.
- * -1 & errno=EAGAIN on insufficient data.
- * 0 on success.
- */
-int
-chttpd_request_parse(struct chttpd_request **request,
-        struct chttpd_connection *connection);
-
-
-#endif  // REQUEST_H_
+#endif  // CONNECTION_H_

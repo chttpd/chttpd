@@ -16,97 +16,24 @@
  *
  *  Author: Vahid Mardani <vahid.mardani@gmail.com>
  */
-#include <unistd.h>
 
 #include <clog.h>
-#include <carrow.h>
+#include <caio.h>
 
 #include "chttpd.h"
 #include "request.h"
-#include "addr.h"
 
 
 void
 requestA(struct caio_task *self, struct chttpd_request *conn) {
-    /*
-    TODO:
-    - Wait for headers, then Parse them
-    - Find handler, otherwise 404
-    */
-    ssize_t bytes;
-    struct mrb *buff = conn->reqbuff;
     CORO_START;
-    static int e = 0;
-    INFO("New conn: %s", sockaddr_dump(&conn->remoteaddr));
-
-    while (true) {
-        e = CET;
-
-        /* tcp write */
-        /* Write as mush as possible until EAGAIN */
-        while (!mrb_isempty(buff)) {
-            bytes = mrb_writeout(buff, conn->fd, mrb_used(buff));
-            if ((bytes == -1) && CMUSTWAIT()) {
-                e |= CAIO_OUT;
-                break;
-            }
-            if (bytes == -1) {
-                CORO_REJECT("write(%d)", conn->fd);
-            }
-            if (bytes == 0) {
-                CORO_REJECT("write(%d) EOF", conn->fd);
-            }
-        }
-
-        /* tcp read */
-        /* Read as mush as possible until EAGAIN */
-        while (!mrb_isfull(buff)) {
-            bytes = mrb_readin(buff, conn->fd, mrb_available(buff));
-            if ((bytes == -1) && CMUSTWAIT()) {
-                e |= CAIO_IN;
-                break;
-            }
-            if (bytes == -1) {
-                CORO_REJECT("read(%d)", conn->fd);
-            }
-            if (bytes == 0) {
-                CORO_REJECT("read(%d) EOF", conn->fd);
-            }
-        }
-
-        char request[REQ_SIZE];
-        while (!mrb_isempty(buff)) {
-            mrb_get(buff, request, REQ_SIZE);
-
-            char *headerend = strstr(request, "\r\n\r\n");
-            if (headerend == NULL) {
-                continue;
-            }
-
-            /* request parser goes here */
-            // reqparser(request, conn);
-        }
-
-        
-
-        /* reset errno and rewait events if neccessary */
-        errno = 0;
-        if (mrb_isempty(buff) || (e & COUT)) {
-            CORO_WAITFD(conn->fd, e);
-        }
-    }
-
     CORO_FINALLY;
-    if (conn->fd != -1) {
-        caio_evloop_unregister(conn->fd);
-        close(conn->fd);
-    }
-    if (mrb_destroy(conn->reqbuff)) {
-        ERROR("Cannot dispose buffers.");
-    }
-    if (mrb_destroy(conn->respbuff)) {
-        ERROR("Cannot dispose buffers.");
-    }
-    free(conn);
 }
 
+
+int
+chttpd_request_parse(struct chttpd_request **request,
+        struct chttpd_connection *connection) {
+    // TODO: Implement
+    return 0;
+}

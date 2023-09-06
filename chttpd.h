@@ -26,14 +26,36 @@
 #include <caio.h>
 
 
-/* Request Types */
-struct chttpd_request {
+enum chttpd_request_status {
+    CRS_HEADER,
+    CRS_BODY,
+    CRS_COMPLETED,
+    CRS_CLOSING,
+};
+
+
+struct chttpd_request;
+
+
+struct chttpd_connection {
     int fd;
     struct sockaddr localaddr;
     struct sockaddr remoteaddr;
     mrb_t reqbuff;
     mrb_t respbuff;
-    void *backref;
+    struct chttpd_request *request;
+};
+
+
+struct chttpd_request {
+    enum chttpd_request_status status;
+    char *verb;
+    char *path;
+    char *version;
+    int contentlength;
+    char *contenttype;
+    char *httpheader;
+    struct chttpd_connection *connection;
 };
 
 
@@ -59,7 +81,7 @@ struct chttpd {
 #define CHTTPD_ROUTE(p, v, h) {(p), (v), (caio_coro)h}
 #define CHTTPD_RESPONSE_FLUSH(req) while (chttpd_response_flush(req)) { \
         if (CMUSTWAIT()) { \
-            CORO_WAIT((req)->fd, COUT); \
+            CORO_WAIT((req)->connection->fd, COUT); \
             continue; \
         } \
         chttpd_response_close(req); \

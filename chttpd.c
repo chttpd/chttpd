@@ -25,6 +25,7 @@
 
 #include "chttpd.h"
 #include "request.h"
+#include "connection.h"
 #include "addr.h"
 
 
@@ -73,7 +74,8 @@ chttpdA(struct caio_task *self, struct chttpd *state) {
         }
 
         /* New Connection */
-        struct chttpd_request *c = malloc(sizeof(struct chttpd_request));
+        struct chttpd_connection *c = malloc(
+                sizeof(struct chttpd_connection));
         if (c == NULL) {
             CORO_REJECT("Out of memory");
         }
@@ -83,7 +85,7 @@ chttpdA(struct caio_task *self, struct chttpd *state) {
         c->remoteaddr = connaddr;
         c->reqbuff = mrb_create(state->buffsize);
         c->respbuff = mrb_create(state->buffsize);
-        CAIO_RUN(requestA, c);
+        CAIO_RUN(connectionA, c);
     }
 
     CORO_FINALLY;
