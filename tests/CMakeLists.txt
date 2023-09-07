@@ -16,7 +16,7 @@ foreach (t IN LISTS testrules)
     # Test help
     add_executable(${t} ${t}.c)
     target_include_directories(${t} PUBLIC "${PROJECT_BINARY_DIR}")
-    target_link_libraries(${t} PUBLIC clog carrow)
+    target_link_libraries(${t} PUBLIC clog mrb carrow)
     add_test(NAME ${t} COMMAND ${t})
     add_custom_target(${t}_exec 
         COMMAND ctest --verbose -R ${t}

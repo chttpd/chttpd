@@ -39,7 +39,7 @@ test_request_parse() {
         "\r\n";
 
     memset(&req, 0, sizeof(req));
-    eqint(0, chttpd_request_parse(&req, request, strlen(request)));
+    eqint(0, _request_parse(&req, request, strlen(request)));
     eqint(strlen(request), req.headerlen);
     eqstr("GET", req.verb);
     eqstr("/foo/bar", req.path);
@@ -55,7 +55,7 @@ test_request_parse() {
         "Connection:\r\n";
 
     memset(&req, 0, sizeof(req));
-    eqint(0, chttpd_request_parse(&req, request, strlen(request)));
+    eqint(0, _request_parse(&req, request, strlen(request)));
     eqint(strlen(request), req.headerlen);
     eqstr("GET", req.verb);
     eqstr("/foo/bar", req.path);
@@ -69,7 +69,7 @@ test_request_parse() {
     request = "GET /foo/bar HTTP/1.1\r\n";
 
     memset(&req, 0, sizeof(req));
-    eqint(0, chttpd_request_parse(&req, request, strlen(request)));
+    eqint(0, _request_parse(&req, request, strlen(request)));
     eqint(strlen(request), req.headerlen);
     eqstr("GET", req.verb);
     eqstr("/foo/bar", req.path);
@@ -82,7 +82,7 @@ test_request_parse() {
     /* Missing version */
     request = "GET /\r\n";
     memset(&req, 0, sizeof(req));
-    eqint(0, chttpd_request_parse(&req, request, strlen(request)));
+    eqint(0, _request_parse(&req, request, strlen(request)));
     eqint(strlen(request), req.headerlen);
     eqstr("GET", req.verb);
     eqstr("/", req.path);
@@ -92,7 +92,7 @@ test_request_parse() {
     /* Bad version */
     request = "GET / FOO\r\n";
     memset(&req, 0, sizeof(req));
-    eqint(0, chttpd_request_parse(&req, request, strlen(request)));
+    eqint(0, _request_parse(&req, request, strlen(request)));
     eqint(strlen(request), req.headerlen);
     eqstr("GET", req.verb);
     eqstr("/", req.path);

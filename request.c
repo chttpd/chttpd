@@ -19,6 +19,7 @@
 #include <ctype.h>
 
 #include <clog.h>
+#include <mrb.h>
 #include <caio.h>
 
 #include "chttpd.h"
@@ -45,8 +46,8 @@ trim(char *s) {
 }
 
 
-int
-chttpd_request_parse(struct chttpd_request *req, const char *header,
+static int
+_request_parse(struct chttpd_request *req, const char *header,
         int headerlen) {
     char *saveptr;
     char *linesaveptr;
@@ -121,6 +122,17 @@ failed:
 void
 requestA(struct caio_task *self, struct chttpd_connection *conn) {
     CORO_START;
+
+    if (conn->request) {
+        // TODO: run handler
+    }
+    else {
+        ssize_t headerlen = mrb_search(conn->inbuff, "\r\n\r\n", 4, 0, 8192);
+        if (headerlen == -1) {
+            conn->status = CCS_HEADER;
+            CORO_RETURN;
+        }
+    }
 
     // TODO: Read the whole header
     // TODO: Allocate memory for request

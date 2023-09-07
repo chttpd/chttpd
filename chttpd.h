@@ -27,10 +27,10 @@
 
 
 enum chttpd_connection_status {
-    CRS_HEADER,
-    CRS_BODY,
-    CRS_COMPLETED,
-    CRS_CLOSING,
+    CCS_HEADER,
+    CCS_BODY,
+    CCS_COMPLETED,
+    CCS_CLOSING,
 };
 
 
@@ -42,8 +42,8 @@ struct chttpd_connection {
     int fd;
     struct sockaddr localaddr;
     struct sockaddr remoteaddr;
-    mrb_t reqbuff;
-    mrb_t respbuff;
+    mrb_t inbuff;
+    mrb_t outbuff;
     struct chttpd_request *request;
 };
 

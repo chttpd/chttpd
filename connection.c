@@ -35,7 +35,7 @@ connectionA(struct caio_task *self, struct chttpd_connection *conn) {
     - Find handler, otherwise 404
     */
     ssize_t bytes;
-    struct mrb *buff = conn->reqbuff;
+    struct mrb *buff = conn->inbuff;
     CORO_START;
     static int e = 0;
     INFO("New conn: %s", sockaddr_dump(&conn->remoteaddr));
@@ -75,26 +75,17 @@ connectionA(struct caio_task *self, struct chttpd_connection *conn) {
             }
         }
 
-        // if (conn->request == NULL) {
-        //     if (chttpd_request_parse(conn->request)) {
-        //         if (CORO_MUSTWAITFD()) {
-        //             goto waitfd;
-        //         }
-        //         CORO_REJECT("chttpd_request_parse(%d)", conn->fd);
-        //     }
-        // }
-
-        // CORO_WAIT(requestA, conn->request);
-        // if (conn->status == CRS_HEADER) {
-        //     conn->status == CRS_BODY;
-        // }
-        // else if (conn->status == CRS_CLOSING) {
-        //     free(conn->request);
-        //     break;
-        // }
-        // else if (conn->status == CRS_COMPLETED) {
-        //     free(conn->request);
-        // }
+        CORO_WAIT(requestA, conn->request);
+        if (conn->status == CCS_HEADER) {
+            conn->status == CCS_BODY;
+        }
+        else if (conn->status == CCS_CLOSING) {
+            free(conn->request);
+            break;
+        }
+        else if (conn->status == CCS_COMPLETED) {
+            free(conn->request);
+        }
 
     waitfd:
         /* reset errno and rewait events if neccessary */
@@ -109,10 +100,10 @@ connectionA(struct caio_task *self, struct chttpd_connection *conn) {
         caio_evloop_unregister(conn->fd);
         close(conn->fd);
     }
-    if (mrb_destroy(conn->reqbuff)) {
+    if (mrb_destroy(conn->inbuff)) {
         ERROR("Cannot dispose buffers.");
     }
-    if (mrb_destroy(conn->respbuff)) {
+    if (mrb_destroy(conn->outbuff)) {
         ERROR("Cannot dispose buffers.");
     }
     free(conn);

@@ -27,15 +27,4 @@ void
 requestA(struct caio_task *self, struct chttpd_connection *conn);
 
 
-/** read a request from connection
- * Return value
- * -1 on error.
- * -1 & errno=EAGAIN on insufficient data.
- * 0 on success.
- */
-int
-chttpd_request_parse(struct chttpd_request *req, const char *header,
-        int headerlen);
-
-
 #endif  // REQUEST_H_
