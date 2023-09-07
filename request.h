@@ -24,7 +24,7 @@
 
 
 void
-requestA(struct caio_task *self, struct chttpd_request *req);
+requestA(struct caio_task *self, struct chttpd_connection *conn);
 
 
 /** read a request from connection
@@ -34,8 +34,7 @@ requestA(struct caio_task *self, struct chttpd_request *req);
  * 0 on success.
  */
 int
-chttpd_request_parse(struct chttpd_request **request,
-        struct chttpd_connection *connection);
+chttpd_request_parse(struct chttpd_request *req);
 
 
 #endif  // REQUEST_H_

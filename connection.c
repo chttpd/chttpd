@@ -76,7 +76,7 @@ connectionA(struct caio_task *self, struct chttpd_connection *conn) {
         }
 
         if (conn->request == NULL) {
-            if (chttpd_request_parse(&(conn->request), conn)) {
+            if (chttpd_request_parse(conn->request)) {
                 if (CORO_MUSTWAITFD()) {
                     goto waitfd;
                 }
@@ -85,14 +85,14 @@ connectionA(struct caio_task *self, struct chttpd_connection *conn) {
         }
 
         CORO_WAIT(requestA, conn->request);
-        if (conn->request->status == CRS_HEADER) {
-            conn->request->status == CRS_BODY;
+        if (conn->status == CRS_HEADER) {
+            conn->status == CRS_BODY;
         }
-        else if (conn->request->status == CRS_CLOSING) {
+        else if (conn->status == CRS_CLOSING) {
             free(conn->request);
             break;
         }
-        else if (conn->request->status == CRS_COMPLETED) {
+        else if (conn->status == CRS_COMPLETED) {
             free(conn->request);
         }
 

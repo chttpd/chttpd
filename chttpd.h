@@ -26,7 +26,7 @@
 #include <caio.h>
 
 
-enum chttpd_request_status {
+enum chttpd_connection_status {
     CRS_HEADER,
     CRS_BODY,
     CRS_COMPLETED,
@@ -38,6 +38,7 @@ struct chttpd_request;
 
 
 struct chttpd_connection {
+    enum chttpd_connection_status status;
     int fd;
     struct sockaddr localaddr;
     struct sockaddr remoteaddr;
@@ -48,7 +49,6 @@ struct chttpd_connection {
 
 
 struct chttpd_request {
-    enum chttpd_request_status status;
     char *verb;
     char *path;
     char *version;

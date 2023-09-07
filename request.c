@@ -24,16 +24,18 @@
 #include "request.h"
 
 
-void
-requestA(struct caio_task *self, struct chttpd_request *conn) {
-    CORO_START;
-    CORO_FINALLY;
+int
+chttpd_request_parse(struct chttpd_request *req) {
 }
 
 
-int
-chttpd_request_parse(struct chttpd_request **request,
-        struct chttpd_connection *connection) {
-    // TODO: Implement
-    return 0;
+void
+requestA(struct caio_task *self, struct chttpd_connection *conn) {
+    CORO_START;
+
+    // TODO: Read the whole header
+    // TODO: Allocate memory for request
+    // TODO: Parse the request
+
+    CORO_FINALLY;
 }
