@@ -75,26 +75,26 @@ connectionA(struct caio_task *self, struct chttpd_connection *conn) {
             }
         }
 
-        if (conn->request == NULL) {
-            if (chttpd_request_parse(conn->request)) {
-                if (CORO_MUSTWAITFD()) {
-                    goto waitfd;
-                }
-                CORO_REJECT("chttpd_request_parse(%d)", conn->fd);
-            }
-        }
+        // if (conn->request == NULL) {
+        //     if (chttpd_request_parse(conn->request)) {
+        //         if (CORO_MUSTWAITFD()) {
+        //             goto waitfd;
+        //         }
+        //         CORO_REJECT("chttpd_request_parse(%d)", conn->fd);
+        //     }
+        // }
 
-        CORO_WAIT(requestA, conn->request);
-        if (conn->status == CRS_HEADER) {
-            conn->status == CRS_BODY;
-        }
-        else if (conn->status == CRS_CLOSING) {
-            free(conn->request);
-            break;
-        }
-        else if (conn->status == CRS_COMPLETED) {
-            free(conn->request);
-        }
+        // CORO_WAIT(requestA, conn->request);
+        // if (conn->status == CRS_HEADER) {
+        //     conn->status == CRS_BODY;
+        // }
+        // else if (conn->status == CRS_CLOSING) {
+        //     free(conn->request);
+        //     break;
+        // }
+        // else if (conn->status == CRS_COMPLETED) {
+        //     free(conn->request);
+        // }
 
     waitfd:
         /* reset errno and rewait events if neccessary */

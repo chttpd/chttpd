@@ -34,7 +34,8 @@ requestA(struct caio_task *self, struct chttpd_connection *conn);
  * 0 on success.
  */
 int
-chttpd_request_parse(struct chttpd_request *req);
+chttpd_request_parse(struct chttpd_request *req, const char *header,
+        int headerlen);
 
 
 #endif  // REQUEST_H_

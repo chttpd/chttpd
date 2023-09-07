@@ -49,13 +49,15 @@ struct chttpd_connection {
 
 
 struct chttpd_request {
-    char *verb;
-    char *path;
-    char *version;
+    char *header;
+    size_t headerlen;
+    const char *verb;
+    const char *path;
+    const char *version;
+    const char *connection;
+    const char *contenttype;
     int contentlength;
-    char *contenttype;
-    char *httpheader;
-    struct chttpd_connection *connection;
+    struct chttpd_connection *tcpconn;
 };
 
 
@@ -81,7 +83,7 @@ struct chttpd {
 #define CHTTPD_ROUTE(p, v, h) {(p), (v), (caio_coro)h}
 #define CHTTPD_RESPONSE_FLUSH(req) while (chttpd_response_flush(req)) { \
         if (CMUSTWAIT()) { \
-            CORO_WAIT((req)->connection->fd, COUT); \
+            CORO_WAIT((req)->tcpconn->fd, COUT); \
             continue; \
         } \
         chttpd_response_close(req); \
