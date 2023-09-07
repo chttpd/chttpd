@@ -1,5 +1,6 @@
 ## High Priority
 - HTTP 1.1 vs 2.0
+- Test with `\n` instead of `\r\n`
   
 - Request parsing
   * Verb

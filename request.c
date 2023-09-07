@@ -49,18 +49,25 @@ int
 chttpd_request_parse(struct chttpd_request *req, const char *header,
         int headerlen) {
     char *saveptr;
+    char *linesaveptr;
+    char *line;
     char *token;
-    char *buff = strndup(header, headerlen);
-    if (buff == NULL) {
+
+    req->header = strndup(header, headerlen);
+    if (req->header == NULL) {
         return -1;
     }
-    req->header = buff;
-
-    /* Preserve headerlen */
+    /* Preserve header and it's len */
     req->headerlen = headerlen;
 
+    /* Protocol's first line */
+    line = strtok_r(req->header, "\r\n", &saveptr);
+    if (line == NULL) {
+        goto failed;
+    }
+
     /* Verb */
-    token = strtok_r(buff, " ", &saveptr);
+    token = strtok_r(line, " ", &linesaveptr);
     if (token == NULL) {
         goto failed;
     }
@@ -70,40 +77,43 @@ chttpd_request_parse(struct chttpd_request *req, const char *header,
     req->contentlength = -1;
 
     /* Path */
-    token = strtok_r(NULL, " ", &saveptr);
+    token = strtok_r(NULL, " ", &linesaveptr);
     if (token == NULL) {
         goto failed;
     }
     req->path = token;
 
     /* HTTP version */
-    token = strtok_r(NULL, "/", &saveptr);
-    if (token == NULL) {
-        goto failed;
+    token = strtok_r(NULL, "/", &linesaveptr);
+    DEBUG("t: %s", token);
+    if (token) {
+        req->version = token;
+        token = strtok_r(NULL, "\r\n", &linesaveptr);
+        if (token) {
+            req->version = token;
+        }
     }
-    token = strtok_r(NULL, "\r\n", &saveptr);
-    if (token == NULL) {
-        goto failed;
+    else {
+        req->version = NULL;
     }
-    req->version = token;
 
     /* Read headers */
-    while ((token = strtok_r(NULL, "\r\n", &saveptr))) {
-        if (strcasestr(token, "connection:") == token) {
-            req->connection = trim(token + 11);
+    while ((line = strtok_r(NULL, "\r\n", &saveptr))) {
+        if (strcasestr(line, "connection:") == line) {
+            req->connection = trim(line + 11);
         }
-        else if (strcasestr(token, "content-type:") == token) {
-            req->contenttype = trim(token + 13);
+        else if (strcasestr(line, "content-type:") == line) {
+            req->contenttype = trim(line + 13);
         }
-        else if (strcasestr(token, "content-length:") == token) {
-            req->contentlength = atoi(trim(token + 15));
+        else if (strcasestr(line, "content-length:") == line) {
+            req->contentlength = atoi(trim(line + 15));
         }
     }
 
     return 0;
 
 failed:
-    free(buff);
+    free(req->header);
     return -1;
 }
 
