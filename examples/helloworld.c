@@ -29,22 +29,22 @@
 
 
 static ASYNC
-indexA(struct caio_task *self, struct chttpd_request* req) {
+indexA(struct caio_task *self, struct chttpd_request* conn) {
     CORO_START;
 
-    chttpd_response_start(req, "200 OK");
-    chttpd_response_header(req, "Content-Type: %s; charset=%s", "text/plain",
+    chttpd_response_start(conn, "200 OK");
+    chttpd_response_header(conn, "Content-Type: %s; charset=%s", "text/plain",
             "us-ascii");
 
     /* Send response header */
-    CHTTPD_RESPONSE_FLUSH(req);
+    CHTTPD_RESPONSE_FLUSH(conn);
 
-    chttpd_response_body(req, "Foo, #%d\n", 1);
-    chttpd_response_body(req, "Bar, #%d\n", 2);
-    chttpd_response_body(req, "Baz, #%d\n", 3);
+    chttpd_response_body(conn, "Foo, #%d\n", 1);
+    chttpd_response_body(conn, "Bar, #%d\n", 2);
+    chttpd_response_body(conn, "Baz, #%d\n", 3);
 
-    chttpd_response_body(req, "{\"foo\": \"%s\"}", "Bar");
-    CHTTPD_RESPONSE_FINALIZE(req);
+    chttpd_response_body(conn, "{\"foo\": \"%s\"}", "Bar");
+    CHTTPD_RESPONSE_FINALIZE(conn);
 
     CORO_FINALLY;
 }

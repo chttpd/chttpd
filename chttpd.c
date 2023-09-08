@@ -74,8 +74,7 @@ chttpdA(struct caio_task *self, struct chttpd *state) {
         }
 
         /* New Connection */
-        struct chttpd_connection *c = malloc(
-                sizeof(struct chttpd_connection));
+        struct chttpd_request *c = malloc(sizeof(struct chttpd_request));
         if (c == NULL) {
             CORO_REJECT("Out of memory");
         }
@@ -85,6 +84,7 @@ chttpdA(struct caio_task *self, struct chttpd *state) {
         c->remoteaddr = connaddr;
         c->inbuff = mrb_create(state->buffsize);
         c->outbuff = mrb_create(state->buffsize);
+        c->status = CCS_HEADER;
         CAIO_RUN(connectionA, c);
     }
 

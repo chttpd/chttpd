@@ -120,17 +120,36 @@ failed:
 
 
 void
-requestA(struct caio_task *self, struct chttpd_connection *conn) {
+chttpd_request_free(struct chttpd_request *req) {
+    if (req == NULL) {
+        return;
+    }
+
+    if (req->header) {
+        free(req->header);
+    }
+
+    memset(req, 0, sizeof(struct chttpd_request));
+}
+
+
+void
+requestA(struct caio_task *self, struct chttpd_request *req) {
+    char *header;
     CORO_START;
 
-    if (conn->request) {
-        // TODO: run handler
-    }
-    else {
-        ssize_t headerlen = mrb_search(conn->inbuff, "\r\n\r\n", 4, 0, 8192);
+    if (req->status == CCS_HEADER) {
+        ssize_t headerlen = mrb_search(req->inbuff, "\r\n\r\n", 4, 0, 8192);
         if (headerlen == -1) {
-            conn->status = CCS_HEADER;
+            // TODO: Preserve searched area to improve performance.
+            req->status = CCS_HEADER;
             CORO_RETURN;
+        }
+
+        mrb_get(req->inbuff, header, headerlen);
+        if (_request_parse(req, header, headerlen)) {
+            /* Request parse error */
+            req->status = CCS_CLOSING;
         }
     }
 
@@ -139,4 +158,5 @@ requestA(struct caio_task *self, struct chttpd_connection *conn) {
     // TODO: Parse the request
 
     CORO_FINALLY;
+    chttpd_request_free(req);
 }

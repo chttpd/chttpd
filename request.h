@@ -24,7 +24,11 @@
 
 
 void
-requestA(struct caio_task *self, struct chttpd_connection *conn);
+requestA(struct caio_task *self, struct chttpd_request *req);
+
+
+void
+chttpd_request_free(struct chttpd_request *req);
 
 
 #endif  // REQUEST_H_

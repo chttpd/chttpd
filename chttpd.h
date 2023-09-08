@@ -26,7 +26,7 @@
 #include <caio.h>
 
 
-enum chttpd_connection_status {
+enum chttpd_request_status {
     CCS_HEADER,
     CCS_BODY,
     CCS_COMPLETED,
@@ -34,21 +34,15 @@ enum chttpd_connection_status {
 };
 
 
-struct chttpd_request;
-
-
-struct chttpd_connection {
-    enum chttpd_connection_status status;
+struct chttpd_request {
+    enum chttpd_request_status status;
     int fd;
     struct sockaddr localaddr;
     struct sockaddr remoteaddr;
     mrb_t inbuff;
     mrb_t outbuff;
-    struct chttpd_request *request;
-};
 
-
-struct chttpd_request {
+    /* HTTP request */
     char *header;
     size_t headerlen;
     const char *verb;
@@ -57,7 +51,6 @@ struct chttpd_request {
     const char *connection;
     const char *contenttype;
     int contentlength;
-    struct chttpd_connection *tcpconn;
 };
 
 
@@ -82,8 +75,8 @@ struct chttpd {
 /* Helper Macros */
 #define CHTTPD_ROUTE(p, v, h) {(p), (v), (caio_coro)h}
 #define CHTTPD_RESPONSE_FLUSH(req) while (chttpd_response_flush(req)) { \
-        if (CMUSTWAIT()) { \
-            CORO_WAIT((req)->tcpconn->fd, COUT); \
+        if (CORO_MUSTWAITFD()) { \
+            CORO_WAITFD((req)->fd, CAIO_OUT); \
             continue; \
         } \
         chttpd_response_close(req); \

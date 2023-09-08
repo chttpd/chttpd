@@ -21,7 +21,7 @@
 
 
 ASYNC
-connectionA(struct caio_task *self, struct chttpd_connection *conn);
+connectionA(struct caio_task *self, struct chttpd_request *req);
 
 
 #endif  // CONNECTION_H_
