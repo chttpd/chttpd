@@ -47,18 +47,14 @@ trim(char *s) {
 
 
 static int
-_request_parse(struct chttpd_request *req, const char *header,
-        int headerlen) {
+_request_parse(struct chttpd_request *req, char *header, int headerlen) {
     char *saveptr;
     char *linesaveptr;
     char *line;
     char *token;
 
-    req->header = strndup(header, headerlen);
-    if (req->header == NULL) {
-        return -1;
-    }
     /* Preserve header and it's len */
+    req->header = header;
     req->headerlen = headerlen;
 
     /* Protocol's first line */
@@ -136,17 +132,39 @@ chttpd_request_free(struct chttpd_request *req) {
 void
 requestA(struct caio_task *self, struct chttpd_request *req) {
     char *header;
+    ssize_t headerlen;
     CORO_START;
+    int hsize = CHTTPD_HEADERSIZE + 4;
 
     if (req->status == CCS_HEADER) {
-        ssize_t headerlen = mrb_search(req->inbuff, "\r\n\r\n", 4, 0, 8192);
+        /* Check the whole header is available or not */
+        headerlen = mrb_search(req->inbuff, "\r\n\r\n", 4, 0, hsize);
         if (headerlen == -1) {
             // TODO: Preserve searched area to improve performance.
-            req->status = CCS_HEADER;
+            if (mrb_used(req->inbuff) >= hsize) {
+                req->status = CCS_CLOSING;
+            }
+            else {
+                req->status = CCS_HEADER;
+            }
+            CORO_RETURN;
+        }
+        headerlen += 2;
+
+        /* Allocate memory for request header */
+        header = malloc(headerlen + 1);
+        if (header == NULL) {
+            req->status = CCS_CLOSING;
             CORO_RETURN;
         }
 
-        mrb_get(req->inbuff, header, headerlen);
+        /* read the HTTP header from request buffer */
+        if (mrb_get(req->inbuff, header, headerlen) != headerlen) {
+            req->status = CCS_CLOSING;
+            CORO_RETURN;
+        }
+
+        /* Parse the request */
         if (_request_parse(req, header, headerlen)) {
             /* Request parse error */
             req->status = CCS_CLOSING;

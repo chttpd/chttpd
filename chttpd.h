@@ -72,6 +72,9 @@ struct chttpd {
 };
 
 
+#define CHTTPD_HEADERSIZE  8192
+
+
 /* Helper Macros */
 #define CHTTPD_ROUTE(p, v, h) {(p), (v), (caio_coro)h}
 #define CHTTPD_RESPONSE_FLUSH(req) while (chttpd_response_flush(req)) { \
