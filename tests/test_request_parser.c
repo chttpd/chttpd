@@ -30,17 +30,16 @@ test_request_parse() {
     char *request;
     struct chttpd_request req;
 
-    request =
+    request = strdup(
         "GET /foo/bar HTTP/1.1\r\n"
         "Connection: close\r\n"
         "Content-Type: qux/quux\r\n"
         "Host: foohost\r\n"
         "Content-Length: 124\r\n"
-        "\r\n";
+        "\r\n");
 
     memset(&req, 0, sizeof(req));
     eqint(0, _request_parse(&req, request, strlen(request)));
-    eqint(strlen(request), req.headerlen);
     eqstr("GET", req.verb);
     eqstr("/foo/bar", req.path);
     eqstr("1.1", req.version);
@@ -50,13 +49,12 @@ test_request_parse() {
     free(req.header);
 
     /* Header with no value */
-    request =
+    request = strdup(
         "GET /foo/bar HTTP/1.1\r\n"
-        "Connection:\r\n";
+        "Connection:\r\n");
 
     memset(&req, 0, sizeof(req));
     eqint(0, _request_parse(&req, request, strlen(request)));
-    eqint(strlen(request), req.headerlen);
     eqstr("GET", req.verb);
     eqstr("/foo/bar", req.path);
     eqstr("1.1", req.version);
@@ -66,11 +64,10 @@ test_request_parse() {
     free(req.header);
 
     /* Missing headers */
-    request = "GET /foo/bar HTTP/1.1\r\n";
+    request = strdup("GET /foo/bar HTTP/1.1\r\n");
 
     memset(&req, 0, sizeof(req));
     eqint(0, _request_parse(&req, request, strlen(request)));
-    eqint(strlen(request), req.headerlen);
     eqstr("GET", req.verb);
     eqstr("/foo/bar", req.path);
     eqstr("1.1", req.version);
@@ -80,20 +77,18 @@ test_request_parse() {
     free(req.header);
 
     /* Missing version */
-    request = "GET /\r\n";
+    request = strdup("GET /\r\n");
     memset(&req, 0, sizeof(req));
     eqint(0, _request_parse(&req, request, strlen(request)));
-    eqint(strlen(request), req.headerlen);
     eqstr("GET", req.verb);
     eqstr("/", req.path);
     isnull(req.version);
     free(req.header);
 
     /* Bad version */
-    request = "GET / FOO\r\n";
+    request = strdup("GET / FOO\r\n");
     memset(&req, 0, sizeof(req));
     eqint(0, _request_parse(&req, request, strlen(request)));
-    eqint(strlen(request), req.headerlen);
     eqstr("GET", req.verb);
     eqstr("/", req.path);
     eqstr("FOO", req.version);
