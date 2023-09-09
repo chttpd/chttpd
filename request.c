@@ -56,6 +56,7 @@ _request_parse(struct chttpd_request *req, char *header, int headerlen) {
     /* Preserve header and it's len */
     req->header = header;
     req->headerlen = headerlen;
+    req->headerscount = 0;
 
     /* Protocol's first line */
     line = strtok_r(req->header, "\r\n", &saveptr);
@@ -104,6 +105,12 @@ _request_parse(struct chttpd_request *req, char *header, int headerlen) {
         else if (strcasestr(line, "content-length:") == line) {
             req->contentlength = atoi(trim(line + 15));
         }
+        else if (req->headerscount < CHTTPD_REQUESTHEADERS_MAX) {
+            req->headers[req->headerscount++] = line;
+        }
+        else {
+            goto failed;
+        }
     }
 
     return 0;
@@ -130,28 +137,14 @@ chttpd_request_free(struct chttpd_request *req) {
 
 const char *
 chttpd_request_header_get(struct chttpd_request *req, const char *name) {
-    char *cursor = req->header;
-    char *line;
-    size_t len = req->headerlen;
+    int i;
+    const char *header;
 
-    /* First line */
-    line = memmem(cursor, len, "\x00\xa", 2);
-    // DEBUG("line: %s", line);
-    if (line == NULL) {
-        return NULL;
-    }
-    line += 2;
-    len -= line - cursor;
-    cursor = line;
-
-    while (len && (line = memmem(cursor, len, "\0\n", 2))) {
-        line += 2;
-        if (strcasestr(line, name) == line) {
-            return trim(line + strlen(name) + 1);
+    for (i = 0; i < req->headerscount; i++) {
+        header = req->headers[i];
+        if (strcasestr(header, name) == header) {
+            return trim((char *)(header + strlen(name) + 1));
         }
-
-        len -= line - cursor;
-        cursor = line;
     }
 
     return NULL;

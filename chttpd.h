@@ -26,6 +26,16 @@
 #include <caio.h>
 
 
+#ifndef CHTTPD_HEADERSIZE
+#define CHTTPD_HEADERSIZE 8192
+#endif
+
+
+#ifndef CHTTPD_REQUESTHEADERS_MAX
+#define CHTTPD_REQUESTHEADERS_MAX 64
+#endif
+
+
 enum chttpd_request_status {
     CCS_HEADER,
     CCS_BODY,
@@ -42,9 +52,15 @@ struct chttpd_request {
     mrb_t inbuff;
     mrb_t outbuff;
 
-    /* HTTP request */
+    /* Request header buffer */
     char *header;
     size_t headerlen;
+
+    /* Request headers */
+    const char *headers[CHTTPD_REQUESTHEADERS_MAX];
+    unsigned char headerscount;
+
+    /* Request attributes */
     const char *verb;
     const char *path;
     const char *version;
@@ -70,9 +86,6 @@ struct chttpd {
     size_t buffsize;
     struct chttpd_route *routes;
 };
-
-
-#define CHTTPD_HEADERSIZE  8192
 
 
 /* Helper Macros */

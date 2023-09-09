@@ -31,6 +31,30 @@ test_request_parse() {
     struct chttpd_request req;
 
     request = strdup(
+        "GET /foo/bar HTTP/1.1\n"
+        "Connection: close\n"
+        "Content-Type: qux/quux\n"
+        "Host: foo\n"
+        "Content-Length: 124\n"
+        "Foo: bar\n"
+        "\n");
+
+    memset(&req, 0, sizeof(req));
+    eqint(0, _request_parse(&req, request, strlen(request)));
+    eqstr("GET", req.verb);
+    eqstr("/foo/bar", req.path);
+    eqstr("1.1", req.version);
+    eqstr(req.connection, "close");
+    eqstr(req.contenttype, "qux/quux");
+    eqint(124, req.contentlength);
+    isnotnull(chttpd_request_header_get(&req, "host"));
+    eqstr("foo", chttpd_request_header_get(&req, "host"));
+    eqstr("foo", chttpd_request_header_get(&req, "host"));
+    eqstr("bar", chttpd_request_header_get(&req, "foo"));
+    isnull(chttpd_request_header_get(&req, "bar"));
+    free(req.header);
+
+    request = strdup(
         "GET /foo/bar HTTP/1.1\r\n"
         "Connection: close\r\n"
         "Content-Type: qux/quux\r\n"
@@ -49,7 +73,6 @@ test_request_parse() {
     eqint(124, req.contentlength);
     eqstr("foo", chttpd_request_header_get(&req, "host"));
     eqstr("bar", chttpd_request_header_get(&req, "foo"));
-    eqstr("124", chttpd_request_header_get(&req, "content-length"));
     isnull(chttpd_request_header_get(&req, "bar"));
     free(req.header);
 
