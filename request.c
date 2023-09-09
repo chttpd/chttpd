@@ -82,7 +82,6 @@ _request_parse(struct chttpd_request *req, char *header, int headerlen) {
 
     /* HTTP version */
     token = strtok_r(NULL, "/", &linesaveptr);
-    DEBUG("t: %s", token);
     if (token) {
         req->version = token;
         token = strtok_r(NULL, "\r\n", &linesaveptr);
@@ -131,7 +130,31 @@ chttpd_request_free(struct chttpd_request *req) {
 
 const char *
 chttpd_request_header_get(struct chttpd_request *req, const char *name) {
-    // TODO: Implement
+    char *cursor = req->header;
+    char *line;
+    size_t len = req->headerlen;
+
+    /* First line */
+    line = memmem(cursor, len, "\x00\xa", 2);
+    // DEBUG("line: %s", line);
+    if (line == NULL) {
+        return NULL;
+    }
+    line += 2;
+    len -= line - cursor;
+    cursor = line;
+
+    while (len && (line = memmem(cursor, len, "\0\n", 2))) {
+        line += 2;
+        if (strcasestr(line, name) == line) {
+            return trim(line + strlen(name) + 1);
+        }
+
+        len -= line - cursor;
+        cursor = line;
+    }
+
+    return NULL;
 }
 
 

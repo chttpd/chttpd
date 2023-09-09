@@ -49,6 +49,7 @@ test_request_parse() {
     eqint(124, req.contentlength);
     eqstr("foo", chttpd_request_header_get(&req, "host"));
     eqstr("bar", chttpd_request_header_get(&req, "foo"));
+    eqstr("124", chttpd_request_header_get(&req, "content-length"));
     isnull(chttpd_request_header_get(&req, "bar"));
     free(req.header);
 
