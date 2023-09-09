@@ -57,6 +57,27 @@ test_request_parse() {
     free(req.header);
 
     request = strdup(
+        "GET /foo/bar HTTP/1.1\n\r"
+        "Connection: close\n\r"
+        "Content-Type: qux/quux\n\r"
+        "Host: foo\n\r"
+        "Content-Length: 124\n\r"
+        "Foo: bar\n\r");
+
+    memset(&req, 0, sizeof(req));
+    eqint(0, _request_parse(&req, request, strlen(request)));
+    eqstr("GET", req.verb);
+    eqstr("/foo/bar", req.path);
+    eqstr("1.1", req.version);
+    eqstr(req.connection, "close");
+    eqstr(req.contenttype, "qux/quux");
+    eqint(124, req.contentlength);
+    eqstr("foo", chttpd_request_header_get(&req, "host"));
+    eqstr("bar", chttpd_request_header_get(&req, "foo"));
+    isnull(chttpd_request_header_get(&req, "bar"));
+    free(req.header);
+
+    request = strdup(
         "GET /foo/bar HTTP/1.1\r\n"
         "Connection: close\r\n"
         "Content-Type: qux/quux\r\n"
