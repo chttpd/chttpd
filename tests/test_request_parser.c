@@ -51,6 +51,8 @@ test_request_parse() {
     eqstr("foo", chttpd_request_header_get(&req, "host"));
     eqstr("foo", chttpd_request_header_get(&req, "host"));
     eqstr("bar", chttpd_request_header_get(&req, "foo"));
+    isnull(chttpd_request_header_get(&req, "content-type"));
+    isnull(chttpd_request_header_get(&req, "content-length"));
     isnull(chttpd_request_header_get(&req, "bar"));
     free(req.header);
 
