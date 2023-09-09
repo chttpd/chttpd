@@ -190,12 +190,12 @@ requestA(struct caio_task *self, struct chttpd_request *req) {
         if (_request_parse(req, header, headerlen)) {
             /* Request parse error */
             req->status = CCS_CLOSING;
+            CORO_RETURN;
         }
     }
 
-    // TODO: Read the whole header
-    // TODO: Allocate memory for request
-    // TODO: Parse the request
+    // TODO: Find handler
+    // TODO: Dispatch
 
     CORO_FINALLY;
     chttpd_request_free(req);
