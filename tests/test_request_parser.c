@@ -34,8 +34,9 @@ test_request_parse() {
         "GET /foo/bar HTTP/1.1\r\n"
         "Connection: close\r\n"
         "Content-Type: qux/quux\r\n"
-        "Host: foohost\r\n"
+        "Host: foo\r\n"
         "Content-Length: 124\r\n"
+        "Foo: bar\r\n"
         "\r\n");
 
     memset(&req, 0, sizeof(req));
@@ -46,6 +47,9 @@ test_request_parse() {
     eqstr(req.connection, "close");
     eqstr(req.contenttype, "qux/quux");
     eqint(124, req.contentlength);
+    eqstr("foo", chttpd_request_header_get(&req, "host"));
+    eqstr("bar", chttpd_request_header_get(&req, "foo"));
+    isnull(chttpd_request_header_get(&req, "bar"));
     free(req.header);
 
     /* Header with no value */

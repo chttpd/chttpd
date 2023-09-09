@@ -129,6 +129,12 @@ chttpd_request_free(struct chttpd_request *req) {
 }
 
 
+const char *
+chttpd_request_header_get(struct chttpd_request *req, const char *name) {
+    // TODO: Implement
+}
+
+
 void
 requestA(struct caio_task *self, struct chttpd_request *req) {
     char *header;
