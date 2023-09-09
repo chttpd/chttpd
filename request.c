@@ -180,7 +180,7 @@ requestA(struct caio_task *self, struct chttpd_request *req) {
             CORO_RETURN;
         }
 
-        /* read the HTTP header from request buffer */
+        /* Read the HTTP header from request buffer */
         if (mrb_get(req->inbuff, header, headerlen) != headerlen) {
             req->status = CCS_CLOSING;
             CORO_RETURN;
