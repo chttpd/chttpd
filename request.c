@@ -59,7 +59,7 @@ _request_parse(struct chttpd_request *req, char *header, int headerlen) {
     req->headerscount = 0;
 
     /* Protocol's first line */
-    line = strtok_r(req->header, "\r\n", &saveptr);
+    line = strtok_r(header, "\r\n", &saveptr);
     if (line == NULL) {
         goto failed;
     }
@@ -105,7 +105,7 @@ _request_parse(struct chttpd_request *req, char *header, int headerlen) {
         else if (strcasestr(line, "content-length:") == line) {
             req->contentlength = atoi(trim(line + 15));
         }
-        else if (req->headerscount < CHTTPD_REQUESTHEADERS_MAX) {
+        else if (req->headerscount < (CHTTPD_REQUESTHEADERS_MAX - 1)) {
             req->headers[req->headerscount++] = line;
         }
         else {
@@ -116,7 +116,6 @@ _request_parse(struct chttpd_request *req, char *header, int headerlen) {
     return 0;
 
 failed:
-    free(req->header);
     return -1;
 }
 
@@ -162,6 +161,10 @@ requestA(struct caio_task *self, struct chttpd_request *req) {
         /* Check the whole header is available or not */
         headerlen = mrb_search(req->inbuff, "\r\n\r\n", 4, 0, hsize);
         if (headerlen == -1) {
+            headerlen = mrb_search(req->inbuff, "\n\n", 2, 0, hsize);
+        }
+
+        if (headerlen == -1) {
             // TODO: Preserve searched area to improve performance.
             if (mrb_used(req->inbuff) >= hsize) {
                 req->status = CCS_CLOSING;
@@ -177,12 +180,14 @@ requestA(struct caio_task *self, struct chttpd_request *req) {
         header = malloc(headerlen + 1);
         if (header == NULL) {
             req->status = CCS_CLOSING;
+            free(header);
             CORO_RETURN;
         }
 
         /* Read the HTTP header from request buffer */
         if (mrb_get(req->inbuff, header, headerlen) != headerlen) {
             req->status = CCS_CLOSING;
+            free(header);
             CORO_RETURN;
         }
 
@@ -190,6 +195,7 @@ requestA(struct caio_task *self, struct chttpd_request *req) {
         if (_request_parse(req, header, headerlen)) {
             /* Request parse error */
             req->status = CCS_CLOSING;
+            free(header);
             CORO_RETURN;
         }
     }

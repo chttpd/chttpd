@@ -36,8 +36,7 @@ test_request_parse() {
         "Content-Type: qux/quux\n"
         "Host: foo\n"
         "Content-Length: 124\n"
-        "Foo: bar\n"
-        "\n");
+        "Foo: bar\n");
 
     memset(&req, 0, sizeof(req));
     eqint(0, _request_parse(&req, request, strlen(request)));
@@ -83,8 +82,7 @@ test_request_parse() {
         "Content-Type: qux/quux\r\n"
         "Host: foo\r\n"
         "Content-Length: 124\r\n"
-        "Foo: bar\r\n"
-        "\r\n");
+        "Foo: bar\r\n");
 
     memset(&req, 0, sizeof(req));
     eqint(0, _request_parse(&req, request, strlen(request)));
