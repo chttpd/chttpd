@@ -3,10 +3,6 @@
 - Test with `\n` instead of `\r\n`
   
 - Request parsing
-  * Verb
-  * Url
-  * Version
-  * Keep-alive
   * Query string
   * JSON form parsing
 - Wildcard route & URL parameters
@@ -15,6 +11,7 @@
 
 ## Backlog
 - HTTP Accept header
+- HTTP decoding/encoding
 - GCov
 - Profile using Valgrind
 - make cpack
