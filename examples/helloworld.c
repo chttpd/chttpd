@@ -43,7 +43,7 @@ indexA(struct caio_task *self, struct chttpd_request* conn) {
     chttpd_response_body(conn, "Bar, #%d\n", 2);
     chttpd_response_body(conn, "Baz, #%d\n", 3);
 
-    chttpd_response_body(conn, "{\"foo\": \"%s\"}", "Bar");
+    // chttpd_response_body(conn, "{\"foo\": \"%s\"}", "Bar");
     CHTTPD_RESPONSE_FINALIZE(conn);
 
     CORO_FINALLY;

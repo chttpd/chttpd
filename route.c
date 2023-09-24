@@ -17,3 +17,9 @@
  *  Author: Vahid Mardani <vahid.mardani@gmail.com>
  */
 #include "route.h"
+
+
+int
+chttpd_route(struct chttpd_request *req) {
+    return -1;
+}

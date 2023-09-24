@@ -84,7 +84,8 @@ chttpdA(struct caio_task *self, struct chttpd *state) {
         c->remoteaddr = connaddr;
         c->inbuff = mrb_create(state->buffsize);
         c->outbuff = mrb_create(state->buffsize);
-        c->status = CCS_HEADER;
+        c->status = CCS_REQUEST_HEADER;
+        c->handler = NULL;
         CAIO_RUN(connectionA, c);
     }
 

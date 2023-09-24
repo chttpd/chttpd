@@ -29,6 +29,7 @@ target_sources(chttpd
     PRIVATE addr.c
             route.c
             connection.c
+            request_parser.c
             request.c
             response.c
 )

@@ -16,108 +16,16 @@
  *
  *  Author: Vahid Mardani <vahid.mardani@gmail.com>
  */
-#include <ctype.h>
-
 #include <clog.h>
 #include <mrb.h>
 #include <caio.h>
 
 #include "chttpd.h"
+#include "connection.h"
 #include "request.h"
-
-
-static char *
-trim(char *s) {
-    if (s == NULL) {
-        return NULL;
-    }
-    int l = strlen(s);
-
-    while (s[0] && isspace(s[0])) {
-        s++;
-        l--;
-    }
-
-    while (isspace(s[l -1])) {
-        s[--l] = 0;
-    }
-
-    return s;
-}
-
-
-static int
-_request_parse(struct chttpd_request *req, char *header, int headerlen) {
-    char *saveptr;
-    char *linesaveptr;
-    char *line;
-    char *token;
-
-    /* Preserve header and it's len */
-    req->header = header;
-    req->headerlen = headerlen;
-    req->headerscount = 0;
-
-    /* Protocol's first line */
-    line = strtok_r(header, "\r\n", &saveptr);
-    if (line == NULL) {
-        goto failed;
-    }
-
-    /* Verb */
-    token = strtok_r(line, " ", &linesaveptr);
-    if (token == NULL) {
-        goto failed;
-    }
-
-    /* Initialize the request fields */
-    req->verb = token;
-    req->contentlength = -1;
-
-    /* Path */
-    token = strtok_r(NULL, " ", &linesaveptr);
-    if (token == NULL) {
-        goto failed;
-    }
-    req->path = token;
-
-    /* HTTP version */
-    token = strtok_r(NULL, "/", &linesaveptr);
-    if (token) {
-        req->version = token;
-        token = strtok_r(NULL, "\r\n", &linesaveptr);
-        if (token) {
-            req->version = token;
-        }
-    }
-    else {
-        req->version = NULL;
-    }
-
-    /* Read headers */
-    while ((line = strtok_r(NULL, "\r\n", &saveptr))) {
-        if (strcasestr(line, "connection:") == line) {
-            req->connection = trim(line + 11);
-        }
-        else if (strcasestr(line, "content-type:") == line) {
-            req->contenttype = trim(line + 13);
-        }
-        else if (strcasestr(line, "content-length:") == line) {
-            req->contentlength = atoi(trim(line + 15));
-        }
-        else if (req->headerscount < (CHTTPD_REQUESTHEADERS_MAX - 1)) {
-            req->headers[req->headerscount++] = line;
-        }
-        else {
-            goto failed;
-        }
-    }
-
-    return 0;
-
-failed:
-    return -1;
-}
+#include "request_parser.h"
+#include "response.h"
+#include "route.h"
 
 
 void
@@ -134,22 +42,6 @@ chttpd_request_free(struct chttpd_request *req) {
 }
 
 
-const char *
-chttpd_request_header_get(struct chttpd_request *req, const char *name) {
-    int i;
-    const char *header;
-
-    for (i = 0; i < req->headerscount; i++) {
-        header = req->headers[i];
-        if (strcasestr(header, name) == header) {
-            return trim((char *)(header + strlen(name) + 1));
-        }
-    }
-
-    return NULL;
-}
-
-
 void
 requestA(struct caio_task *self, struct chttpd_request *req) {
     char *header;
@@ -157,7 +49,7 @@ requestA(struct caio_task *self, struct chttpd_request *req) {
     CORO_START;
     int hsize = CHTTPD_HEADERSIZE + 4;
 
-    if (req->status == CCS_HEADER) {
+    if (req->status == CCS_REQUEST_HEADER) {
         /* Check the whole header is available or not */
         headerlen = mrb_search(req->inbuff, "\r\n\r\n", 4, 0, hsize);
         if (headerlen == -1) {
@@ -168,9 +60,6 @@ requestA(struct caio_task *self, struct chttpd_request *req) {
             // TODO: Preserve searched area to improve performance.
             if (mrb_used(req->inbuff) >= hsize) {
                 req->status = CCS_CLOSING;
-            }
-            else {
-                req->status = CCS_HEADER;
             }
             CORO_RETURN;
         }
@@ -192,14 +81,26 @@ requestA(struct caio_task *self, struct chttpd_request *req) {
         }
 
         /* Parse the request */
-        if (_request_parse(req, header, headerlen)) {
+        if (chttpd_request_parse(req, header, headerlen)) {
             /* Request parse error */
+            req->status = CCS_CLOSING;
+            free(header);
+            CORO_RETURN;
+        }
+
+        /* Route(Find handler) */
+        if (chttpd_route(req)) {
+            chttpd_response(req, "404 Not Found");
+            chttpd_connection_close(req);
             req->status = CCS_CLOSING;
             free(header);
             CORO_RETURN;
         }
     }
 
+    if (req->handler == NULL) {
+        chttpd_route(req);
+    }
     // TODO: Find handler
     // TODO: Dispatch
 

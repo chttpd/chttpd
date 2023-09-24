@@ -22,7 +22,7 @@
 #include <clog.h>
 
 #include "chttpd.h"
-#include "request.c"
+#include "request_parser.c"
 
 
 void
@@ -39,7 +39,7 @@ test_request_parse() {
         "Foo: bar\n");
 
     memset(&req, 0, sizeof(req));
-    eqint(0, _request_parse(&req, request, strlen(request)));
+    eqint(0, chttpd_request_parse(&req, request, strlen(request)));
     eqstr("GET", req.verb);
     eqstr("/foo/bar", req.path);
     eqstr("1.1", req.version);
@@ -64,7 +64,7 @@ test_request_parse() {
         "Foo: bar\n\r");
 
     memset(&req, 0, sizeof(req));
-    eqint(0, _request_parse(&req, request, strlen(request)));
+    eqint(0, chttpd_request_parse(&req, request, strlen(request)));
     eqstr("GET", req.verb);
     eqstr("/foo/bar", req.path);
     eqstr("1.1", req.version);
@@ -85,7 +85,7 @@ test_request_parse() {
         "Foo: bar\r\n");
 
     memset(&req, 0, sizeof(req));
-    eqint(0, _request_parse(&req, request, strlen(request)));
+    eqint(0, chttpd_request_parse(&req, request, strlen(request)));
     eqstr("GET", req.verb);
     eqstr("/foo/bar", req.path);
     eqstr("1.1", req.version);
@@ -103,7 +103,7 @@ test_request_parse() {
         "Connection:\r\n");
 
     memset(&req, 0, sizeof(req));
-    eqint(0, _request_parse(&req, request, strlen(request)));
+    eqint(0, chttpd_request_parse(&req, request, strlen(request)));
     eqstr("GET", req.verb);
     eqstr("/foo/bar", req.path);
     eqstr("1.1", req.version);
@@ -116,7 +116,7 @@ test_request_parse() {
     request = strdup("GET /foo/bar HTTP/1.1\r\n");
 
     memset(&req, 0, sizeof(req));
-    eqint(0, _request_parse(&req, request, strlen(request)));
+    eqint(0, chttpd_request_parse(&req, request, strlen(request)));
     eqstr("GET", req.verb);
     eqstr("/foo/bar", req.path);
     eqstr("1.1", req.version);
@@ -128,7 +128,7 @@ test_request_parse() {
     /* Missing version */
     request = strdup("GET /\r\n");
     memset(&req, 0, sizeof(req));
-    eqint(0, _request_parse(&req, request, strlen(request)));
+    eqint(0, chttpd_request_parse(&req, request, strlen(request)));
     eqstr("GET", req.verb);
     eqstr("/", req.path);
     isnull(req.version);
@@ -137,7 +137,7 @@ test_request_parse() {
     /* Bad version */
     request = strdup("GET / FOO\r\n");
     memset(&req, 0, sizeof(req));
-    eqint(0, _request_parse(&req, request, strlen(request)));
+    eqint(0, chttpd_request_parse(&req, request, strlen(request)));
     eqstr("GET", req.verb);
     eqstr("/", req.path);
     eqstr("FOO", req.version);

@@ -27,26 +27,28 @@
 #include "addr.h"
 
 
+int
+chttpd_connection_close(struct chttpd_request *req) {
+    return -1;
+}
+
+
 ASYNC
 connectionA(struct caio_task *self, struct chttpd_request *req) {
-    /*
-    TODO:
-    - Wait for headers, then Parse them
-    - Find handler, otherwise 404
-    */
     ssize_t bytes;
-    struct mrb *buff = req->inbuff;
+    struct mrb *inbuff = req->inbuff;
+    struct mrb *outbuff = req->outbuff;
     CORO_START;
     static int e = 0;
-    INFO("New req: %s", sockaddr_dump(&req->remoteaddr));
+    INFO("new connection: %s", sockaddr_dump(&req->remoteaddr));
 
     while (true) {
         e = CAIO_ET;
 
         /* tcp write */
         /* Write as mush as possible until EAGAIN */
-        while (!mrb_isempty(buff)) {
-            bytes = mrb_writeout(buff, req->fd, mrb_used(buff));
+        while (!mrb_isempty(outbuff)) {
+            bytes = mrb_writeout(outbuff, req->fd, mrb_used(outbuff));
             if ((bytes == -1) && CORO_MUSTWAITFD()) {
                 e |= CAIO_OUT;
                 break;
@@ -61,8 +63,8 @@ connectionA(struct caio_task *self, struct chttpd_request *req) {
 
         /* tcp read */
         /* Read as mush as possible until EAGAIN */
-        while (!mrb_isfull(buff)) {
-            bytes = mrb_readin(buff, req->fd, mrb_available(buff));
+        while ((req->status != CCS_CLOSING) && (!mrb_isfull(inbuff))) {
+            bytes = mrb_readin(inbuff, req->fd, mrb_available(inbuff));
             if ((bytes == -1) && CORO_MUSTWAITFD()) {
                 e |= CAIO_IN;
                 break;
@@ -75,15 +77,22 @@ connectionA(struct caio_task *self, struct chttpd_request *req) {
             }
         }
 
-        CORO_WAIT(requestA, req);
-        if (req->status == CCS_CLOSING) {
+        if (req->status != CCS_CLOSING) {
+            CORO_WAIT(requestA, req);
+        }
+
+        if ((req->status == CCS_CLOSING) && mrb_isempty(outbuff)) {
             break;
         }
 
     waitfd:
         /* reset errno and rewait events if neccessary */
         errno = 0;
-        if (mrb_isempty(buff) || (e & CAIO_OUT)) {
+        if (!mrb_isfull(inbuff)) {
+            e |= CAIO_IN;
+        }
+
+        if (e != CAIO_ET) {
             CORO_WAITFD(req->fd, e);
         }
     }

@@ -20,4 +20,12 @@
 #define RESPONSE_H_
 
 
+int
+chttpd_response(struct chttpd_request *req, const char *format, ...);
+
+
+int
+chttpd_response_print(struct chttpd_request *req, const char *format, ...);
+
+
 #endif  // RESPONSE_H_

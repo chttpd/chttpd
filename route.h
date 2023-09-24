@@ -20,4 +20,11 @@
 #define ROUTE_H_
 
 
+#include "chttpd.h"
+
+
+int
+chttpd_route(struct chttpd_request *req);
+
+
 #endif  // ROUTE_H_

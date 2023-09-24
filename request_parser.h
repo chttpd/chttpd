@@ -16,16 +16,16 @@
  *
  *  Author: Vahid Mardani <vahid.mardani@gmail.com>
  */
-#ifndef CONNECTION_H_
-#define CONNECTION_H_
-
-
-ASYNC
-connectionA(struct caio_task *self, struct chttpd_request *req);
+#ifndef REQUEST_PARSER_H_
+#define REQUEST_PARSER_H_
 
 
 int
-chttpd_connection_close(struct chttpd_request *req);
+chttpd_request_parse(struct chttpd_request *req, char *header, int headerlen);
 
 
-#endif  // CONNECTION_H_
+const char *
+chttpd_request_header_get(struct chttpd_request *req, const char *name);
+
+
+#endif  // REQUEST_PARSER_H_

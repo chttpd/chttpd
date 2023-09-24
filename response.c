@@ -21,6 +21,24 @@
 
 
 int
+chttpd_response_print(struct chttpd_request *req, const char *format, ...) {
+    va_list args;
+
+    if (format) {
+        va_start(args, format);
+    }
+
+    int written = mrb_vprint(req->outbuff, format, args);
+
+    if (format) {
+        va_end(args);
+    }
+
+    return written;
+}
+
+
+int
 chttpd_response_start(struct chttpd_request *req, const char *format, ...) {
     // TODO: implement
     return -1;
@@ -57,6 +75,13 @@ chttpd_response_finalize(struct chttpd_request *req) {
 
 int
 chttpd_response_body(struct chttpd_request *req, const char *format, ...) {
+    // TODO: implement
+    return -1;
+}
+
+
+int
+chttpd_response(struct chttpd_request *req, const char *format, ...) {
     // TODO: implement
     return -1;
 }

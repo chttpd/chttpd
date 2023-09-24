@@ -37,9 +37,10 @@
 
 
 enum chttpd_request_status {
-    CCS_HEADER,
-    CCS_BODY,
-    CCS_COMPLETED,
+    CCS_REQUEST_HEADER,
+    CCS_REQUEST_BODY,
+    CCS_RESPONSE_HEADER,
+    CCS_RESPONSE_BODY,
     CCS_CLOSING,
 };
 
@@ -67,6 +68,9 @@ struct chttpd_request {
     const char *connection;
     const char *contenttype;
     int contentlength;
+
+    /* Handler */
+    caio_coro handler;
 };
 
 
