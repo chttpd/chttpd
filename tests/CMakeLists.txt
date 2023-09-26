@@ -8,7 +8,7 @@ list(APPEND testrules
 )
 list(TRANSFORM testrules PREPEND test_)
 set(profilerules ${testrules})
-list(TRANSFORM profilerules PREPEND profile_)
+list(TRANSFORM profilerules APPEND _profile)
 add_custom_target(profile DEPENDS ${profilerules})
 
 

@@ -12,6 +12,6 @@ foreach (t IN LISTS examples)
     target_link_libraries(${t} PUBLIC clog chttpd carrow)
     add_custom_target(${t}_exec COMMAND ${t})
     add_custom_target(${t}_profile
-        COMMAND "valgrind" ${VALGRIND_FLAGS} ${t}
+        COMMAND "valgrind" ${VALGRIND_FLAGS} ./${t}
     )
 endforeach()
