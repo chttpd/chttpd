@@ -1,6 +1,5 @@
 ## High Priority
 - HTTP 1.1 vs 2.0
-- Test with `\n` instead of `\r\n`
   
 - Request parsing
   * Query string
@@ -10,6 +9,7 @@
 
 
 ## Backlog
+- User Agent
 - HTTP Accept header
 - HTTP decoding/encoding
 - GCov
@@ -25,3 +25,4 @@
 - Multipart
 - Cookie
 - ETag
+- Access log: one line per request

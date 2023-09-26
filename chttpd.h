@@ -47,21 +47,23 @@ enum chttpd_request_status {
 
 struct chttpd_request {
     enum chttpd_request_status status;
+
+    /* Connection */
     int fd;
     struct sockaddr localaddr;
     struct sockaddr remoteaddr;
     mrb_t inbuff;
     mrb_t outbuff;
 
-    /* Request header buffer */
+    /* Header buffer */
     char *header;
     size_t headerlen;
 
-    /* Request headers */
+    /* HTTP headers */
     const char *headers[CHTTPD_REQUESTHEADERS_MAX];
     unsigned char headerscount;
 
-    /* Request attributes */
+    /* Attributes */
     const char *verb;
     const char *path;
     const char *version;
@@ -74,7 +76,7 @@ struct chttpd_request {
 };
 
 
-/* Route Types */
+/* Router entry */
 struct chttpd_route {
     const char *pattern;
     const char *verb;
@@ -82,12 +84,18 @@ struct chttpd_route {
 };
 
 
-/* Core Types */
+/* chttpd state */
 struct chttpd {
+    /* Socket */
     const char *bindaddr;
     unsigned short bindport;
+
+    /* Limits */
     int backlog;
     size_t buffsize;
+    size_t maxconn;
+
+    /* Routes */
     struct chttpd_route *routes;
 };
 
@@ -137,7 +145,7 @@ chttpd_response_body(struct chttpd_request *req, const char *format, ...);
 
 
 int
-chttpd_forever(struct chttpd *state, int maxconn);
+chttpd_forever(struct chttpd *restrict state);
 
 
 #endif  // CHTTPD_H_

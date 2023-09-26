@@ -96,6 +96,6 @@ chttpdA(struct caio_task *self, struct chttpd *state) {
 
 
 int
-chttpd_forever(struct chttpd *state, int maxconn) {
-    return CAIO(chttpdA, state, maxconn + 1);
+chttpd_forever(struct chttpd *restrict state) {
+    return CAIO(chttpdA, state, state->maxconn + 1);
 }

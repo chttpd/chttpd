@@ -61,12 +61,18 @@ main() {
     clog_verbosity = CLOG_DEBUG;
 
     struct chttpd state = {
+        /* Socket */
         .bindaddr = "0.0.0.0",
         .bindport = 8080,
+
+        /* Limits */
         .backlog = 2,
         .buffsize = BUFFSIZE,
+        .maxconn = 3,
+
+        /* Route */
         .routes = routes,
     };
 
-    return chttpd_forever(&state, 3);
+    return chttpd_forever(&state);
 }
