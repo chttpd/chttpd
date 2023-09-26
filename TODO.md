@@ -1,28 +1,30 @@
-## High Priority
-- HTTP 1.1 vs 2.0
+## high priority
+- http 1.1 vs 2.0
   
-- Request parsing
-  * Query string
-  * JSON form parsing
-- Wildcard route & URL parameters
-- Default handler
+- request parsing
+  * query string
+  * json form parsing
+- wildcard route & url parameters
+- default handler
 
 
-## Backlog
-- User Agent
-- HTTP Accept header
-- HTTP decoding/encoding
-- GCov
-- Profile using Valgrind
+## backlog
+- user agent
+- http accept header
+- http decoding/encoding
+- gcov
+- profile using valgrind
 - make cpack
 - make test
-- Buffsize should be multiple of pagesize. if not, raise error
-- Separate buffer size options for request and response
-- Handle multiple requests with one connection using CORO_RESET and keep-alive
+- buffsize should be multiple of pagesize. if not, raise error
+- separate buffer size options for request and response
+- handle multiple requests with one connection using coro_reset and keep-alive
   header
 - gzip, deflate
-- URL formencodded 
-- Multipart
-- Cookie
-- ETag
-- Access log: one line per request
+- url formencodded 
+- multipart
+- cookie
+- etag
+- access log: one line per request
+- unix domain socket
+- hooks: init, deinit, new request, new connection and etc.

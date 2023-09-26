@@ -29,7 +29,7 @@
 
 
 static ASYNC
-indexA(struct caio_task *self, struct chttpd_request* conn) {
+indexA(struct caio_task *self, struct chttpd_connection *conn) {
     CORO_START;
 
     chttpd_response_start(conn, "200 OK");
@@ -72,6 +72,7 @@ main() {
 
         /* Route */
         .routes = routes,
+        .defaulthandler = NULL,
     };
 
     return chttpd_forever(&state);

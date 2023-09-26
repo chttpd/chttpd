@@ -20,19 +20,12 @@
 #define REQUEST_H_
 
 
-#include <caio.h>
-
-
-void
-requestA(struct caio_task *self, struct chttpd_request *req);
+int
+chttpd_request_parse(struct chttpd_connection *req);
 
 
 const char *
-chttpd_request_header_get(struct chttpd_request *req, const char *name);
-
-
-void
-chttpd_request_free(struct chttpd_request *req);
+chttpd_request_header_get(struct chttpd_connection *req, const char *name);
 
 
 #endif  // REQUEST_H_

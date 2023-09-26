@@ -36,7 +36,7 @@
 #endif
 
 
-enum chttpd_request_status {
+enum chttpd_connection_status {
     CCS_REQUEST_HEADER,
     CCS_REQUEST_BODY,
     CCS_RESPONSE_HEADER,
@@ -45,12 +45,13 @@ enum chttpd_request_status {
 };
 
 
-struct chttpd_request {
-    enum chttpd_request_status status;
+struct chttpd_connection {
+    /* state */
+    enum chttpd_connection_status status;
+    struct chttpd *chttpd;
 
     /* Connection */
     int fd;
-    struct sockaddr localaddr;
     struct sockaddr remoteaddr;
     mrb_t inbuff;
     mrb_t outbuff;
@@ -89,6 +90,7 @@ struct chttpd {
     /* Socket */
     const char *bindaddr;
     unsigned short bindport;
+    struct sockaddr listenaddr;
 
     /* Limits */
     int backlog;
@@ -97,6 +99,7 @@ struct chttpd {
 
     /* Routes */
     struct chttpd_route *routes;
+    caio_coro defaulthandler;
 };
 
 
@@ -121,27 +124,27 @@ chttpdA(struct caio_task *self, struct chttpd *state);
 
 
 int
-chttpd_response_start(struct chttpd_request *req, const char *format, ...);
+chttpd_response_start(struct chttpd_connection *req, const char *format, ...);
 
 
 int
-chttpd_response_header(struct chttpd_request *req, const char *format, ...);
+chttpd_response_header(struct chttpd_connection *req, const char *format, ...);
 
 
 int
-chttpd_response_flush(struct chttpd_request *req);
+chttpd_response_flush(struct chttpd_connection *req);
 
 
 int
-chttpd_response_close(struct chttpd_request *req);
+chttpd_response_close(struct chttpd_connection *req);
 
 
 int
-chttpd_response_finalize(struct chttpd_request *req);
+chttpd_response_finalize(struct chttpd_connection *req);
 
 
 int
-chttpd_response_body(struct chttpd_request *req, const char *format, ...);
+chttpd_response_body(struct chttpd_connection *req, const char *format, ...);
 
 
 int

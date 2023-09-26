@@ -24,15 +24,159 @@
 #include <caio.h>
 
 #include "chttpd.h"
-#include "request.h"
-#include "connection.h"
 #include "addr.h"
+#include "connection.h"
+#include "request.h"
+#include "route.h"
+#include "response.h"
+
+
+void
+requestA(struct caio_task *self, struct chttpd_connection *req) {
+    char *header;
+    ssize_t headerlen;
+    int seplen;
+    CORO_START;
+
+    if (req->status == CCS_REQUEST_HEADER) {
+        /* Check the whole header is available or not */
+        headerlen = mrb_search(req->inbuff, "\r\n\r\n", 4, 0,
+                CHTTPD_HEADERSIZE);
+        if (headerlen == -1) {
+            // TODO: Preserve searched area to improve performance.
+            if (mrb_used(req->inbuff) >= CHTTPD_HEADERSIZE) {
+                req->status = CCS_CLOSING;
+            }
+            CORO_RETURN;
+        }
+
+        /* Pick the first CRLF to be able to parse the last header. */
+        headerlen += 2;
+
+        /* Allocate memory for request header */
+        req->header = malloc(headerlen + 1);
+        if (req->header == NULL) {
+            req->status = CCS_CLOSING;
+            CORO_RETURN;
+        }
+        req->headerlen = headerlen;
+
+        /* Read whole HTTP header from the request buffer */
+        mrb_get(req->inbuff, req->header, headerlen);
+
+        /* Skip the second CRLF */
+        mrb_skip(req->inbuff, 2);
+
+        /* Parse the request */
+        if (chttpd_request_parse(req)) {
+            /* Request parse error */
+            req->status = CCS_CLOSING;
+            CORO_RETURN;
+        }
+
+        /* Route(Find handler) */
+        if (chttpd_route(req)) {
+            /* Raise 404 if default handler is not specified */
+            if (req->chttpd->defaulthandler == NULL) {
+                chttpd_response(req, "404 Not Found");
+                req->status = CCS_CLOSING;
+                CORO_RETURN;
+            }
+
+            /* Set to default handler */
+            req->handler = req->chttpd->defaulthandler;
+        }
+    }
+
+    // TODO: call handler
+
+    CORO_FINALLY;
+    chttpd_connection_reset(req);
+}
 
 
 ASYNC
-chttpdA(struct caio_task *self, struct chttpd *state) {
+connectionA(struct caio_task *self, struct chttpd_connection *conn) {
+    ssize_t bytes;
+    struct mrb *inbuff = conn->inbuff;
+    struct mrb *outbuff = conn->outbuff;
+    CORO_START;
+    static int e = 0;
+    INFO("new connection: %s", sockaddr_dump(&conn->remoteaddr));
+
+    while (true) {
+        e = CAIO_ET;
+
+        /* sock write */
+        /* Write as mush as possible until EAGAIN */
+        while (!mrb_isempty(outbuff)) {
+            bytes = mrb_writeout(outbuff, conn->fd, mrb_used(outbuff));
+            if ((bytes == -1) && CORO_MUSTWAITFD()) {
+                e |= CAIO_OUT;
+                break;
+            }
+            if (bytes == -1) {
+                CORO_REJECT("write(%d)", conn->fd);
+            }
+            if (bytes == 0) {
+                CORO_REJECT("write(%d) EOF", conn->fd);
+            }
+        }
+
+        /* sock read */
+        /* Read as mush as possible until EAGAIN */
+        while ((conn->status != CCS_CLOSING) && (!mrb_isfull(inbuff))) {
+            bytes = mrb_readin(inbuff, conn->fd, mrb_available(inbuff));
+            if ((bytes == -1) && CORO_MUSTWAITFD()) {
+                e |= CAIO_IN;
+                break;
+            }
+            if (bytes == -1) {
+                CORO_REJECT("read(%d)", conn->fd);
+            }
+            if (bytes == 0) {
+                CORO_REJECT("read(%d) EOF", conn->fd);
+            }
+        }
+
+        if (conn->status != CCS_CLOSING) {
+            CORO_WAIT(requestA, conn);
+        }
+
+        if ((conn->status == CCS_CLOSING) && mrb_isempty(outbuff)) {
+            break;
+        }
+
+    waitfd:
+        /* reset errno and rewait events if neccessary */
+        errno = 0;
+        if (!mrb_isfull(inbuff)) {
+            e |= CAIO_IN;
+        }
+
+        if (e != CAIO_ET) {
+            CORO_WAITFD(conn->fd, e);
+        }
+    }
+
+    CORO_FINALLY;
+    if (conn->fd != -1) {
+        caio_evloop_unregister(conn->fd);
+        close(conn->fd);
+    }
+    if (mrb_destroy(conn->inbuff)) {
+        ERROR("Cannot dispose buffers.");
+    }
+    if (mrb_destroy(conn->outbuff)) {
+        ERROR("Cannot dispose buffers.");
+    }
+    free(conn);
+}
+
+
+ASYNC
+chttpdA(struct caio_task *self, struct chttpd *chttpd) {
     socklen_t addrlen = sizeof(struct sockaddr);
-    struct sockaddr bindaddr;
     struct sockaddr connaddr;
     static int fd;
     int connfd;
@@ -41,7 +185,7 @@ chttpdA(struct caio_task *self, struct chttpd *state) {
     CORO_START;
 
     /* Parse listen address */
-    sockaddr_parse(&bindaddr, state->bindaddr, state->bindport);
+    sockaddr_parse(&chttpd->listenaddr, chttpd->bindaddr, chttpd->bindport);
 
     /* Create socket */
     fd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
@@ -50,16 +194,17 @@ chttpdA(struct caio_task *self, struct chttpd *state) {
     setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &option, sizeof(option));
 
     /* Bind to tcp port */
-    res = bind(fd, &bindaddr, sizeof(bindaddr));
+    res = bind(fd, &chttpd->listenaddr, sizeof(chttpd->listenaddr));
     if (res) {
-        CORO_REJECT("Cannot bind on: %s", sockaddr_dump(&bindaddr));
+        CORO_REJECT("Cannot bind on: %s", sockaddr_dump(&chttpd->listenaddr));
     }
 
     /* Listen */
-    res = listen(fd, state->backlog);
-    INFO("Listening on: %s", sockaddr_dump(&bindaddr));
+    res = listen(fd, chttpd->backlog);
+    INFO("Listening on: %s", sockaddr_dump(&chttpd->listenaddr));
     if (res) {
-        CORO_REJECT("Cannot listen on: %s", sockaddr_dump(&bindaddr));
+        CORO_REJECT("Cannot listen on: %s",
+                sockaddr_dump(&chttpd->listenaddr));
     }
 
     while (true) {
@@ -74,19 +219,12 @@ chttpdA(struct caio_task *self, struct chttpd *state) {
         }
 
         /* New Connection */
-        struct chttpd_request *c = malloc(sizeof(struct chttpd_request));
-        if (c == NULL) {
+        struct chttpd_connection *conn = chttpd_connection_new(chttpd, connfd,
+                connaddr);
+        if (conn == NULL) {
             CORO_REJECT("Out of memory");
         }
-
-        c->fd = connfd;
-        c->localaddr = bindaddr;
-        c->remoteaddr = connaddr;
-        c->inbuff = mrb_create(state->buffsize);
-        c->outbuff = mrb_create(state->buffsize);
-        c->status = CCS_REQUEST_HEADER;
-        c->handler = NULL;
-        CAIO_RUN(connectionA, c);
+        CAIO_RUN(connectionA, conn);
     }
 
     CORO_FINALLY;
@@ -96,6 +234,6 @@ chttpdA(struct caio_task *self, struct chttpd *state) {
 
 
 int
-chttpd_forever(struct chttpd *restrict state) {
-    return CAIO(chttpdA, state, state->maxconn + 1);
+chttpd_forever(struct chttpd *restrict chttpd) {
+    return CAIO(chttpdA, chttpd, chttpd->maxconn + 1);
 }

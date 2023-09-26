@@ -20,12 +20,15 @@
 #define CONNECTION_H_
 
 
-ASYNC
-connectionA(struct caio_task *self, struct chttpd_request *req);
+#include "chttpd.h"
 
 
-int
-chttpd_connection_close(struct chttpd_request *req);
+struct chttpd_connection*
+chttpd_connection_new(struct chttpd *chttpd, int fd, struct sockaddr addr);
+
+
+void
+chttpd_connection_reset(struct chttpd_connection *conn);
 
 
 #endif  // CONNECTION_H_

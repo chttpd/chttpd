@@ -21,7 +21,7 @@
 
 
 int
-chttpd_response_print(struct chttpd_request *req, const char *format, ...) {
+chttpd_response_print(struct chttpd_connection *req, const char *format, ...) {
     va_list args;
 
     if (format) {
@@ -39,49 +39,49 @@ chttpd_response_print(struct chttpd_request *req, const char *format, ...) {
 
 
 int
-chttpd_response_start(struct chttpd_request *req, const char *format, ...) {
+chttpd_response_start(struct chttpd_connection *req, const char *format, ...) {
     // TODO: implement
     return -1;
 }
 
 
 int
-chttpd_response_header(struct chttpd_request *req, const char *format, ...) {
+chttpd_response_header(struct chttpd_connection *req, const char *format, ...) {
     // TODO: implement
     return -1;
 }
 
 
 int
-chttpd_response_flush(struct chttpd_request *req) {
+chttpd_response_flush(struct chttpd_connection *req) {
     // TODO: implement
     return -1;
 }
 
 
 int
-chttpd_response_close(struct chttpd_request *req) {
+chttpd_response_close(struct chttpd_connection *req) {
     // TODO: implement
     return -1;
 }
 
 
 int
-chttpd_response_finalize(struct chttpd_request *req) {
+chttpd_response_finalize(struct chttpd_connection *req) {
     // TODO: implement
     return -1;
 }
 
 
 int
-chttpd_response_body(struct chttpd_request *req, const char *format, ...) {
+chttpd_response_body(struct chttpd_connection *req, const char *format, ...) {
     // TODO: implement
     return -1;
 }
 
 
 int
-chttpd_response(struct chttpd_request *req, const char *format, ...) {
+chttpd_response(struct chttpd_connection *req, const char *format, ...) {
     // TODO: implement
     return -1;
 }

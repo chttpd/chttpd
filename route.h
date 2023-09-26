@@ -24,7 +24,7 @@
 
 
 int
-chttpd_route(struct chttpd_request *req);
+chttpd_route(struct chttpd_connection *req);
 
 
 #endif  // ROUTE_H_

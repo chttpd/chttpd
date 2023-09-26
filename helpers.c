@@ -16,16 +16,27 @@
  *
  *  Author: Vahid Mardani <vahid.mardani@gmail.com>
  */
-#ifndef REQUEST_PARSER_H_
-#define REQUEST_PARSER_H_
+#include <ctype.h>
+#include <string.h>
+
+#include "helpers.h"
 
 
-int
-chttpd_request_parse(struct chttpd_request *req, char *header, int headerlen);
+char *
+trim(char *s) {
+    if (s == NULL) {
+        return NULL;
+    }
+    int l = strlen(s);
 
+    while (s[0] && isspace(s[0])) {
+        s++;
+        l--;
+    }
 
-const char *
-chttpd_request_header_get(struct chttpd_request *req, const char *name);
+    while (isspace(s[l -1])) {
+        s[--l] = 0;
+    }
 
-
-#endif  // REQUEST_PARSER_H_
+    return s;
+}

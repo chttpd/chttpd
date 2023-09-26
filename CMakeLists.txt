@@ -27,9 +27,9 @@ target_sources(chttpd
     PUBLIC chttpd.c
     INTERFACE chttpd.h
     PRIVATE addr.c
+            helpers.c
             route.c
             connection.c
-            request_parser.c
             request.c
             response.c
 )

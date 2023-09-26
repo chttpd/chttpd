@@ -16,10 +16,12 @@
  *
  *  Author: Vahid Mardani <vahid.mardani@gmail.com>
  */
-#include "route.h"
+#ifndef HELPERS_H_
+#define HELPERS_H_
 
 
-int
-chttpd_route(struct chttpd_connection *req) {
-    return -1;
-}
+char *
+trim(char *s);
+
+
+#endif  // HELPERS_H_
