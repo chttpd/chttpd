@@ -25,7 +25,7 @@
 
 
 #define PAGESIZE 4096
-#define BUFFSIZE (PAGESIZE * 32768)
+#define BUFFSIZE (PAGESIZE * 8)  // 32768
 
 
 static ASYNC
