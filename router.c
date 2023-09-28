@@ -46,7 +46,44 @@ chttpd_router_cleanup(struct chttpd_route * restrict route) {
 }
 
 
+#define MATCHF(m, s) (m).rm_eo - (m).rm_so, s + (m).rm_so
+
+
 int
 chttpd_route(struct chttpd_connection *req) {
+    int g;
+    int i = 0;
+    struct chttpd *chttpd = req->chttpd;
+    struct chttpd_route *r = chttpd->routes;
+    regmatch_t pmatch[CHTTPD_URLARGS_MAX + 1];
+
+    while (r && r->pattern) {
+        if (regexec(&r->preg, req->path, CHTTPD_URLARGS_MAX + 1, pmatch, 0)
+                == 0) {
+            goto found;
+        }
+        r++;
+        i++;
+    }
+
     return -1;
+
+found:
+    req->_url = strdup(req->path);
+    if (req->_url == NULL) {
+        ERROR("Out of memory");
+        return -1;
+    }
+
+    for (g = 1; g <= CHTTPD_URLARGS_MAX; g++) {
+        if (pmatch[g].rm_so == -1) {
+            break;
+        }
+
+        req->urlargs[req->urlargscount++] = req->_url + pmatch[g].rm_so;
+        req->_url[pmatch[g].rm_eo] = 0;
+    }
+
+    req->handler = r->handler;
+    return i;
 }

@@ -37,8 +37,9 @@ fooA(struct caio_task *self, struct chttpd_connection *conn) {
 void
 test_router() {
     struct chttpd_route routes[] = {
-        CHTTPD_ROUTE("/foo", NULL, fooA),
-        CHTTPD_ROUTE("/", NULL, indexA),
+        CHTTPD_ROUTE("^/foo$", NULL, fooA),
+        CHTTPD_ROUTE("^/foo/(.*)$", NULL, fooA),
+        CHTTPD_ROUTE("^/$", NULL, indexA),
         CHTTPD_ROUTE(NULL, NULL, NULL)
     };
     struct chttpd chttpd = {
@@ -49,17 +50,34 @@ test_router() {
         .chttpd = &chttpd,
     };
 
+    chttpd_router_compilepatterns(routes);
+
     req.path = "/bar";
+    req.urlargscount = 0;
     eqint(-1, chttpd_route(&req));
     isnull(req.handler);
+    eqint(0, req.urlargscount);
 
     req.path = "/foo";
+    req.urlargscount = 0;
     eqint(0, chttpd_route(&req));
     eqptr(fooA, req.handler);
+    eqint(0, req.urlargscount);
 
     req.path = "/";
-    eqint(1, chttpd_route(&req));
+    req.urlargscount = 0;
+    eqint(2, chttpd_route(&req));
     eqptr(indexA, req.handler);
+    eqint(0, req.urlargscount);
+
+    req.path = "/foo/bar";
+    req.urlargscount = 0;
+    eqint(1, chttpd_route(&req));
+    eqptr(fooA, req.handler);
+    eqint(1, req.urlargscount);
+    eqstr("bar", req.urlargs[0]);
+
+    chttpd_router_cleanup(routes);
 }
 
 

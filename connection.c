@@ -64,7 +64,11 @@ chttpd_connection_reset(struct chttpd_connection *conn) {
     conn->connection = NULL;
     conn->contenttype = NULL;
     conn->contentlength = 0;
+    conn->urlargscount = 0;
 
+    if (conn->_url) {
+        free(conn->_url);
+    }
     /* Handler */
     conn->handler = NULL;
 }

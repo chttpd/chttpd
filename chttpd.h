@@ -37,6 +37,11 @@
 #endif
 
 
+#ifndef CHTTPD_URLARGS_MAX
+#define CHTTPD_URLARGS_MAX 8
+#endif
+
+
 enum chttpd_connection_status {
     CCS_REQUEST_HEADER,
     CCS_REQUEST_BODY,
@@ -72,6 +77,11 @@ struct chttpd_connection {
     const char *connection;
     const char *contenttype;
     int contentlength;
+
+    /* URL arguments */
+    char *_url;
+    const char *urlargs[CHTTPD_URLARGS_MAX];
+    unsigned int urlargscount;
 
     /* Handler */
     caio_coro handler;
