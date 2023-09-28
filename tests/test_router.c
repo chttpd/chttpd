@@ -20,9 +20,47 @@
 
 #include <cutest.h>
 
+#include "chttpd.h"
+#include "route.c"
+
+
+static ASYNC
+indexA(struct caio_task *self, struct chttpd_connection *conn) {
+}
+
+
+static ASYNC
+fooA(struct caio_task *self, struct chttpd_connection *conn) {
+}
+
 
 void
 test_router() {
+    // struct chttpd_route routes[] = {
+    //     CHTTPD_ROUTE("/foo", NULL, fooA),
+    //     CHTTPD_ROUTE("/", NULL, indexA),
+    //     CHTTPD_ROUTE(NULL, NULL, NULL)
+    // };
+    // struct chttpd chttpd = {
+    //     .routes = routes,
+    // };
+    // struct chttpd_connection req = {
+    //     .verb = "GET",
+    //     .chttpd = &chttpd,
+    // };
+
+    // req.path = "/bar";
+    // eqint(-1, chttpd_route(&req));
+    // isnull(req.handler);
+
+    // req.path = "/foo";
+    // eqint(0, chttpd_route(&req));
+    // eqptr(fooA, req.handler);
+
+    // req.path = "/";
+    // eqint(1, chttpd_route(&req));
+    // eqptr(indexA, req.handler);
+
 }
 
 
