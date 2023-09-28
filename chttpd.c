@@ -176,7 +176,6 @@ connectionA(struct caio_task *self, struct chttpd_connection *conn) {
 
 ASYNC
 chttpdA(struct caio_task *self, struct chttpd *chttpd) {
-    int fd;
     socklen_t addrlen = sizeof(struct sockaddr);
     struct sockaddr connaddr;
     int connfd;
@@ -186,15 +185,15 @@ chttpdA(struct caio_task *self, struct chttpd *chttpd) {
         CORO_REJECT("Route pattern error");
     }
 
-    fd = chttpd_listen(chttpd);
-    if (fd == -1) {
+    chttpd->listenfd = chttpd_listen(chttpd);
+    if (chttpd->listenfd == -1) {
         CORO_REJECT(NULL);
     }
 
     while (true) {
-        connfd = accept4(fd, &connaddr, &addrlen, SOCK_NONBLOCK);
+        connfd = accept4(chttpd->listenfd, &connaddr, &addrlen, SOCK_NONBLOCK);
         if ((connfd == -1) && CORO_MUSTWAITFD()) {
-            CORO_WAITFD(fd, CAIO_IN | CAIO_ET);
+            CORO_WAITFD(chttpd->listenfd, CAIO_IN | CAIO_ET);
             continue;
         }
 
@@ -212,8 +211,8 @@ chttpdA(struct caio_task *self, struct chttpd *chttpd) {
     }
 
     CORO_FINALLY;
-    caio_evloop_unregister(fd);
-    close(fd);
+    caio_evloop_unregister(chttpd->listenfd);
+    close(chttpd->listenfd);
     chttpd_router_cleanup(chttpd->routes);
 }
 

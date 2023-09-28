@@ -1,5 +1,5 @@
 list(APPEND examples
-    helloworld
+    tcp
     unix
 )
 set(profilerules ${examples})

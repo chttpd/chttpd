@@ -161,12 +161,11 @@ chttpd_listen(struct chttpd *chttpd) {
     if (saddr->sa_family == AF_UNIX) {
         unlink(chttpd->bindaddr + 7);
     }
-    else {
-        /* Allow reuse the address for TCP socket */
-        if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &option, sizeof(option))) {
-            ERROR("Cannot set socket option: %s", sockaddr_dump(saddr));
-            return -1;
-        }
+    /* Allow reuse the address for TCP socket */
+    else if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &option,
+                sizeof(option))) {
+        ERROR("Cannot set socket option: %s", sockaddr_dump(saddr));
+        return -1;
     }
 
     /* Bind to socket */

@@ -94,6 +94,7 @@ struct chttpd {
     unsigned short bindport;
     struct sockaddr_storage listenaddr;
     socklen_t listenaddrlen;
+    int listenfd;
 
     /* Limits */
     int backlog;
