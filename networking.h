@@ -16,8 +16,8 @@
  *
  *  Author: Vahid Mardani <vahid.mardani@gmail.com>
  */
-#ifndef ADDR_H_
-#define ADDR_H_
+#ifndef NETWORKING_H_
+#define NETWORKING_H_
 
 
 #include <arpa/inet.h>
@@ -34,4 +34,8 @@ char *
 sockaddr_dump(struct sockaddr *addr);
 
 
-#endif  // ADDR_H_
+int
+chttpd_listen(struct chttpd *chttpd);
+
+
+#endif  // NETWORKING_H_

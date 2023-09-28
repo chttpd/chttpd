@@ -26,7 +26,7 @@ add_library(chttpd)
 target_sources(chttpd
     PUBLIC chttpd.c
     INTERFACE chttpd.h
-    PRIVATE addr.c
+    PRIVATE networking.c
             helpers.c
             router.c
             connection.c

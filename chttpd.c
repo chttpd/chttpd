@@ -24,7 +24,7 @@
 #include <caio.h>
 
 #include "chttpd.h"
-#include "addr.h"
+#include "networking.h"
 #include "connection.h"
 #include "request.h"
 #include "router.h"
@@ -176,50 +176,19 @@ connectionA(struct caio_task *self, struct chttpd_connection *conn) {
 
 ASYNC
 chttpdA(struct caio_task *self, struct chttpd *chttpd) {
+    int fd;
     socklen_t addrlen = sizeof(struct sockaddr);
     struct sockaddr connaddr;
-    static int fd;
     int connfd;
-    int res;
-    int option = 1;
     CORO_START;
 
     if (chttpd_router_compilepatterns(chttpd->routes)) {
         CORO_REJECT("Route pattern error");
     }
 
-    /* Parse listen address */
-    if (sockaddr_parse(&chttpd->listenaddr, chttpd->bindaddr,
-                chttpd->bindport)) {
-        CORO_REJECT("Invalid address: %s:%d", chttpd->bindaddr,
-                chttpd->bindport);
-    }
-
-    /* Create socket */
-    fd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
+    fd = chttpd_listen(chttpd);
     if (fd == -1) {
-        CORO_REJECT("Cannot create socket: %s:%s", chttpd->bindaddr,
-                chttpd->bindport);
-    }
-
-    /* Allow reuse the address */
-    if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &option, sizeof(option))) {
-        CORO_REJECT("Cannot set socket option: %s:%s", chttpd->bindaddr,
-                chttpd->bindport);
-    }
-
-    /* Bind to tcp port */
-    res = bind(fd, &chttpd->listenaddr, sizeof(chttpd->listenaddr));
-    if (res) {
-        CORO_REJECT("Cannot bind on: %s", sockaddr_dump(&chttpd->listenaddr));
-    }
-
-    /* Listen */
-    res = listen(fd, chttpd->backlog);
-    INFO("Listening on: %s", sockaddr_dump(&chttpd->listenaddr));
-    if (res) {
-        CORO_REJECT("Cannot listen on: %s",
-                sockaddr_dump(&chttpd->listenaddr));
+        CORO_REJECT(NULL);
     }
 
     while (true) {

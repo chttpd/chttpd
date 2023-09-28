@@ -24,7 +24,7 @@ int
 chttpd_router_compilepatterns(struct chttpd_route * restrict route) {
     struct chttpd_route *r = route;
 
-    while (r->pattern) {
+    while (r && r->pattern) {
         if (regcomp(&r->preg, r->pattern, REG_EXTENDED)) {
             return -1;
         }
@@ -39,7 +39,7 @@ void
 chttpd_router_cleanup(struct chttpd_route * restrict route) {
     struct chttpd_route *r = route;
 
-    while (r->pattern) {
+    while (r && r->pattern) {
         regfree(&r->preg);
         r++;
     }

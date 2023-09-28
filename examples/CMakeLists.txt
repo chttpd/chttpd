@@ -1,5 +1,6 @@
 list(APPEND examples
     helloworld
+    unix
 )
 set(profilerules ${examples})
 list(TRANSFORM profilerules PREPEND profile_)
