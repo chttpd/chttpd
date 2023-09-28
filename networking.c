@@ -139,7 +139,6 @@ chttpd_listen(struct chttpd *chttpd) {
     int addrlen;
     int option = 1;
     int fd;
-    int addrfamily;
     struct sockaddr *saddr = (struct sockaddr*)&chttpd->listenaddr;
 
     /* Parse the bind address */

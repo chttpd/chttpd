@@ -81,7 +81,8 @@ test_router() {
 }
 
 
-void
+int
 main() {
     test_router();
+    return EXIT_SUCCESS;
 }

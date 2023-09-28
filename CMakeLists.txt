@@ -12,7 +12,7 @@ cmake_policy(SET CMP0076 NEW)
 # set(CMAKE_C_COMPILER gcc)
 # set(CMAKE_VERBOSE_MAKEFILE ON)
 # TODO: handle debug flag
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -fms-extensions -D_GNU_SOURCE=1")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -fms-extensions -D_GNU_SOURCE=1 -Wall")
 
 
 configure_file(manifest.h.in manifest.h)

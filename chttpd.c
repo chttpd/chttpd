@@ -33,9 +33,7 @@
 
 void
 requestA(struct caio_task *self, struct chttpd_connection *req) {
-    char *header;
     ssize_t headerlen;
-    int seplen;
     CORO_START;
 
     if (req->status == CCS_REQUEST_HEADER) {
@@ -57,7 +55,7 @@ requestA(struct caio_task *self, struct chttpd_connection *req) {
         req->header = malloc(headerlen + 1);
         if (req->header == NULL) {
             req->status = CCS_CLOSING;
-            CORO_RETURN;
+            CORO_REJECT("Out of memory");
         }
         req->headerlen = headerlen;
 
@@ -71,11 +69,11 @@ requestA(struct caio_task *self, struct chttpd_connection *req) {
         if (chttpd_request_parse(req)) {
             /* Request parse error */
             req->status = CCS_CLOSING;
-            CORO_RETURN;
+            CORO_REJECT("Request malformed");
         }
 
         /* Route(Find handler) */
-        if (chttpd_route(req)) {
+        if (chttpd_route(req) == -1) {
             /* Raise 404 if default handler is not specified */
             if (req->chttpd->defaulthandler == NULL) {
                 chttpd_response(req, "404 Not Found");
@@ -88,7 +86,7 @@ requestA(struct caio_task *self, struct chttpd_connection *req) {
         }
     }
 
-    // TODO: call handler
+    CORO_WAIT(req->handler, req);
 
     CORO_FINALLY;
     chttpd_connection_reset(req);
@@ -147,7 +145,7 @@ connectionA(struct caio_task *self, struct chttpd_connection *conn) {
             break;
         }
 
-    waitfd:
+        // waitfd:
         /* reset errno and rewait events if neccessary */
         errno = 0;
         if (!mrb_isfull(inbuff)) {

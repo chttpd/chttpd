@@ -103,7 +103,8 @@ test_request_parse() {
 }
 
 
-void
+int
 main() {
     test_request_parse();
+    return EXIT_SUCCESS;
 }
