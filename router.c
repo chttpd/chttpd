@@ -20,6 +20,9 @@
 #include "router.h"
 
 
+/**
+ * https://developer-old.gnome.org/glib/stable/glib-regex-syntax.html
+ */
 int
 chttpd_router_compilepatterns(struct chttpd_route * restrict route) {
     struct chttpd_route *r = route;
