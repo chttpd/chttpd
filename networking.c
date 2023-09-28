@@ -160,6 +160,7 @@ chttpd_listen(struct chttpd *chttpd) {
     if (saddr->sa_family == AF_UNIX) {
         unlink(chttpd->bindaddr + 7);
     }
+
     /* Allow reuse the address for TCP socket */
     else if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &option,
                 sizeof(option))) {
