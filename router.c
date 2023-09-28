@@ -46,9 +46,6 @@ chttpd_router_cleanup(struct chttpd_route * restrict route) {
 }
 
 
-#define MATCHF(m, s) (m).rm_eo - (m).rm_so, s + (m).rm_so
-
-
 int
 chttpd_route(struct chttpd_connection *req) {
     int g;
