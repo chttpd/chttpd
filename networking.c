@@ -70,6 +70,7 @@ struct sockaddr_un {
 };
 */
 #include <stdio.h>
+#include <unistd.h>
 #include <string.h>
 #include <sys/un.h>
 
@@ -138,6 +139,7 @@ chttpd_listen(struct chttpd *chttpd) {
     int addrlen;
     int option = 1;
     int fd;
+    int addrfamily;
     struct sockaddr *saddr = (struct sockaddr*)&chttpd->listenaddr;
 
     /* Parse the bind address */
@@ -147,22 +149,24 @@ chttpd_listen(struct chttpd *chttpd) {
         return -1;
     }
     chttpd->listenaddrlen = (socklen_t)addrlen;
-    ERROR("Listenning on: %s", sockaddr_dump(saddr));
-    return -1;
 
     /* Create socket */
-    fd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
+    fd = socket(saddr->sa_family, SOCK_STREAM | SOCK_NONBLOCK, 0);
     if (fd == -1) {
-        ERROR("Cannot create socket: %s:%s", chttpd->bindaddr,
-                chttpd->bindport);
+        ERROR("Cannot create socket: %s", sockaddr_dump(saddr));
         return -1;
     }
 
-    /* Allow reuse the address */
-    if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &option, sizeof(option))) {
-        ERROR("Cannot set socket option: %s:%s", chttpd->bindaddr,
-                chttpd->bindport);
-        return -1;
+    /* Unlink for unix domain sockets */
+    if (saddr->sa_family == AF_UNIX) {
+        unlink(chttpd->bindaddr + 7);
+    }
+    else {
+        /* Allow reuse the address for TCP socket */
+        if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &option, sizeof(option))) {
+            ERROR("Cannot set socket option: %s", sockaddr_dump(saddr));
+            return -1;
+        }
     }
 
     /* Bind to socket */
