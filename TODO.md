@@ -1,10 +1,9 @@
 ## high priority
 - http 1.1 vs 2.0
-  
+
 - request parsing
   * query string
   * json form parsing
-- wildcard route & url parameters
 - default handler
 
 
