@@ -16,7 +16,34 @@
  *
  *  Author: Vahid Mardani <vahid.mardani@gmail.com>
  */
-#include "route.h"
+#include "chttpd.h"
+#include "router.h"
+
+
+int
+chttpd_router_compilepatterns(struct chttpd_route * restrict route) {
+    struct chttpd_route *r = route;
+
+    while (r->pattern) {
+        if (regcomp(&r->preg, r->pattern, REG_EXTENDED)) {
+            return -1;
+        }
+        r++;
+    }
+
+    return 0;
+}
+
+
+void
+chttpd_router_cleanup(struct chttpd_route * restrict route) {
+    struct chttpd_route *r = route;
+
+    while (r->pattern) {
+        regfree(&r->preg);
+        r++;
+    }
+}
 
 
 int

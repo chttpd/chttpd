@@ -27,7 +27,7 @@
 #include "addr.h"
 #include "connection.h"
 #include "request.h"
-#include "route.h"
+#include "router.h"
 #include "response.h"
 
 
@@ -184,14 +184,29 @@ chttpdA(struct caio_task *self, struct chttpd *chttpd) {
     int option = 1;
     CORO_START;
 
+    if (chttpd_router_compilepatterns(chttpd->routes)) {
+        CORO_REJECT("Route pattern error");
+    }
+
     /* Parse listen address */
-    sockaddr_parse(&chttpd->listenaddr, chttpd->bindaddr, chttpd->bindport);
+    if (sockaddr_parse(&chttpd->listenaddr, chttpd->bindaddr,
+                chttpd->bindport)) {
+        CORO_REJECT("Invalid address: %s:%d", chttpd->bindaddr,
+                chttpd->bindport);
+    }
 
     /* Create socket */
     fd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
+    if (fd == -1) {
+        CORO_REJECT("Cannot create socket: %s:%s", chttpd->bindaddr,
+                chttpd->bindport);
+    }
 
     /* Allow reuse the address */
-    setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &option, sizeof(option));
+    if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &option, sizeof(option))) {
+        CORO_REJECT("Cannot set socket option: %s:%s", chttpd->bindaddr,
+                chttpd->bindport);
+    }
 
     /* Bind to tcp port */
     res = bind(fd, &chttpd->listenaddr, sizeof(chttpd->listenaddr));
@@ -230,6 +245,7 @@ chttpdA(struct caio_task *self, struct chttpd *chttpd) {
     CORO_FINALLY;
     caio_evloop_unregister(fd);
     close(fd);
+    chttpd_router_cleanup(chttpd->routes);
 }
 
 

@@ -16,8 +16,8 @@
  *
  *  Author: Vahid Mardani <vahid.mardani@gmail.com>
  */
-#ifndef ROUTE_H_
-#define ROUTE_H_
+#ifndef ROUTER_H_
+#define ROUTER_H_
 
 
 #include "chttpd.h"
@@ -27,4 +27,12 @@ int
 chttpd_route(struct chttpd_connection *req);
 
 
-#endif  // ROUTE_H_
+int
+chttpd_router_compilepatterns(struct chttpd_route * restrict route);
+
+
+void
+chttpd_router_cleanup(struct chttpd_route * restrict route);
+
+
+#endif  // ROUTER_H_

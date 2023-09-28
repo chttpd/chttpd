@@ -20,6 +20,7 @@
 #define CHTTPD_H_
 
 
+#include <regex.h>
 #include <sys/socket.h>
 
 #include <mrb.h>
@@ -82,6 +83,7 @@ struct chttpd_route {
     const char *pattern;
     const char *verb;
     caio_coro handler;
+    regex_t preg;
 };
 
 
