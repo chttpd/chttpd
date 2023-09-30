@@ -100,11 +100,12 @@ chttpd_response(struct chttpd_connection *req, const char *restrict status,
     if (format) {
         va_start(args, format);
         contentlen = vsprintf(tmp, format, args);
+        va_end(args);
         if (contentlen <= 0) {
             free(tmp);
             return -1;
         }
-        va_end(args);
+        tmp[contentlen] = 0;
     }
 
     bytes = chttpd_response_print(req, "Content-Length: %d\r\n\r\n",
@@ -116,13 +117,19 @@ chttpd_response(struct chttpd_connection *req, const char *restrict status,
     written += bytes;
 
     if (contentlen) {
-        bytes = mrb_putall(req->outbuff, tmp, contentlen);
+        bytes = chttpd_response_write(req, tmp, contentlen);
         if (bytes == -1) {
             free(tmp);
             return -1;
         }
-        chttpd_response_write(req, "\r\n", 2);
         written += contentlen;
+
+        bytes = chttpd_response_write(req, "\r\n", 2);
+        if (bytes == -1) {
+            free(tmp);
+            return -1;
+        }
+        written += bytes;
     }
     free(tmp);
     return written;
