@@ -86,6 +86,28 @@ test_request_parse() {
     eqint(83, req.header_len);
     chttpd_request_reset(&req);
 
+    /* Primitive CRLF */
+    REQ("\r\nGET /foo/bar HTTP/1.1\r\n"
+        "Connection: close\r\n"
+        "Content-Type: qux/quux\r\n"
+        "Host: foo\r\n"
+        "Content-Length: 124\r\n"
+        "Foo: bar\r\n\r\n");
+    eqint(0, chttpd_request_parse(&req));
+    eqstr("GET", req.verb);
+    eqstr("/foo/bar", req.path);
+    eqstr("1.1", req.version);
+    eqstr(req.connection, "close");
+    eqstr(req.contenttype, "qux/quux");
+    eqint(124, req.contentlength);
+    eqstr("foo", chttpd_request_header_get(&req, "host"));
+    eqstr("bar", chttpd_request_header_get(&req, "foo"));
+    isnull(chttpd_request_header_get(&req, "content-type"));
+    isnull(chttpd_request_header_get(&req, "content-length"));
+    isnull(chttpd_request_header_get(&req, "bar"));
+    eqint(83, req.header_len);
+    chttpd_request_reset(&req);
+
     /* Header with no value */
     REQ("GET /foo/bar HTTP/1.1\r\n"
         "Connection:\r\n\r\n");
@@ -123,6 +145,41 @@ test_request_parse() {
     eqstr("GET", req.verb);
     eqstr("/", req.path);
     eqstr("FOO", req.version);
+    chttpd_request_reset(&req);
+
+    /* Malformed request */
+    REQ("foo");
+    eqint(-1, chttpd_request_parse(&req));
+    eqint(0, errno);
+    chttpd_request_reset(&req);
+
+    REQ("foo\r\n");
+    eqint(-1, chttpd_request_parse(&req));
+    eqint(0, errno);
+    chttpd_request_reset(&req);
+
+    /* Empty line */
+    REQ("\r\n");
+    eqint(-1, chttpd_request_parse(&req));
+    eqint(0, errno);
+    chttpd_request_reset(&req);
+
+    /* Bad line */
+    REQ("\n");
+    eqint(-1, chttpd_request_parse(&req));
+    eqint(0, errno);
+    chttpd_request_reset(&req);
+
+    /* Bad line */
+    REQ("\r");
+    eqint(-1, chttpd_request_parse(&req));
+    eqint(0, errno);
+    chttpd_request_reset(&req);
+
+    /* Empty request */
+    REQ("");
+    eqint(-1, chttpd_request_parse(&req));
+    eqint(0, errno);
     chttpd_request_reset(&req);
 
     mrb_destroy(req.inbuff);
