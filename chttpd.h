@@ -52,6 +52,11 @@
 #endif
 
 
+#ifndef CHTTPD_RESPONSE_BODY_MAXLEN
+#define CHTTPD_RESPONSE_BODY_MAXLEN 8192
+#endif
+
+
 // enum chttpd_connection_status {
 //     CCS_REQUEST_STARTLINE,
 //     CCS_REQUEST_HEADER,
@@ -134,16 +139,10 @@ struct chttpd {
 #define CHTTPD_ROUTE(p, v, h) {(p), (v), (caio_coro)h}
 #define CHTTPD_RESPONSE_FLUSH(req) while (chttpd_response_flush(req)) { \
         if (CORO_MUSTWAITFD()) { \
-            CORO_WAITFD((req)->fd, CAIO_OUT); \
+            CORO_WAITFD((req)->fd, CAIO_ET | CAIO_OUT); \
             continue; \
         } \
-        chttpd_response_close(req); \
     }
-
-
-#define CHTTPD_RESPONSE_FINALIZE(req) \
-    chttpd_response_finalize(req); \
-    CHTTPD_RESPONSE_FLUSH(req)
 
 
 ASYNC
@@ -151,31 +150,23 @@ chttpdA(struct caio_task *self, struct chttpd *state);
 
 
 int
-chttpd_response_start(struct chttpd_connection *req, const char *format, ...);
-
-
-int
-chttpd_response_header(struct chttpd_connection *req, const char *format, ...);
+chttpd_forever(struct chttpd *restrict state);
 
 
 int
 chttpd_response_flush(struct chttpd_connection *req);
 
 
-int
-chttpd_response_close(struct chttpd_connection *req);
+ssize_t
+chttpd_response_print(struct chttpd_connection *req, const char *format, ...);
 
 
-int
-chttpd_response_finalize(struct chttpd_connection *req);
+ssize_t
+chttpd_response(struct chttpd_connection *req, const char *restrict status,
+        const char *format, ...);
 
 
-int
-chttpd_response_body(struct chttpd_connection *req, const char *format, ...);
-
-
-int
-chttpd_forever(struct chttpd *restrict state);
+#define chttpd_response_write(r, d, c) mrb_putall((r)->outbuff, d, c)
 
 
 #endif  // CHTTPD_H_

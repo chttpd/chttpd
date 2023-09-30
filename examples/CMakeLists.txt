@@ -15,4 +15,7 @@ foreach (t IN LISTS examples)
     add_custom_target(${t}_profile
         COMMAND "valgrind" ${VALGRIND_FLAGS} ./${t}
     )
+    add_custom_target(${t}_debug 
+        COMMAND gdb ./${t}
+    )
 endforeach()

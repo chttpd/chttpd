@@ -32,150 +32,65 @@
 
 
 ASYNC
-connectionA(struct caio_task *self, struct chttpd_connection *conn) {
+requestA(struct caio_task *self, struct chttpd_connection *req) {
     int e = CAIO_ET;
     CORO_START;
-    INFO("new connection: %s", sockaddr_dump(&conn->remoteaddr));
+    INFO("new connection: %s", sockaddr_dump(&req->remoteaddr));
 
 parse:
-    if (chttpd_request_parse(conn)) {
+    if (chttpd_request_parse(req)) {
         if (CORO_MUSTWAITFD()) {
-            CORO_WAITFD(conn->fd, e | CAIO_IN);
+            CORO_WAITFD(req->fd, e | CAIO_IN);
             goto parse;
         }
-        conn->closing = true;
-        CORO_REJECT("Cannot parse header");
+        req->closing = true;
+        CORO_RETURN;
     }
 
+    DEBUG("routing: %s", req->path);
     /* Route(Find handler) */
-    if (chttpd_route(conn) == -1) {
+    if (chttpd_route(req) == -1) {
         /* Raise 404 if default handler is not specified */
-        if (conn->chttpd->defaulthandler == NULL) {
-            chttpd_response(conn, "404 Not Found");
-            conn->closing = true;
+        if (req->chttpd->defaulthandler == NULL) {
+            chttpd_response(req, "404 Not Found", NULL);
+            req->closing = true;
             CORO_REJECT("Cannot find handler");
         }
 
         /* Set to default handler */
-        conn->handler = conn->chttpd->defaulthandler;
+        req->handler = req->chttpd->defaulthandler;
     }
 
-    CORO_WAIT(conn->handler, conn);
-
-flush:
-    if (chttpd_response_flush(conn)) {
-        if (CORO_MUSTWAITFD()) {
-            CORO_WAITFD(conn->fd, e | CAIO_OUT);
-            goto flush;
-        }
-    }
-
+    CORO_WAIT(req->handler, req);
+    CHTTPD_RESPONSE_FLUSH(req);
     CORO_FINALLY;
 
-    chttpd_response_flush(conn);
-    if (!(conn->closing)) {
-        chttpd_request_reset(conn);
+    chttpd_response_flush(req);
+    if (!(req->closing)) {
+        chttpd_request_reset(req);
         goto parse;
     }
 
-    if (conn->fd != -1) {
-        caio_evloop_unregister(conn->fd);
-        close(conn->fd);
+    if (req->fd != -1) {
+        caio_evloop_unregister(req->fd);
+        close(req->fd);
     }
-    if (mrb_destroy(conn->inbuff)) {
+    if (mrb_destroy(req->inbuff)) {
         ERROR("Cannot dispose buffers.");
     }
-    if (mrb_destroy(conn->outbuff)) {
+    if (mrb_destroy(req->outbuff)) {
         ERROR("Cannot dispose buffers.");
     }
-    free(conn);
+    free(req);
 }
-
-
-// ASYNC
-// _connectionA(struct caio_task *self, struct chttpd_connection *conn) {
-//     ssize_t bytes;
-//     struct mrb *inbuff = conn->inbuff;
-//     struct mrb *outbuff = conn->outbuff;
-//     CORO_START;
-//     static int e = 0;
-//     INFO("new connection: %s", sockaddr_dump(&conn->remoteaddr));
-//
-//     while (true) {
-//         e = CAIO_ET;
-//
-//         /* sock write */
-//         /* Write as mush as possible until EAGAIN */
-//         while (!mrb_isempty(outbuff)) {
-//             bytes = mrb_writeout(outbuff, conn->fd, mrb_used(outbuff));
-//             if ((bytes == -1) && CORO_MUSTWAITFD()) {
-//                 e |= CAIO_OUT;
-//                 break;
-//             }
-//             if (bytes == -1) {
-//                 CORO_REJECT("write(%d)", conn->fd);
-//             }
-//             if (bytes == 0) {
-//                 CORO_REJECT("write(%d) EOF", conn->fd);
-//             }
-//         }
-//
-//         /* sock read */
-//         /* Read as mush as possible until EAGAIN */
-//         while ((conn->status != CCS_CLOSING) && (!mrb_isfull(inbuff))) {
-//             bytes = mrb_readin(inbuff, conn->fd, mrb_available(inbuff));
-//             if ((bytes == -1) && CORO_MUSTWAITFD()) {
-//                 e |= CAIO_IN;
-//                 break;
-//             }
-//             if (bytes == -1) {
-//                 CORO_REJECT("read(%d)", conn->fd);
-//             }
-//             if (bytes == 0) {
-//                 CORO_REJECT("read(%d) EOF", conn->fd);
-//             }
-//         }
-//
-//         if (conn->status != CCS_CLOSING) {
-//             CORO_WAIT(requestA, conn);
-//         }
-//
-//         if ((conn->status == CCS_CLOSING) && mrb_isempty(outbuff)) {
-//             break;
-//         }
-//
-//         // waitfd:
-//         /* reset errno and rewait events if neccessary */
-//         errno = 0;
-//         if (!mrb_isfull(inbuff)) {
-//             e |= CAIO_IN;
-//         }
-//
-//         if (e != CAIO_ET) {
-//             CORO_WAITFD(conn->fd, e);
-//         }
-//     }
-//
-//     CORO_FINALLY;
-//     if (conn->fd != -1) {
-//         caio_evloop_unregister(conn->fd);
-//         close(conn->fd);
-//     }
-//     if (mrb_destroy(conn->inbuff)) {
-//         ERROR("Cannot dispose buffers.");
-//     }
-//     if (mrb_destroy(conn->outbuff)) {
-//         ERROR("Cannot dispose buffers.");
-//     }
-//     free(conn);
-// }
 
 
 ASYNC
 chttpdA(struct caio_task *self, struct chttpd *chttpd) {
     socklen_t addrlen = sizeof(struct sockaddr);
     struct sockaddr connaddr;
-    int connfd;
+    int reqfd;
+    struct chttpd_connection *req;
     CORO_START;
 
     if (chttpd_router_compilepatterns(chttpd->routes)) {
@@ -188,23 +103,22 @@ chttpdA(struct caio_task *self, struct chttpd *chttpd) {
     }
 
     while (true) {
-        connfd = accept4(chttpd->listenfd, &connaddr, &addrlen, SOCK_NONBLOCK);
-        if ((connfd == -1) && CORO_MUSTWAITFD()) {
+        reqfd = accept4(chttpd->listenfd, &connaddr, &addrlen, SOCK_NONBLOCK);
+        if ((reqfd == -1) && CORO_MUSTWAITFD()) {
             CORO_WAITFD(chttpd->listenfd, CAIO_IN | CAIO_ET);
             continue;
         }
 
-        if (connfd == -1) {
+        if (reqfd == -1) {
             CORO_REJECT("accept4");
         }
 
         /* New Connection */
-        struct chttpd_connection *conn = chttpd_connection_new(chttpd, connfd,
-                connaddr);
-        if (conn == NULL) {
+        req = chttpd_connection_new(chttpd, reqfd, connaddr);
+        if (req == NULL) {
             CORO_REJECT("Out of memory");
         }
-        CAIO_RUN(connectionA, conn);
+        CAIO_RUN(requestA, req);
     }
 
     CORO_FINALLY;

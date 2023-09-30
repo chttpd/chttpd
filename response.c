@@ -18,39 +18,7 @@
  */
 #include "chttpd.h"
 #include "response.h"
-
-
-int
-chttpd_response_print(struct chttpd_connection *req, const char *format,
-        ...) {
-    va_list args;
-
-    if (format) {
-        va_start(args, format);
-    }
-
-    int written = mrb_vprint(req->outbuff, format, args);
-
-    if (format) {
-        va_end(args);
-    }
-
-    return written;
-}
-
-
-int
-chttpd_response_start(struct chttpd_connection *req, const char *format, ...) {
-    // TODO: implement
-    return -1;
-}
-
-
-int
-chttpd_response_header(struct chttpd_connection *req, const char *format, ...) {
-    // TODO: implement
-    return -1;
-}
+#include "manifest.h"
 
 
 int
@@ -70,40 +38,92 @@ chttpd_response_flush(struct chttpd_connection *req) {
 }
 
 
-int
-chttpd_response_close(struct chttpd_connection *req) {
-    // TODO: implement
-    return -1;
-}
-
-
-int
-chttpd_response_finalize(struct chttpd_connection *req) {
-    // TODO: implement
-    return -1;
-}
-
-
-int
-chttpd_response_body(struct chttpd_connection *req, const char *format, ...) {
-    // TODO: implement
-    return -1;
-}
-
-
-int
-chttpd_response(struct chttpd_connection *req, const char *format, ...) {
+ssize_t
+chttpd_response_print(struct chttpd_connection *req, const char *format,
+        ...) {
     va_list args;
 
     if (format) {
         va_start(args, format);
     }
 
-    int written = mrb_vprint(req->outbuff, format, args);
+    ssize_t written = mrb_vprint(req->outbuff, format, args);
 
     if (format) {
         va_end(args);
     }
 
+    return written;
+}
+
+
+ssize_t
+chttpd_response_start(struct chttpd_connection *req, const char *status) {
+    ssize_t bytes;
+
+    if (status == NULL) {
+        return -1;
+    }
+
+    bytes = chttpd_response_print(req,
+            "HTTP/1.1 %s\r\n"
+            "Server: chttpd/" CHTTPD_VERSION "\r\n",
+            status);
+    if (bytes <= 0) {
+        return -1;
+    }
+
+    return bytes;
+}
+
+
+ssize_t
+chttpd_response(struct chttpd_connection *req, const char *restrict status,
+        const char *format, ...) {
+    va_list args;
+    ssize_t written = 0;
+    ssize_t bytes;
+    ssize_t contentlen = 0;
+    char *tmp;
+
+    bytes = chttpd_response_start(req, status);
+    if (bytes <= 0) {
+        return -1;
+    }
+    written += bytes;
+
+    tmp = malloc(CHTTPD_RESPONSE_BODY_MAXLEN + 1);
+    if (tmp == NULL) {
+        return -1;
+    }
+
+    if (format) {
+        va_start(args, format);
+        contentlen = vsprintf(tmp, format, args);
+        if (contentlen <= 0) {
+            free(tmp);
+            return -1;
+        }
+        va_end(args);
+    }
+
+    bytes = chttpd_response_print(req, "Content-Length: %d\r\n\r\n",
+            contentlen);
+    if (bytes <= 0) {
+        free(tmp);
+        return -1;
+    }
+    written += bytes;
+
+    if (contentlen) {
+        bytes = mrb_putall(req->outbuff, tmp, contentlen);
+        if (bytes == -1) {
+            free(tmp);
+            return -1;
+        }
+        chttpd_response_write(req, "\r\n", 2);
+        written += contentlen;
+    }
+    free(tmp);
     return written;
 }
