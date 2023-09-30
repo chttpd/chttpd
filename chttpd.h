@@ -163,7 +163,7 @@ chttpd_response_print(struct chttpd_connection *req, const char *format, ...);
 
 ssize_t
 chttpd_response(struct chttpd_connection *req, const char *restrict status,
-        const char *format, ...);
+        const char *restrict contenttype, const char *restrict format, ...);
 
 
 #define chttpd_response_write(r, d, c) mrb_putall((r)->outbuff, d, c)

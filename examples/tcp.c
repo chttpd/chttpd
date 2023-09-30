@@ -32,7 +32,7 @@ static ASYNC
 indexA(struct caio_task *self, struct chttpd_connection *req) {
     DEBUG("handler: %d", req->contentlength);
     CORO_START;
-    chttpd_response(req, "200 OK", "foo bar baz\n");
+    chttpd_response(req, "200 OK", "text/plain", "foo bar baz\n");
     CORO_FINALLY;
 }
 

@@ -79,7 +79,7 @@ chttpd_response_start(struct chttpd_connection *req, const char *status) {
 
 ssize_t
 chttpd_response(struct chttpd_connection *req, const char *restrict status,
-        const char *format, ...) {
+        const char *restrict contenttype, const char *restrict format, ...) {
     va_list args;
     ssize_t written = 0;
     ssize_t bytes;
@@ -108,29 +108,39 @@ chttpd_response(struct chttpd_connection *req, const char *restrict status,
         tmp[contentlen] = 0;
     }
 
+    if (contenttype) {
+        bytes = chttpd_response_print(req, "Content-Type: %s\r\n",
+                contenttype);
+        if (bytes <= 0) {
+            goto failed;
+        }
+        written += bytes;
+    }
+
     bytes = chttpd_response_print(req, "Content-Length: %d\r\n\r\n",
             contentlen);
     if (bytes <= 0) {
-        free(tmp);
-        return -1;
+        goto failed;
     }
     written += bytes;
 
     if (contentlen) {
         bytes = chttpd_response_write(req, tmp, contentlen);
         if (bytes == -1) {
-            free(tmp);
-            return -1;
+            goto failed;
         }
         written += contentlen;
 
         bytes = chttpd_response_write(req, "\r\n", 2);
         if (bytes == -1) {
-            free(tmp);
-            return -1;
+            goto failed;
         }
         written += bytes;
     }
     free(tmp);
     return written;
+
+failed:
+    free(tmp);
+    return -1;
 }
