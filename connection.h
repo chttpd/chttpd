@@ -27,8 +27,4 @@ struct chttpd_connection*
 chttpd_connection_new(struct chttpd *chttpd, int fd, struct sockaddr addr);
 
 
-void
-chttpd_connection_reset(struct chttpd_connection *conn);
-
-
 #endif  // CONNECTION_H_

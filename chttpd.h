@@ -27,33 +27,42 @@
 #include <caio.h>
 
 
-#ifndef CHTTPD_HEADERSIZE
-#define CHTTPD_HEADERSIZE 8192
+#ifndef CHTTPD_RESPONSE_HEADER_BUFFSIZE
+#define CHTTPD_RESPONSE_HEADER_BUFFSIZE 8192
 #endif
 
 
-#ifndef CHTTPD_REQUESTHEADERS_MAX
-#define CHTTPD_REQUESTHEADERS_MAX 64
+#ifndef CHTTPD_REQUEST_HEADER_BUFFSIZE
+#define CHTTPD_REQUEST_HEADER_BUFFSIZE 8192
 #endif
 
 
-#ifndef CHTTPD_URLARGS_MAX
-#define CHTTPD_URLARGS_MAX 8
+#ifndef CHTTPD_REQUEST_STARTLINE_MAXLEN
+#define CHTTPD_REQUEST_STARTLINE_MAXLEN CHTTPD_REQUEST_HEADER_BUFFSIZE
 #endif
 
 
-enum chttpd_connection_status {
-    CCS_REQUEST_HEADER,
-    CCS_REQUEST_BODY,
-    CCS_RESPONSE_HEADER,
-    CCS_RESPONSE_BODY,
-    CCS_CLOSING,
-};
+#ifndef CHTTPD_REQUEST_HEADERS_MAXCOUNT
+#define CHTTPD_REQUEST_HEADERS_MAXCOUNT 64
+#endif
+
+
+#ifndef CHTTPD_URLARGS_MAXCOUNT
+#define CHTTPD_URLARGS_MAXCOUNT 8
+#endif
+
+
+// enum chttpd_connection_status {
+//     CCS_REQUEST_STARTLINE,
+//     CCS_REQUEST_HEADER,
+//     CCS_REQUEST_HANDLER,
+//     CCS_CLOSING,
+// };
 
 
 struct chttpd_connection {
     /* state */
-    enum chttpd_connection_status status;
+    bool closing;
     struct chttpd *chttpd;
 
     /* Connection */
@@ -62,12 +71,16 @@ struct chttpd_connection {
     mrb_t inbuff;
     mrb_t outbuff;
 
+    /* Startline buffer */
+    char *startline;
+    size_t startline_len;
+
     /* Header buffer */
     char *header;
-    size_t headerlen;
+    size_t header_len;
 
     /* HTTP headers */
-    const char *headers[CHTTPD_REQUESTHEADERS_MAX];
+    const char *headers[CHTTPD_REQUEST_HEADERS_MAXCOUNT];
     unsigned char headerscount;
 
     /* Attributes */
@@ -80,7 +93,7 @@ struct chttpd_connection {
 
     /* URL arguments */
     char *_url;
-    const char *urlargs[CHTTPD_URLARGS_MAX];
+    const char *urlargs[CHTTPD_URLARGS_MAXCOUNT];
     unsigned int urlargscount;
 
     /* Handler */

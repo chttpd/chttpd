@@ -55,10 +55,11 @@ chttpd_route(struct chttpd_connection *req) {
     int i = 0;
     struct chttpd *chttpd = req->chttpd;
     struct chttpd_route *r = chttpd->routes;
-    regmatch_t pmatch[CHTTPD_URLARGS_MAX + 1];
+    regmatch_t pmatch[CHTTPD_URLARGS_MAXCOUNT + 1];
 
     while (r && r->pattern) {
-        if (regexec(&r->preg, req->path, CHTTPD_URLARGS_MAX + 1, pmatch, 0)
+        if (regexec(&r->preg, req->path, CHTTPD_URLARGS_MAXCOUNT + 1, pmatch,
+                    0)
                 == 0) {
             goto found;
         }
@@ -75,7 +76,7 @@ found:
         return -1;
     }
 
-    for (g = 1; g <= CHTTPD_URLARGS_MAX; g++) {
+    for (g = 1; g <= CHTTPD_URLARGS_MAXCOUNT; g++) {
         if (pmatch[g].rm_so == -1) {
             break;
         }

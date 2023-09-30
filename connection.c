@@ -28,7 +28,6 @@ chttpd_connection_new(struct chttpd *chttpd, int fd, struct sockaddr addr) {
     }
     memset(conn, 0, sizeof(struct chttpd_connection));
 
-    conn->status = CCS_REQUEST_HEADER;
     conn->chttpd = chttpd;
     conn->fd = fd;
     conn->remoteaddr = addr;
@@ -36,39 +35,4 @@ chttpd_connection_new(struct chttpd *chttpd, int fd, struct sockaddr addr) {
     conn->outbuff = mrb_create(chttpd->buffsize);
 
     return conn;
-}
-
-
-void
-chttpd_connection_reset(struct chttpd_connection *conn) {
-    if (conn == NULL) {
-        return;
-    }
-
-    /* State */
-    conn->status = CCS_REQUEST_HEADER;
-
-    /* Header buffer */
-    conn->headerlen = 0;
-    if (conn->header != NULL) {
-        free(conn->header);
-    }
-
-    /* HTTP headers */
-    conn->headerscount = 0;
-
-    /* Attributes */
-    conn->verb = NULL;
-    conn->path = NULL;
-    conn->version = NULL;
-    conn->connection = NULL;
-    conn->contenttype = NULL;
-    conn->contentlength = 0;
-    conn->urlargscount = 0;
-
-    if (conn->_url) {
-        free(conn->_url);
-    }
-    /* Handler */
-    conn->handler = NULL;
 }

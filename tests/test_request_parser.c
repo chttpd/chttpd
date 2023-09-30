@@ -17,6 +17,8 @@
  *  Author: Vahid Mardani <vahid.mardani@gmail.com>
  */
 #include <stdlib.h>
+#include <unistd.h>
+#include <sys/mman.h>
 
 #include <cutest.h>
 #include <clog.h>
@@ -26,19 +28,49 @@
 #include "request.c"
 
 
+struct tfile {
+    FILE *file;
+    int fd;
+};
+
+
+static struct tfile
+tmpfile_open() {
+    struct tfile t = {
+        .file = tmpfile(),
+    };
+
+    t.fd = fileno(t.file);
+    return t;
+}
+
+
+#define REQ(r) \
+    in = (r); \
+    lseek(req.fd, 0, SEEK_SET); \
+    ftruncate(req.fd, 0); \
+    write(req.fd, in, strlen(in)); \
+    lseek(req.fd, 0, SEEK_SET)
+
+
 void
 test_request_parse() {
+    const char *in;
     struct chttpd_connection req;
-
     memset(&req, 0, sizeof(req));
-    req.header = strdup(
-        "GET /foo/bar HTTP/1.1\n\r"
-        "Connection: close\n\r"
-        "Content-Type: qux/quux\n\r"
-        "Host: foo\n\r"
-        "Content-Length: 124\n\r"
-        "Foo: bar\n\r");
-    req.headerlen = strlen(req.header);
+    struct tfile infile = tmpfile_open();
+    req.fd = infile.fd;
+    istrue(req.fd > 2);
+    req.inbuff = mrb_create(CHTTPD_REQUEST_HEADER_BUFFSIZE);
+    req.outbuff = mrb_create(CHTTPD_REQUEST_HEADER_BUFFSIZE);
+    chttpd_request_reset(&req);
+
+    REQ("GET /foo/bar HTTP/1.1\r\n"
+        "Connection: close\r\n"
+        "Content-Type: qux/quux\r\n"
+        "Host: foo\r\n"
+        "Content-Length: 124\r\n"
+        "Foo: bar\r\n\r\n");
     eqint(0, chttpd_request_parse(&req));
     eqstr("GET", req.verb);
     eqstr("/foo/bar", req.path);
@@ -51,14 +83,12 @@ test_request_parse() {
     isnull(chttpd_request_header_get(&req, "content-type"));
     isnull(chttpd_request_header_get(&req, "content-length"));
     isnull(chttpd_request_header_get(&req, "bar"));
-    free(req.header);
+    eqint(83, req.header_len);
+    chttpd_request_reset(&req);
 
     /* Header with no value */
-    memset(&req, 0, sizeof(req));
-    req.header = strdup(
-        "GET /foo/bar HTTP/1.1\r\n"
-        "Connection:\r\n");
-    req.headerlen = strlen(req.header);
+    REQ("GET /foo/bar HTTP/1.1\r\n"
+        "Connection:\r\n\r\n");
     eqint(0, chttpd_request_parse(&req));
     eqstr("GET", req.verb);
     eqstr("/foo/bar", req.path);
@@ -66,12 +96,10 @@ test_request_parse() {
     eqstr(req.connection, "");
     isnull(req.contenttype);
     eqint(-1, req.contentlength);
-    free(req.header);
+    chttpd_request_reset(&req);
 
     /* Missing headers */
-    memset(&req, 0, sizeof(req));
-    req.header = strdup("GET /foo/bar HTTP/1.1\r\n");
-    req.headerlen = strlen(req.header);
+    REQ("GET /foo/bar HTTP/1.1\r\n\r\n");
     eqint(0, chttpd_request_parse(&req));
     eqstr("GET", req.verb);
     eqstr("/foo/bar", req.path);
@@ -79,27 +107,27 @@ test_request_parse() {
     isnull(req.connection);
     isnull(req.contenttype);
     eqint(-1, req.contentlength);
-    free(req.header);
+    chttpd_request_reset(&req);
 
     /* Missing version */
-    memset(&req, 0, sizeof(req));
-    req.header = strdup("GET /\r\n");
-    req.headerlen = strlen(req.header);
+    REQ("GET /\r\n\r\n");
     eqint(0, chttpd_request_parse(&req));
     eqstr("GET", req.verb);
     eqstr("/", req.path);
     isnull(req.version);
-    free(req.header);
+    chttpd_request_reset(&req);
 
     /* Bad version */
-    memset(&req, 0, sizeof(req));
-    req.header = strdup("GET / FOO\r\n");
-    req.headerlen = strlen(req.header);
+    REQ("GET / FOO\r\n\r\n");
     eqint(0, chttpd_request_parse(&req));
     eqstr("GET", req.verb);
     eqstr("/", req.path);
     eqstr("FOO", req.version);
-    free(req.header);
+    chttpd_request_reset(&req);
+
+    mrb_destroy(req.inbuff);
+    mrb_destroy(req.outbuff);
+    fclose(infile.file);
 }
 
 

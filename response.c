@@ -55,8 +55,18 @@ chttpd_response_header(struct chttpd_connection *req, const char *format, ...) {
 
 int
 chttpd_response_flush(struct chttpd_connection *req) {
-    // TODO: implement
-    return -1;
+    ssize_t bytes;
+
+    /* sock write */
+    /* Write as mush as possible until EAGAIN */
+    while (!mrb_isempty(req->outbuff)) {
+        bytes = mrb_writeout(req->outbuff, req->fd, mrb_used(req->outbuff));
+        if (bytes <= 0) {
+            return -1;
+        }
+    }
+
+    return 0;
 }
 
 

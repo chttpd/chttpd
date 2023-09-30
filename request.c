@@ -21,6 +21,48 @@
 #include "helpers.h"
 
 
+void
+chttpd_request_reset(struct chttpd_connection *req) {
+    if (req == NULL) {
+        return;
+    }
+
+    /* Startline buffer */
+    req->startline_len = 0;
+    if (req->startline != NULL) {
+        free(req->startline);
+        req->startline = NULL;
+    }
+
+    /* Header buffer */
+    req->header_len = 0;
+    if (req->header != NULL) {
+        free(req->header);
+        req->header = NULL;
+    }
+
+    /* HTTP headers */
+    req->headerscount = 0;
+
+    /* Attributes */
+    req->verb = NULL;
+    req->path = NULL;
+    req->version = NULL;
+    req->connection = NULL;
+    req->contenttype = NULL;
+    req->contentlength = -1;
+    req->urlargscount = 0;
+
+    if (req->_url) {
+        free(req->_url);
+        req->_url = NULL;
+    }
+
+    /* Handler */
+    req->handler = NULL;
+}
+
+
 const char *
 chttpd_request_header_get(struct chttpd_connection *req, const char *name) {
     int i;
@@ -38,43 +80,74 @@ chttpd_request_header_get(struct chttpd_connection *req, const char *name) {
 
 
 int
-chttpd_request_parse(struct chttpd_connection *req) {
+chttpd_request_startline_parse(struct chttpd_connection *req) {
     char *saveptr;
-    char *linesaveptr;
-    char *line;
     char *token;
+    ssize_t bytes;
+    ssize_t sllen;
 
-    /* Preserve header and it's len */
-    req->headerscount = 0;
+    /* Try to parse request start line */
+    while (true) {
+search:
+        if (!mrb_isempty(req->inbuff)) {
+            /* Try to read the start line */
+            sllen = mrb_search(req->inbuff, "\r\n", 2, 0,
+                    CHTTPD_REQUEST_STARTLINE_MAXLEN);
+            if (sllen == 0) {
+                /* Ignore starting dummy newline */
+                mrb_skip(req->inbuff, 2);
+                goto search;
+            }
+            if (sllen > 0) {
+                break;
+            }
 
-    /* Protocol's first line */
-    line = strtok_r(req->header, "\r\n", &saveptr);
-    if (line == NULL) {
-        goto failed;
+            if (mrb_used(req->inbuff) >= CHTTPD_REQUEST_STARTLINE_MAXLEN) {
+                errno = 0;
+                goto failed;
+            }
+        }
+
+        errno = 0;
+        bytes = mrb_readin(req->inbuff, req->fd, mrb_available(req->inbuff));
+        if (bytes <= 0) {
+            goto failed;
+        }
     }
 
+    /* Allocate memory for startline */
+    req->startline = malloc(sllen + 1);
+    if (req->startline == NULL) {
+        ERROR("Out of memory");
+        goto failed;
+    }
+    req->startline_len = sllen;
+
+    /* Read the start line from the request buffer */
+    mrb_get(req->inbuff, req->startline, sllen);
+    req->startline[sllen] = 0;
+
     /* Verb */
-    token = strtok_r(line, " ", &linesaveptr);
+    token = strtok_r(req->startline, " ", &saveptr);
     if (token == NULL) {
         goto failed;
     }
 
     /* Initialize the request fields */
     req->verb = token;
-    req->contentlength = -1;
 
     /* Path */
-    token = strtok_r(NULL, " ", &linesaveptr);
+    token = strtok_r(NULL, " ", &saveptr);
     if (token == NULL) {
         goto failed;
     }
     req->path = token;
 
     /* HTTP version */
-    token = strtok_r(NULL, "/", &linesaveptr);
+    token = strtok_r(NULL, "/", &saveptr);
     if (token) {
         req->version = token;
-        token = strtok_r(NULL, "\r\n", &linesaveptr);
+        token = strtok_r(NULL, " ", &saveptr);
         if (token) {
             req->version = token;
         }
@@ -82,9 +155,74 @@ chttpd_request_parse(struct chttpd_connection *req) {
     else {
         req->version = NULL;
     }
+    return 0;
+
+failed:
+    if (req->startline) {
+        free(req->startline);
+        req->startline = NULL;
+    }
+    return -1;
+}
+
+
+int
+chttpd_request_headers_parse(struct chttpd_connection *req) {
+    char *saveptr;
+    char *line;
+    ssize_t bytes;
+    ssize_t headerlen;
+
+    /* Try gather request header */
+    while (true) {
+        /* Check the whole header is available or not */
+        headerlen = mrb_search(req->inbuff, "\r\n\r\n", 4, 0,
+                CHTTPD_REQUEST_HEADER_BUFFSIZE);
+        if (headerlen == 0) {
+            return 0;
+        }
+        else if (headerlen > 0) {
+            break;
+        }
+
+        // TODO: Preserve searched area to improve performance.
+        if (mrb_isfull(req->inbuff) ||
+                (mrb_used(req->inbuff) >= CHTTPD_REQUEST_HEADER_BUFFSIZE)) {
+            errno = 0;
+            goto failed;
+        }
+
+        errno = 0;
+        bytes = mrb_readin(req->inbuff, req->fd, mrb_available(req->inbuff));
+        if (bytes <= 0) {
+            goto failed;
+        }
+    }
+
+    /* Skip the primitive(startline) CRLF */
+    headerlen -= 2;
+    mrb_skip(req->inbuff, 2);
+
+    /* Allocate memory for request header */
+    req->header = malloc(headerlen + 1);
+    if (req->header == NULL) {
+        goto failed;
+    }
+    req->header_len = headerlen;
+
+    /* Read whole HTTP header from the request buffer */
+    mrb_get(req->inbuff, req->header, headerlen);
+    req->header[headerlen] = 0;
+
+    /* Skip the second CRLF */
+    mrb_skip(req->inbuff, 2);
+
+    /* Parse the request */
+    req->headerscount = 0;
 
     /* Read headers */
-    while ((line = strtok_r(NULL, "\r\n", &saveptr))) {
+    line = strtok_r(req->header, "\r\n", &saveptr);
+    do {
         if (strcasestr(line, "connection:") == line) {
             req->connection = trim(line + 11);
         }
@@ -94,16 +232,33 @@ chttpd_request_parse(struct chttpd_connection *req) {
         else if (strcasestr(line, "content-length:") == line) {
             req->contentlength = atoi(trim(line + 15));
         }
-        else if (req->headerscount < (CHTTPD_REQUESTHEADERS_MAX - 1)) {
+        else if (req->headerscount < (CHTTPD_REQUEST_HEADERS_MAXCOUNT - 1)) {
             req->headers[req->headerscount++] = line;
         }
         else {
+            errno = 0;
+            free(req->header);
+            req->header = NULL;
             goto failed;
         }
-    }
+    } while ((line = strtok_r(NULL, "\r\n", &saveptr)));
 
     return 0;
 
 failed:
     return -1;
+}
+
+
+int
+chttpd_request_parse(struct chttpd_connection *req) {
+    if ((req->startline == NULL) && chttpd_request_startline_parse(req)) {
+        return -1;
+    }
+
+    if ((req->header == NULL) && chttpd_request_headers_parse(req)) {
+        return -1;
+    }
+
+    return 0;
 }

@@ -31,133 +31,53 @@
 #include "response.h"
 
 
-void
-requestA(struct caio_task *self, struct chttpd_connection *req) {
-    ssize_t headerlen;
-    CORO_START;
-
-    if (req->status == CCS_REQUEST_HEADER) {
-        /* Check the whole header is available or not */
-        headerlen = mrb_search(req->inbuff, "\r\n\r\n", 4, 0,
-                CHTTPD_HEADERSIZE);
-        if (headerlen == -1) {
-            // TODO: Preserve searched area to improve performance.
-            if (mrb_used(req->inbuff) >= CHTTPD_HEADERSIZE) {
-                req->status = CCS_CLOSING;
-            }
-            CORO_RETURN;
-        }
-
-        /* Pick the first CRLF to be able to parse the last header. */
-        headerlen += 2;
-
-        /* Allocate memory for request header */
-        req->header = malloc(headerlen + 1);
-        if (req->header == NULL) {
-            req->status = CCS_CLOSING;
-            CORO_REJECT("Out of memory");
-        }
-        req->headerlen = headerlen;
-
-        /* Read whole HTTP header from the request buffer */
-        mrb_get(req->inbuff, req->header, headerlen);
-
-        /* Skip the second CRLF */
-        mrb_skip(req->inbuff, 2);
-
-        /* Parse the request */
-        if (chttpd_request_parse(req)) {
-            /* Request parse error */
-            req->status = CCS_CLOSING;
-            CORO_REJECT("Request malformed");
-        }
-
-        /* Route(Find handler) */
-        if (chttpd_route(req) == -1) {
-            /* Raise 404 if default handler is not specified */
-            if (req->chttpd->defaulthandler == NULL) {
-                chttpd_response(req, "404 Not Found");
-                req->status = CCS_CLOSING;
-                CORO_RETURN;
-            }
-
-            /* Set to default handler */
-            req->handler = req->chttpd->defaulthandler;
-        }
-    }
-
-    CORO_WAIT(req->handler, req);
-
-    CORO_FINALLY;
-    chttpd_connection_reset(req);
-}
-
-
 ASYNC
 connectionA(struct caio_task *self, struct chttpd_connection *conn) {
-    ssize_t bytes;
-    struct mrb *inbuff = conn->inbuff;
-    struct mrb *outbuff = conn->outbuff;
+    int e = CAIO_ET;
     CORO_START;
-    static int e = 0;
     INFO("new connection: %s", sockaddr_dump(&conn->remoteaddr));
 
-    while (true) {
-        e = CAIO_ET;
+parse:
+    if (chttpd_request_parse(conn)) {
+        if (CORO_MUSTWAITFD()) {
+            CORO_WAITFD(conn->fd, e | CAIO_IN);
+            goto parse;
+        }
+        conn->closing = true;
+        CORO_REJECT("Cannot parse header");
+    }
 
-        /* sock write */
-        /* Write as mush as possible until EAGAIN */
-        while (!mrb_isempty(outbuff)) {
-            bytes = mrb_writeout(outbuff, conn->fd, mrb_used(outbuff));
-            if ((bytes == -1) && CORO_MUSTWAITFD()) {
-                e |= CAIO_OUT;
-                break;
-            }
-            if (bytes == -1) {
-                CORO_REJECT("write(%d)", conn->fd);
-            }
-            if (bytes == 0) {
-                CORO_REJECT("write(%d) EOF", conn->fd);
-            }
+    /* Route(Find handler) */
+    if (chttpd_route(conn) == -1) {
+        /* Raise 404 if default handler is not specified */
+        if (conn->chttpd->defaulthandler == NULL) {
+            chttpd_response(conn, "404 Not Found");
+            conn->closing = true;
+            CORO_REJECT("Cannot find handler");
         }
 
-        /* sock read */
-        /* Read as mush as possible until EAGAIN */
-        while ((conn->status != CCS_CLOSING) && (!mrb_isfull(inbuff))) {
-            bytes = mrb_readin(inbuff, conn->fd, mrb_available(inbuff));
-            if ((bytes == -1) && CORO_MUSTWAITFD()) {
-                e |= CAIO_IN;
-                break;
-            }
-            if (bytes == -1) {
-                CORO_REJECT("read(%d)", conn->fd);
-            }
-            if (bytes == 0) {
-                CORO_REJECT("read(%d) EOF", conn->fd);
-            }
-        }
+        /* Set to default handler */
+        conn->handler = conn->chttpd->defaulthandler;
+    }
 
-        if (conn->status != CCS_CLOSING) {
-            CORO_WAIT(requestA, conn);
-        }
+    CORO_WAIT(conn->handler, conn);
 
-        if ((conn->status == CCS_CLOSING) && mrb_isempty(outbuff)) {
-            break;
-        }
-
-        // waitfd:
-        /* reset errno and rewait events if neccessary */
-        errno = 0;
-        if (!mrb_isfull(inbuff)) {
-            e |= CAIO_IN;
-        }
-
-        if (e != CAIO_ET) {
-            CORO_WAITFD(conn->fd, e);
+flush:
+    if (chttpd_response_flush(conn)) {
+        if (CORO_MUSTWAITFD()) {
+            CORO_WAITFD(conn->fd, e | CAIO_OUT);
+            goto flush;
         }
     }
 
     CORO_FINALLY;
+
+    chttpd_response_flush(conn);
+    if (!(conn->closing)) {
+        chttpd_request_reset(conn);
+        goto parse;
+    }
+
     if (conn->fd != -1) {
         caio_evloop_unregister(conn->fd);
         close(conn->fd);
@@ -170,6 +90,85 @@ connectionA(struct caio_task *self, struct chttpd_connection *conn) {
     }
     free(conn);
 }
+
+
+// ASYNC
+// _connectionA(struct caio_task *self, struct chttpd_connection *conn) {
+//     ssize_t bytes;
+//     struct mrb *inbuff = conn->inbuff;
+//     struct mrb *outbuff = conn->outbuff;
+//     CORO_START;
+//     static int e = 0;
+//     INFO("new connection: %s", sockaddr_dump(&conn->remoteaddr));
+//
+//     while (true) {
+//         e = CAIO_ET;
+//
+//         /* sock write */
+//         /* Write as mush as possible until EAGAIN */
+//         while (!mrb_isempty(outbuff)) {
+//             bytes = mrb_writeout(outbuff, conn->fd, mrb_used(outbuff));
+//             if ((bytes == -1) && CORO_MUSTWAITFD()) {
+//                 e |= CAIO_OUT;
+//                 break;
+//             }
+//             if (bytes == -1) {
+//                 CORO_REJECT("write(%d)", conn->fd);
+//             }
+//             if (bytes == 0) {
+//                 CORO_REJECT("write(%d) EOF", conn->fd);
+//             }
+//         }
+//
+//         /* sock read */
+//         /* Read as mush as possible until EAGAIN */
+//         while ((conn->status != CCS_CLOSING) && (!mrb_isfull(inbuff))) {
+//             bytes = mrb_readin(inbuff, conn->fd, mrb_available(inbuff));
+//             if ((bytes == -1) && CORO_MUSTWAITFD()) {
+//                 e |= CAIO_IN;
+//                 break;
+//             }
+//             if (bytes == -1) {
+//                 CORO_REJECT("read(%d)", conn->fd);
+//             }
+//             if (bytes == 0) {
+//                 CORO_REJECT("read(%d) EOF", conn->fd);
+//             }
+//         }
+//
+//         if (conn->status != CCS_CLOSING) {
+//             CORO_WAIT(requestA, conn);
+//         }
+//
+//         if ((conn->status == CCS_CLOSING) && mrb_isempty(outbuff)) {
+//             break;
+//         }
+//
+//         // waitfd:
+//         /* reset errno and rewait events if neccessary */
+//         errno = 0;
+//         if (!mrb_isfull(inbuff)) {
+//             e |= CAIO_IN;
+//         }
+//
+//         if (e != CAIO_ET) {
+//             CORO_WAITFD(conn->fd, e);
+//         }
+//     }
+//
+//     CORO_FINALLY;
+//     if (conn->fd != -1) {
+//         caio_evloop_unregister(conn->fd);
+//         close(conn->fd);
+//     }
+//     if (mrb_destroy(conn->inbuff)) {
+//         ERROR("Cannot dispose buffers.");
+//     }
+//     if (mrb_destroy(conn->outbuff)) {
+//         ERROR("Cannot dispose buffers.");
+//     }
+//     free(conn);
+// }
 
 
 ASYNC
