@@ -47,14 +47,13 @@ parse:
         CORO_RETURN;
     }
 
-    DEBUG("routing: %s", req->path);
     /* Route(Find handler) */
     if (chttpd_route(req) == -1) {
         /* Raise 404 if default handler is not specified */
         if (req->chttpd->defaulthandler == NULL) {
             chttpd_response(req, "404 Not Found", "text/html", NULL);
             req->closing = true;
-            CORO_REJECT("Cannot find handler");
+            CORO_RETURN;
         }
 
         /* Set to default handler */
