@@ -71,6 +71,7 @@ test_request_parse_complex() {
         "Content-Type: qux/quux\r\n"
         "Host: foo\r\n"
         "Content-Length: 124\r\n"
+        "User-Agent: foobar\r\n"
         "Foo: bar\r\n\r\n");
     eqint(0, chttpd_request_parse(&req));
     eqstr("GET", req.verb);
@@ -79,13 +80,14 @@ test_request_parse_complex() {
     eqstr("foo=bar&baz=qux", req.query);
     eqint(HTTP_CT_CLOSE, req.connection);
     eqstr("qux/quux", req.contenttype);
+    eqstr("foobar", req.useragent);
     eqint(124, req.contentlength);
     eqstr("foo", chttpd_request_header_get(&req, "host"));
     eqstr("bar", chttpd_request_header_get(&req, "foo"));
     isnull(chttpd_request_header_get(&req, "content-type"));
     isnull(chttpd_request_header_get(&req, "content-length"));
     isnull(chttpd_request_header_get(&req, "bar"));
-    eqint(83, req.header_len);
+    eqint(103, req.header_len);
     eqint(37, req.startline_len);
     chttpd_request_reset(&req);
 
@@ -249,10 +251,41 @@ test_request_parse_malformed() {
 }
 
 
+void
+test_request_parse_urlencoded() {
+    const char *in;
+    struct chttpd_connection req;
+    memset(&req, 0, sizeof(req));
+    struct tfile infile = tmpfile_open();
+    req.fd = infile.fd;
+    istrue(req.fd > 2);
+    req.inbuff = mrb_create(CHTTPD_REQUEST_HEADER_BUFFSIZE);
+    req.outbuff = mrb_create(CHTTPD_REQUEST_HEADER_BUFFSIZE);
+    chttpd_request_reset(&req);
+
+    /* Url encoded */
+    REQ("GET /foo%20bar HTTP/1.1\r\n\r\n");
+    eqint(0, chttpd_request_parse(&req));
+    eqstr("/foo bar", req.path);
+    chttpd_request_reset(&req);
+
+    REQ("GET /foo%20bar?baz=qux%20thud HTTP/1.1\r\n\r\n");
+    eqint(0, chttpd_request_parse(&req));
+    eqstr("/foo bar", req.path);
+    eqstr("baz=qux%20thud", req.query);
+    chttpd_request_reset(&req);
+
+    mrb_destroy(req.inbuff);
+    mrb_destroy(req.outbuff);
+    fclose(infile.file);
+}
+
+
 int
 main() {
     test_request_parse_complex();
     test_request_parse_headers();
     test_request_parse_malformed();
+    test_request_parse_urlencoded();
     return EXIT_SUCCESS;
 }

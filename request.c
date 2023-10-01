@@ -51,6 +51,7 @@ chttpd_request_reset(struct chttpd_connection *req) {
     req->version = NULL;
     req->connection = HTTP_CT_NONE;
     req->contenttype = NULL;
+    req->useragent = NULL;
     req->contentlength = -1;
     req->urlargscount = 0;
 
@@ -151,6 +152,7 @@ search:
         tmp[0] = '\0';
         req->query = ++tmp;
     }
+    urldecode(token);
 
     /* HTTP version */
     token = strtok_r(NULL, " ", &saveptr);
@@ -241,6 +243,9 @@ chttpd_request_headers_parse(struct chttpd_connection *req) {
         }
         else if (strcasestr(line, "content-type:") == line) {
             req->contenttype = trim(line + 13);
+        }
+        else if (strcasestr(line, "user-agent:") == line) {
+            req->useragent = trim(line + 11);
         }
         else if (strcasestr(line, "content-length:") == line) {
             req->contentlength = atoi(trim(line + 15));

@@ -92,9 +92,10 @@ struct chttpd_connection {
     const char *path;
     const char *query;
     const char *version;
-    enum http_connection_token connection;
+    const char *useragent;
     const char *contenttype;
     int contentlength;
+    enum http_connection_token connection;
 
     /* URL arguments */
     char *_url;
