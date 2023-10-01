@@ -35,10 +35,21 @@ chttpd_connection_new(struct chttpd *chttpd, int fd, struct sockaddr addr) {
     conn->chttpd = chttpd;
     conn->fd = fd;
     conn->remoteaddr = addr;
-    conn->inbuff = mrb_create(chttpd->buffsize);
-    conn->outbuff = mrb_create(chttpd->buffsize);
+    conn->inbuff = mrb_create(chttpd->request_buffsize);
+    if (conn->inbuff == NULL) {
+        goto failed;
+    }
+
+    conn->outbuff = mrb_create(chttpd->response_buffsize);
+    if (conn->outbuff == NULL) {
+        goto failed;
+    }
 
     return conn;
+
+failed:
+    free(conn);
+    return NULL;
 }
 
 

@@ -38,21 +38,14 @@ indexA(struct caio_task *self, struct chttpd_connection *req) {
 
 int
 main() {
+    struct chttpd chttpd;
+
     clog_verbosity = CLOG_DEBUG;
 
-    struct chttpd state = {
-        /* Socket */
-        .bindaddr = "unix:///tmp/chttpd_examples_unix.s",
+    chttpd_defaults(&chttpd);
 
-        /* Limits */
-        .backlog = 2,
-        .buffsize = BUFFSIZE,
-        .maxconn = 3,
+    chttpd.bindaddr = "unix:///tmp/chttpd_examples_unix.s",
+    chttpd.defaulthandler = (caio_coro)indexA;
 
-        /* Route */
-        .routes = NULL,
-        .defaulthandler = (caio_coro)indexA,
-    };
-
-    return chttpd_forever(&state);
+    return chttpd_forever(&chttpd);
 }

@@ -27,6 +27,16 @@
 #include <caio.h>
 
 
+#ifndef CHTTPD_REQUEST_DEFAULT_BUFFSIZE
+#define CHTTPD_REQUEST_DEFAULT_BUFFSIZE(pagesize) ((pagesize) * 8)
+#endif
+
+
+#ifndef CHTTPD_RESPONSE_DEFAULT_BUFFSIZE
+#define CHTTPD_RESPONSE_DEFAULT_BUFFSIZE(pagesize) ((pagesize) * 8)
+#endif
+
+
 #ifndef CHTTPD_RESPONSE_HEADER_BUFFSIZE
 #define CHTTPD_RESPONSE_HEADER_BUFFSIZE 8192
 #endif
@@ -128,8 +138,9 @@ struct chttpd {
 
     /* Limits */
     int backlog;
-    size_t buffsize;
     size_t maxconn;
+    size_t request_buffsize;
+    size_t response_buffsize;
 
     /* Routes */
     struct chttpd_route *routes;
@@ -143,6 +154,10 @@ chttpdA(struct caio_task *self, struct chttpd *state);
 
 int
 chttpd_forever(struct chttpd *restrict state);
+
+
+void
+chttpd_defaults(struct chttpd *restrict chttpd);
 
 
 /* Request function, defined in request.c */

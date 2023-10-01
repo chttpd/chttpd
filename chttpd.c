@@ -134,7 +134,43 @@ chttpdA(struct caio_task *self, struct chttpd *chttpd) {
 }
 
 
+void
+chttpd_defaults(struct chttpd *restrict chttpd) {
+    int pagesize = getpagesize();
+
+    /* Socket */
+    chttpd->bindaddr = "0.0.0.0";
+    chttpd->bindport = 8080;
+
+    /* Limits */
+    chttpd->backlog = 10;
+    chttpd->maxconn = 100;
+    chttpd->request_buffsize = CHTTPD_REQUEST_DEFAULT_BUFFSIZE(pagesize);
+    chttpd->response_buffsize = CHTTPD_RESPONSE_DEFAULT_BUFFSIZE(pagesize);
+
+    /* Route */
+    chttpd->routes = NULL;
+    chttpd->defaulthandler = NULL;
+}
+
+
 int
 chttpd_forever(struct chttpd *restrict chttpd) {
+    int pagesize = getpagesize();
+
+    if (chttpd->request_buffsize % pagesize) {
+        ERROR("Invalid request buffer size: %lu, it should be multiple of "
+            "pagesize (%d), see getpagesize(2).", chttpd->request_buffsize,
+            pagesize);
+        return -1;
+    }
+
+    if (chttpd->response_buffsize % pagesize) {
+        ERROR("Invalid response buffer size: %lu, it should be multiple of "
+            "pagesize (%d), see getpagesize(2).", chttpd->response_buffsize,
+            pagesize);
+        return -1;
+    }
+
     return CAIO(chttpdA, chttpd, chttpd->maxconn + 1);
 }

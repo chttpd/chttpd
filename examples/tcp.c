@@ -24,10 +24,6 @@
 #include <chttpd.h>
 
 
-#define PAGESIZE 4096
-#define BUFFSIZE (PAGESIZE * 8)  // 32768
-
-
 static ASYNC
 indexA(struct caio_task *self, struct chttpd_connection *req) {
     CORO_START;
@@ -44,22 +40,15 @@ static struct chttpd_route routes[] = {
 
 int
 main() {
+    struct chttpd chttpd;
+
     clog_verbosity = CLOG_DEBUG;
 
-    struct chttpd state = {
-        /* Socket */
-        .bindaddr = "0.0.0.0",
-        .bindport = 8080,
+    chttpd_defaults(&chttpd);
 
-        /* Limits */
-        .backlog = 1000,
-        .buffsize = BUFFSIZE,
-        .maxconn = 1000,
+    chttpd.backlog = 1000;
+    chttpd.maxconn = 1000;
+    chttpd.routes = routes;
 
-        /* Route */
-        .routes = routes,
-        .defaulthandler = NULL,
-    };
-
-    return chttpd_forever(&state);
+    return chttpd_forever(&chttpd);
 }
