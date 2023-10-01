@@ -125,7 +125,7 @@ chttpdA(struct caio_task *self, struct chttpd *chttpd) {
 
     chttpd->listenfd = chttpd_listen(chttpd);
     if (chttpd->listenfd == -1) {
-        goto finally;
+        CORO_REJECT(NULL);
     }
 
     while (true) {
@@ -158,7 +158,6 @@ chttpdA(struct caio_task *self, struct chttpd *chttpd) {
         CAIO_RUN(requestA, req);
     }
 
-finally:
     CORO_FINALLY;
     caio_evloop_unregister(chttpd->listenfd);
     close(chttpd->listenfd);
