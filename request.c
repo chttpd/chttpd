@@ -18,7 +18,6 @@
  */
 #include "chttpd.h"
 #include "request.h"
-#include "helpers.h"
 
 
 void

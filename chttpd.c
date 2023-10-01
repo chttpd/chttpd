@@ -28,7 +28,6 @@
 #include "connection.h"
 #include "request.h"
 #include "router.h"
-#include "response.h"
 
 
 ASYNC

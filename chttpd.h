@@ -144,6 +144,12 @@ int
 chttpd_forever(struct chttpd *restrict state);
 
 
+/* Request function, defined in request.c */
+const char *
+chttpd_request_header_get(struct chttpd_connection *req, const char *name);
+
+
+/* Response function, defined in response.c */
 int
 chttpd_response_flush(struct chttpd_connection *req);
 
@@ -155,6 +161,21 @@ chttpd_response_print(struct chttpd_connection *req, const char *format, ...);
 ssize_t
 chttpd_response(struct chttpd_connection *req, const char *restrict status,
         const char *restrict contenttype, const char *restrict format, ...);
+
+
+/* Query string functions, defined in querystring.c */
+int
+chttpd_querystring_tokenize(char *query, char **saveptr, char **key,
+        char **value);
+
+
+/* Helper functions, defined in helpers.c */
+char *
+trim(char *s);
+
+
+int
+urldecode(char *encoded);
 
 
 /* Helper Macros */
@@ -169,7 +190,7 @@ chttpd_response(struct chttpd_connection *req, const char *restrict status,
     }
 
 
-/* Helper aliases, using macro for spped up. */
+/* Helper aliases, using macro for speed-up. */
 #define chttpd_response_write(r, d, c) mrb_putall((r)->outbuff, d, c)
 #define chttpd_connection_close(r) (r)->closing = true
 
