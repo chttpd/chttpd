@@ -14,6 +14,7 @@
 - http 1.0, 1.1 and 2.0
 - make cpack
 - http decoding/encoding
+- static content
 - readme
 - documentation
 

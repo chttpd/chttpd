@@ -21,10 +21,17 @@
 #include <chttpd.h>
 
 
+#define RESP_HEADER "<!doctype html><html><head>" \
+    "<title>chttpd demo</title>" \
+    "</head><body>"
+#define RESP_FOOTER "</body></html>"
+
+
 static ASYNC
 indexA(struct caio_task *self, struct chttpd_connection *req) {
     CORO_START;
-    chttpd_response(req, "200 OK", "text/plain", "foo bar baz\n");
+    chttpd_response(req, "200 OK", "text/html", RESP_HEADER
+            "<h1>Hello %s!</h1>" RESP_FOOTER, "chttpd");
     CORO_FINALLY;
 }
 
