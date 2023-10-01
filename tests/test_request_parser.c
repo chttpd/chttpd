@@ -104,6 +104,7 @@ test_request_parse_complex() {
     eqstr("1.1", req.version);
     eqint(HTTP_CT_CLOSE, req.connection);
     eqstr("qux/quux", req.contenttype);
+    isnull(req.useragent);
     eqint(124, req.contentlength);
     eqstr("foo", chttpd_request_header_get(&req, "host"));
     eqstr("bar", chttpd_request_header_get(&req, "foo"));
