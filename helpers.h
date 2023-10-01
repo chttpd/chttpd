@@ -24,4 +24,8 @@ char *
 trim(char *s);
 
 
+int
+urldecode(char *encoded);
+
+
 #endif  // HELPERS_H_

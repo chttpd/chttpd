@@ -20,6 +20,7 @@
 
 #include <cutest.h>
 
+#include "helpers.c"
 #include "querystring.c"
 
 
@@ -34,19 +35,19 @@ test_querystring() {
     char *key = NULL;
     char *value = NULL;
 
-    eqint(0, qstok(copy, &saveptr, &key, &value));
+    eqint(0, chttpd_querystring_tokenize(copy, &saveptr, &key, &value));
     eqint(3, strlen(key));
     eqint(3, strlen(value));
     eqstr("foo", key);
     eqstr("bar", value);
 
-    eqint(0, qstok(NULL, &saveptr, &key, &value));
+    eqint(0, chttpd_querystring_tokenize(NULL, &saveptr, &key, &value));
     eqint(3, strlen(key));
     eqint(4, strlen(value));
     eqstr("baz", key);
     eqstr("quux", value);
 
-    eqint(1, qstok(NULL, &saveptr, &key, &value));
+    eqint(1, chttpd_querystring_tokenize(NULL, &saveptr, &key, &value));
     free(copy);
 }
 
@@ -62,18 +63,18 @@ test_querystring_error() {
     char *key;
     char *value;
 
-    eqint(-1, qstok(copy, &saveptr, &key, &value));
+    eqint(-1, chttpd_querystring_tokenize(copy, &saveptr, &key, &value));
     saveptr = NULL;
-    eqint(-1, qstok(NULL, &saveptr, &key, &value));
-    eqint(-1, qstok(copy, &saveptr, NULL, &value));
-    eqint(-1, qstok(copy, &saveptr, &key, NULL));
+    eqint(-1, chttpd_querystring_tokenize(NULL, &saveptr, &key, &value));
+    eqint(-1, chttpd_querystring_tokenize(copy, &saveptr, NULL, &value));
+    eqint(-1, chttpd_querystring_tokenize(copy, &saveptr, &key, NULL));
 
     free(copy);
 }
 
 
 void
-test_querystring_url_encoded() {
+test_querystring_urlencoded() {
     const char *query = "foo%20bar=baz&qux=quux%21corge";
 
     char *copy = malloc(strlen(query));
@@ -83,19 +84,19 @@ test_querystring_url_encoded() {
     char *key;
     char *value;
 
-    eqint(0, qstok(copy, &saveptr, &key, &value));
+    eqint(0, chttpd_querystring_tokenize(copy, &saveptr, &key, &value));
     eqint(7, strlen(key));
     eqint(3, strlen(value));
     eqstr("foo bar", key);
     eqstr("baz", value);
 
-    eqint(0, qstok(NULL, &saveptr, &key, &value));
+    eqint(0, chttpd_querystring_tokenize(NULL, &saveptr, &key, &value));
     eqint(3, strlen(key));
     eqint(10, strlen(value));
     eqstr("qux", key);
     eqstr("quux!corge", value);
 
-    eqint(1, qstok(NULL, &saveptr, &key, &value));
+    eqint(1, chttpd_querystring_tokenize(NULL, &saveptr, &key, &value));
     free(copy);
 }
 
@@ -104,6 +105,6 @@ int
 main() {
     test_querystring();
     test_querystring_error();
-    test_querystring_url_encoded();
+    test_querystring_urlencoded();
     return EXIT_SUCCESS;
 }

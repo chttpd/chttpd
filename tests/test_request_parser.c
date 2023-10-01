@@ -54,7 +54,7 @@ tmpfile_open() {
 
 
 void
-test_request_parse() {
+test_request_parse_complex() {
     const char *in;
     struct chttpd_connection req;
     memset(&req, 0, sizeof(req));
@@ -65,7 +65,8 @@ test_request_parse() {
     req.outbuff = mrb_create(CHTTPD_REQUEST_HEADER_BUFFSIZE);
     chttpd_request_reset(&req);
 
-    REQ("GET /foo/bar HTTP/1.1\r\n"
+    /* Complex request */
+    REQ("GET /foo/bar?foo=bar&baz=qux HTTP/1.1\r\n"
         "Connection: close\r\n"
         "Content-Type: qux/quux\r\n"
         "Host: foo\r\n"
@@ -75,6 +76,7 @@ test_request_parse() {
     eqstr("GET", req.verb);
     eqstr("/foo/bar", req.path);
     eqstr("1.1", req.version);
+    eqstr("foo=bar&baz=qux", req.query);
     eqint(HTTP_CT_CLOSE, req.connection);
     eqstr("qux/quux", req.contenttype);
     eqint(124, req.contentlength);
@@ -84,6 +86,7 @@ test_request_parse() {
     isnull(chttpd_request_header_get(&req, "content-length"));
     isnull(chttpd_request_header_get(&req, "bar"));
     eqint(83, req.header_len);
+    eqint(37, req.startline_len);
     chttpd_request_reset(&req);
 
     /* Primitive CRLF */
@@ -108,10 +111,41 @@ test_request_parse() {
     eqint(83, req.header_len);
     chttpd_request_reset(&req);
 
-    /* Connection header with no value */
-    REQ("GET /foo/bar HTTP/1.1\r\n"
-        "Connection:\r\n\r\n");
-    eqint(-1, chttpd_request_parse(&req));
+    mrb_destroy(req.inbuff);
+    mrb_destroy(req.outbuff);
+    fclose(infile.file);
+}
+
+
+void
+test_request_parse_headers() {
+    const char *in;
+    struct chttpd_connection req;
+    memset(&req, 0, sizeof(req));
+    struct tfile infile = tmpfile_open();
+    req.fd = infile.fd;
+    istrue(req.fd > 2);
+    req.inbuff = mrb_create(CHTTPD_REQUEST_HEADER_BUFFSIZE);
+    req.outbuff = mrb_create(CHTTPD_REQUEST_HEADER_BUFFSIZE);
+    chttpd_request_reset(&req);
+
+    REQ("GET / HTTP/1.1\r\n"
+        "Connection: close\r\n"
+        "Content-Type: qux/quux\r\n"
+        "Host: foo\r\n"
+        "Content-Length: 124\r\n"
+        "Foo: bar\r\n"
+        "Bar: baz\r\n\r\n");
+    eqint(0, chttpd_request_parse(&req));
+    eqint(HTTP_CT_CLOSE, req.connection);
+    eqstr("qux/quux", req.contenttype);
+    eqint(124, req.contentlength);
+    eqstr("foo", chttpd_request_header_get(&req, "host"));
+    eqstr("bar", chttpd_request_header_get(&req, "foo"));
+    eqstr("baz", chttpd_request_header_get(&req, "bar"));
+    isnull(chttpd_request_header_get(&req, "content-type"));
+    isnull(chttpd_request_header_get(&req, "content-length"));
+    isnull(chttpd_request_header_get(&req, "baz"));
     chttpd_request_reset(&req);
 
     /* Header with no value */
@@ -137,6 +171,24 @@ test_request_parse() {
     eqint(-1, req.contentlength);
     chttpd_request_reset(&req);
 
+    mrb_destroy(req.inbuff);
+    mrb_destroy(req.outbuff);
+    fclose(infile.file);
+}
+
+
+void
+test_request_parse_malformed() {
+    const char *in;
+    struct chttpd_connection req;
+    memset(&req, 0, sizeof(req));
+    struct tfile infile = tmpfile_open();
+    req.fd = infile.fd;
+    istrue(req.fd > 2);
+    req.inbuff = mrb_create(CHTTPD_REQUEST_HEADER_BUFFSIZE);
+    req.outbuff = mrb_create(CHTTPD_REQUEST_HEADER_BUFFSIZE);
+    chttpd_request_reset(&req);
+
     /* Missing version */
     REQ("GET /\r\n\r\n");
     eqint(0, chttpd_request_parse(&req));
@@ -147,10 +199,7 @@ test_request_parse() {
 
     /* Bad version */
     REQ("GET / FOO\r\n\r\n");
-    eqint(0, chttpd_request_parse(&req));
-    eqstr("GET", req.verb);
-    eqstr("/", req.path);
-    eqstr("FOO", req.version);
+    eqint(-1, chttpd_request_parse(&req));
     chttpd_request_reset(&req);
 
     /* Malformed request */
@@ -188,6 +237,12 @@ test_request_parse() {
     eqint(0, errno);
     chttpd_request_reset(&req);
 
+    /* Connection header with no value */
+    REQ("GET /foo/bar HTTP/1.1\r\n"
+        "Connection:\r\n\r\n");
+    eqint(-1, chttpd_request_parse(&req));
+    chttpd_request_reset(&req);
+
     mrb_destroy(req.inbuff);
     mrb_destroy(req.outbuff);
     fclose(infile.file);
@@ -196,6 +251,8 @@ test_request_parse() {
 
 int
 main() {
-    test_request_parse();
+    test_request_parse_complex();
+    test_request_parse_headers();
+    test_request_parse_malformed();
     return EXIT_SUCCESS;
 }

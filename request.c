@@ -47,6 +47,7 @@ chttpd_request_reset(struct chttpd_connection *req) {
     /* Attributes */
     req->verb = NULL;
     req->path = NULL;
+    req->query = NULL;
     req->version = NULL;
     req->connection = HTTP_CT_NONE;
     req->contenttype = NULL;
@@ -83,6 +84,7 @@ int
 chttpd_request_startline_parse(struct chttpd_connection *req) {
     char *saveptr;
     char *token;
+    char *tmp;
     ssize_t bytes;
     ssize_t sllen;
 
@@ -143,18 +145,22 @@ search:
     }
     req->path = token;
 
+    /* Query string */
+    tmp = strchr(token, '?');
+    if (tmp) {
+        tmp[0] = '\0';
+        req->query = ++tmp;
+    }
+
     /* HTTP version */
-    token = strtok_r(NULL, "/", &saveptr);
+    token = strtok_r(NULL, " ", &saveptr);
     if (token) {
-        req->version = token;
-        token = strtok_r(NULL, " ", &saveptr);
-        if (token) {
-            req->version = token;
+        if (strncmp("HTTP/", token, 5)) {
+            goto failed;
         }
+        req->version = token + 5;
     }
-    else {
-        req->version = NULL;
-    }
+
     return 0;
 
 failed:

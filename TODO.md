@@ -1,10 +1,10 @@
 ## high priority
-- http 1.1 vs 2.0
+- http 1.0, 1.1 and 2.0
 
 - request parsing
+  * decode url
   * query string
   * json form parsing
-- default handler
 
 
 ## backlog
@@ -17,8 +17,6 @@
 - make test
 - buffsize should be multiple of pagesize. if not, raise error
 - separate buffer size options for request and response
-- handle multiple requests with one connection using coro_reset and keep-alive
-  header
 - gzip, deflate
 - url formencodded 
 - multipart

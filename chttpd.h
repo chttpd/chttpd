@@ -90,6 +90,7 @@ struct chttpd_connection {
     /* Attributes */
     const char *verb;
     const char *path;
+    const char *query;
     const char *version;
     enum http_connection_token connection;
     const char *contenttype;
