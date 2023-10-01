@@ -47,9 +47,7 @@ main() {
     struct chttpd chttpd;
 
     clog_verbosity = CLOG_DEBUG;
-
     chttpd_defaults(&chttpd);
-
     chttpd.backlog = 1000;
     chttpd.maxconn = 1000;
     chttpd.routes = routes;

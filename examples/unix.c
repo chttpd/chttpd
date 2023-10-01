@@ -34,9 +34,7 @@ main() {
     struct chttpd chttpd;
 
     clog_verbosity = CLOG_DEBUG;
-
     chttpd_defaults(&chttpd);
-
     chttpd.bindaddr = "unix:///tmp/chttpd_examples_unix.s",
     chttpd.defaulthandler = (caio_coro)indexA;
 
