@@ -32,6 +32,7 @@ static ASYNC
 indexA(struct caio_task *self, struct chttpd_connection *req) {
     CORO_START;
     chttpd_response(req, "200 OK", "text/plain", "foo bar baz\n");
+    req->closing = true;
     CORO_FINALLY;
 }
 
@@ -52,9 +53,9 @@ main() {
         .bindport = 8080,
 
         /* Limits */
-        .backlog = 2,
+        .backlog = 1000,
         .buffsize = BUFFSIZE,
-        .maxconn = 3,
+        .maxconn = 1000,
 
         /* Route */
         .routes = routes,

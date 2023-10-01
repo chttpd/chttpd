@@ -38,9 +38,12 @@ requestA(struct caio_task *self, struct chttpd_connection *req) {
     INFO("new connection: %s", sockaddr_dump(&req->remoteaddr));
 
 parse:
+    /* Try to parse the request and perhapse wait for more data if the header
+       is not transferred completely. */
     if (chttpd_request_parse(req)) {
         if (CORO_MUSTWAITFD()) {
             CORO_WAITFD(req->fd, e | CAIO_IN);
+            /* Try again */
             goto parse;
         }
         req->closing = true;
@@ -53,7 +56,9 @@ parse:
         if (req->chttpd->defaulthandler == NULL) {
             chttpd_response(req, "404 Not Found", "text/html", NULL);
             req->closing = true;
-            CORO_RETURN;
+
+            /* Jump to flush, skip calling handler */
+            goto flush;
         }
 
         /* Set to default handler */
@@ -61,24 +66,34 @@ parse:
     }
 
     CORO_WAIT(req->handler, req);
-    CHTTPD_RESPONSE_FLUSH(req);
+
+flush:
+    /* Flush the response */
+    if (chttpd_response_flush(req)) {
+        if (CORO_MUSTWAITFD()) {
+            CORO_WAITFD((req)->fd, e | CAIO_OUT);
+            goto flush;
+        }
+        req->closing = true;
+    }
+
     CORO_FINALLY;
 
-    chttpd_response_flush(req);
-    if (!(req->closing)) {
-        chttpd_request_reset(req);
+    /* free request resources */
+    chttpd_request_reset(req);
+
+    /* Keep open the connection, and become ready for the next request */
+    if (!req->closing) {
         goto parse;
     }
 
+    /* free connection resources */
     if (req->fd != -1) {
         caio_evloop_unregister(req->fd);
         close(req->fd);
     }
-    if (mrb_destroy(req->inbuff)) {
-        ERROR("Cannot dispose buffers.");
-    }
-    if (mrb_destroy(req->outbuff)) {
-        ERROR("Cannot dispose buffers.");
+    if (mrb_destroy(req->inbuff) || mrb_destroy(req->outbuff)) {
+        ERROR("Cannot dispose buffer(s).");
     }
     free(req);
 }

@@ -135,16 +135,6 @@ struct chttpd {
 };
 
 
-/* Helper Macros */
-#define CHTTPD_ROUTE(p, v, h) {(p), (v), (caio_coro)h}
-#define CHTTPD_RESPONSE_FLUSH(req) while (chttpd_response_flush(req)) { \
-        if (CORO_MUSTWAITFD()) { \
-            CORO_WAITFD((req)->fd, CAIO_ET | CAIO_OUT); \
-            continue; \
-        } \
-    }
-
-
 ASYNC
 chttpdA(struct caio_task *self, struct chttpd *state);
 
@@ -166,7 +156,21 @@ chttpd_response(struct chttpd_connection *req, const char *restrict status,
         const char *restrict contenttype, const char *restrict format, ...);
 
 
+/* Helper Macros */
+#define CHTTPD_ROUTE(p, v, h) {(p), (v), (caio_coro)h}
+#define CHTTPD_RESPONSE_FLUSH(req) while (chttpd_response_flush(req)) { \
+        if (CORO_MUSTWAITFD()) { \
+            CORO_WAITFD((req)->fd, CAIO_ET | CAIO_OUT); \
+            continue; \
+        } \
+        req->closing = true; \
+        CORO_RETURN; \
+    }
+
+
+/* Helper aliases, using macro for spped up. */
 #define chttpd_response_write(r, d, c) mrb_putall((r)->outbuff, d, c)
+#define chttpd_connection_close(r) (r)->closing = true
 
 
 #endif  // CHTTPD_H_
