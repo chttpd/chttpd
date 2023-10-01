@@ -18,14 +18,7 @@
  */
 #include <stdlib.h>
 
-#include <clog.h>
-#include <carrow.h>
-
 #include <chttpd.h>
-
-
-#define PAGESIZE 4096
-#define BUFFSIZE (PAGESIZE * 8)  // 32768
 
 
 static ASYNC

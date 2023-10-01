@@ -18,9 +18,6 @@
  */
 #include <stdlib.h>
 
-#include <clog.h>
-#include <carrow.h>
-
 #include <chttpd.h>
 
 
