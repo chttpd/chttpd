@@ -47,6 +47,7 @@ parse:
         }
         req->closing = true;
         CORO_RETURN;
+        // CORO_JUMP_FINALLY;
     }
 
     /* Begin request hook */
@@ -54,6 +55,7 @@ parse:
         /* Connection canceled by the hook */
         req->closing = true;
         CORO_RETURN;
+        // CORO_JUMP_FINALLY;
     }
 
     /* Route(Find handler) */
