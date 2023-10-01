@@ -46,16 +46,14 @@ parse:
             goto parse;
         }
         req->closing = true;
-        CORO_RETURN;
-        // CORO_JUMP_FINALLY;
+        goto finally;
     }
 
     /* Begin request hook */
     if (chttpd->on_request_begin && chttpd->on_request_begin(req)) {
         /* Connection canceled by the hook */
         req->closing = true;
-        CORO_RETURN;
-        // CORO_JUMP_FINALLY;
+        goto finally;
     }
 
     /* Route(Find handler) */
@@ -91,8 +89,8 @@ flush:
         req->closing = true;
     }
 
+finally:
     CORO_FINALLY;
-
     /* free request resources */
     chttpd_request_reset(req);
 
@@ -127,7 +125,7 @@ chttpdA(struct caio_task *self, struct chttpd *chttpd) {
 
     chttpd->listenfd = chttpd_listen(chttpd);
     if (chttpd->listenfd == -1) {
-        CORO_REJECT(NULL);
+        goto finally;
     }
 
     while (true) {
@@ -160,6 +158,7 @@ chttpdA(struct caio_task *self, struct chttpd *chttpd) {
         CAIO_RUN(requestA, req);
     }
 
+finally:
     CORO_FINALLY;
     caio_evloop_unregister(chttpd->listenfd);
     close(chttpd->listenfd);
