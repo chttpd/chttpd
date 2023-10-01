@@ -16,6 +16,10 @@
  *
  *  Author: Vahid Mardani <vahid.mardani@gmail.com>
  */
+#include <unistd.h>
+
+#include <caio.h>
+
 #include "chttpd.h"
 #include "connection.h"
 
@@ -35,4 +39,21 @@ chttpd_connection_new(struct chttpd *chttpd, int fd, struct sockaddr addr) {
     conn->outbuff = mrb_create(chttpd->buffsize);
 
     return conn;
+}
+
+
+void
+chttpd_connection_free(struct chttpd_connection *req) {
+    if (req == NULL) {
+        return;
+    }
+
+    if (req->fd != -1) {
+        caio_evloop_unregister(req->fd);
+        close(req->fd);
+    }
+    if (mrb_destroy(req->inbuff) || mrb_destroy(req->outbuff)) {
+        ERROR("Cannot dispose buffer(s).");
+    }
+    free(req);
 }

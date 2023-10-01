@@ -87,14 +87,7 @@ flush:
     }
 
     /* free connection resources */
-    if (req->fd != -1) {
-        caio_evloop_unregister(req->fd);
-        close(req->fd);
-    }
-    if (mrb_destroy(req->inbuff) || mrb_destroy(req->outbuff)) {
-        ERROR("Cannot dispose buffer(s).");
-    }
-    free(req);
+    chttpd_connection_free(req);
 }
 
 
