@@ -1,5 +1,4 @@
 ## high priority
-- http accept header
 - hooks: init, deinit, new request, new connection and etc.
 - separate buffer size options for request and response
 - buffsize should be multiple of pagesize. if not, raise error

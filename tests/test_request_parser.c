@@ -71,6 +71,7 @@ test_request_parse_complex() {
         "Content-Type: qux/quux\r\n"
         "Host: foo\r\n"
         "Content-Length: 124\r\n"
+        "Accept: */*\r\n"
         "User-Agent: foobar\r\n"
         "Foo: bar\r\n\r\n");
     eqint(0, chttpd_request_parse(&req));
@@ -81,13 +82,14 @@ test_request_parse_complex() {
     eqint(HTTP_CT_CLOSE, req.connection);
     eqstr("qux/quux", req.contenttype);
     eqstr("foobar", req.useragent);
+    eqstr("*/*", req.accept);
     eqint(124, req.contentlength);
     eqstr("foo", chttpd_request_header_get(&req, "host"));
     eqstr("bar", chttpd_request_header_get(&req, "foo"));
     isnull(chttpd_request_header_get(&req, "content-type"));
     isnull(chttpd_request_header_get(&req, "content-length"));
     isnull(chttpd_request_header_get(&req, "bar"));
-    eqint(103, req.header_len);
+    eqint(116, req.header_len);
     eqint(37, req.startline_len);
     chttpd_request_reset(&req);
 
@@ -105,6 +107,7 @@ test_request_parse_complex() {
     eqint(HTTP_CT_CLOSE, req.connection);
     eqstr("qux/quux", req.contenttype);
     isnull(req.useragent);
+    isnull(req.accept);
     eqint(124, req.contentlength);
     eqstr("foo", chttpd_request_header_get(&req, "host"));
     eqstr("bar", chttpd_request_header_get(&req, "foo"));

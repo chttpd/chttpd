@@ -50,6 +50,7 @@ chttpd_request_reset(struct chttpd_connection *req) {
     req->version = NULL;
     req->connection = HTTP_CT_NONE;
     req->contenttype = NULL;
+    req->accept = NULL;
     req->useragent = NULL;
     req->contentlength = -1;
     req->urlargscount = 0;
@@ -242,6 +243,9 @@ chttpd_request_headers_parse(struct chttpd_connection *req) {
         }
         else if (strcasestr(line, "content-type:") == line) {
             req->contenttype = trim(line + 13);
+        }
+        else if (strcasestr(line, "accept:") == line) {
+            req->accept = trim(line + 7);
         }
         else if (strcasestr(line, "user-agent:") == line) {
             req->useragent = trim(line + 11);

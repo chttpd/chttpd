@@ -94,6 +94,7 @@ struct chttpd_connection {
     const char *version;
     const char *useragent;
     const char *contenttype;
+    const char *accept;
     int contentlength;
     enum http_connection_token connection;
 
