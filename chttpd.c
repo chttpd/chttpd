@@ -83,7 +83,7 @@ flush:
     chttpd_request_reset(req);
 
     /* Keep open the connection, and become ready for the next request */
-    if (!req->closing) {
+    if ((!req->closing) && (req->connection == HTTP_CT_KEEPALIVE)) {
         goto parse;
     }
 

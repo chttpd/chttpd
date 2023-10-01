@@ -57,12 +57,11 @@
 #endif
 
 
-// enum chttpd_connection_status {
-//     CCS_REQUEST_STARTLINE,
-//     CCS_REQUEST_HEADER,
-//     CCS_REQUEST_HANDLER,
-//     CCS_CLOSING,
-// };
+enum http_connection_token {
+    HTTP_CT_NONE,
+    HTTP_CT_KEEPALIVE,
+    HTTP_CT_CLOSE,
+};
 
 
 struct chttpd_connection {
@@ -92,7 +91,7 @@ struct chttpd_connection {
     const char *verb;
     const char *path;
     const char *version;
-    const char *connection;
+    enum http_connection_token connection;
     const char *contenttype;
     int contentlength;
 

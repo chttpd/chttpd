@@ -48,7 +48,7 @@ chttpd_request_reset(struct chttpd_connection *req) {
     req->verb = NULL;
     req->path = NULL;
     req->version = NULL;
-    req->connection = NULL;
+    req->connection = HTTP_CT_NONE;
     req->contenttype = NULL;
     req->contentlength = -1;
     req->urlargscount = 0;
@@ -158,10 +158,6 @@ search:
     return 0;
 
 failed:
-    if (req->startline) {
-        free(req->startline);
-        req->startline = NULL;
-    }
     return -1;
 }
 
@@ -170,6 +166,7 @@ int
 chttpd_request_headers_parse(struct chttpd_connection *req) {
     char *saveptr;
     char *line;
+    char *tmp;
     ssize_t bytes;
     ssize_t headerlen;
 
@@ -224,7 +221,17 @@ chttpd_request_headers_parse(struct chttpd_connection *req) {
     line = strtok_r(req->header, "\r\n", &saveptr);
     do {
         if (strcasestr(line, "connection:") == line) {
-            req->connection = trim(line + 11);
+            tmp = trim(line + 11);
+            if (strcasecmp("close", tmp) == 0) {
+                req->connection = HTTP_CT_CLOSE;
+            }
+            else if (strcasecmp("keep-alive", tmp) == 0) {
+                req->connection = HTTP_CT_KEEPALIVE;
+            }
+            else {
+                errno = 0;
+                goto failed;
+            }
         }
         else if (strcasestr(line, "content-type:") == line) {
             req->contenttype = trim(line + 13);
@@ -237,8 +244,6 @@ chttpd_request_headers_parse(struct chttpd_connection *req) {
         }
         else {
             errno = 0;
-            free(req->header);
-            req->header = NULL;
             goto failed;
         }
     } while ((line = strtok_r(NULL, "\r\n", &saveptr)));

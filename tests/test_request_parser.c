@@ -75,8 +75,8 @@ test_request_parse() {
     eqstr("GET", req.verb);
     eqstr("/foo/bar", req.path);
     eqstr("1.1", req.version);
-    eqstr(req.connection, "close");
-    eqstr(req.contenttype, "qux/quux");
+    eqint(HTTP_CT_CLOSE, req.connection);
+    eqstr("qux/quux", req.contenttype);
     eqint(124, req.contentlength);
     eqstr("foo", chttpd_request_header_get(&req, "host"));
     eqstr("bar", chttpd_request_header_get(&req, "foo"));
@@ -97,8 +97,8 @@ test_request_parse() {
     eqstr("GET", req.verb);
     eqstr("/foo/bar", req.path);
     eqstr("1.1", req.version);
-    eqstr(req.connection, "close");
-    eqstr(req.contenttype, "qux/quux");
+    eqint(HTTP_CT_CLOSE, req.connection);
+    eqstr("qux/quux", req.contenttype);
     eqint(124, req.contentlength);
     eqstr("foo", chttpd_request_header_get(&req, "host"));
     eqstr("bar", chttpd_request_header_get(&req, "foo"));
@@ -108,15 +108,21 @@ test_request_parse() {
     eqint(83, req.header_len);
     chttpd_request_reset(&req);
 
-    /* Header with no value */
+    /* Connection header with no value */
     REQ("GET /foo/bar HTTP/1.1\r\n"
         "Connection:\r\n\r\n");
+    eqint(-1, chttpd_request_parse(&req));
+    chttpd_request_reset(&req);
+
+    /* Header with no value */
+    REQ("GET /foo/bar HTTP/1.1\r\n"
+        "Foo:\r\n\r\n");
     eqint(0, chttpd_request_parse(&req));
     eqstr("GET", req.verb);
     eqstr("/foo/bar", req.path);
     eqstr("1.1", req.version);
-    eqstr(req.connection, "");
     isnull(req.contenttype);
+    eqint(HTTP_CT_NONE, req.connection);
     eqint(-1, req.contentlength);
     chttpd_request_reset(&req);
 
@@ -126,7 +132,7 @@ test_request_parse() {
     eqstr("GET", req.verb);
     eqstr("/foo/bar", req.path);
     eqstr("1.1", req.version);
-    isnull(req.connection);
+    eqint(HTTP_CT_NONE, req.connection);
     isnull(req.contenttype);
     eqint(-1, req.contentlength);
     chttpd_request_reset(&req);

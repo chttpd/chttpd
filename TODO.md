@@ -41,3 +41,8 @@
   - Read-wait loop to recv body
   - Write-wait loop to send response
 - (core) decide to close or keep connection based on connection header.
+
+## References
+
+- HTTP/1.1 rfc: https://httpwg.org/specs/rfc9113.html
+- HTTP/2 rfc: https://httpwg.org/specs/rfc9113.html
