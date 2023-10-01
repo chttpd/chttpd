@@ -1,5 +1,4 @@
 ## high priority
-- hooks: init, deinit, new request, new connection and etc.
 - http 100 continue
 
 
