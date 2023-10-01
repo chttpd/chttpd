@@ -72,6 +72,7 @@ test_request_parse_complex() {
         "Host: foo\r\n"
         "Content-Length: 124\r\n"
         "Accept: */*\r\n"
+        "Expect: 100-continue\r\n"
         "User-Agent: foobar\r\n"
         "Foo: bar\r\n\r\n");
     eqint(0, chttpd_request_parse(&req));
@@ -83,13 +84,14 @@ test_request_parse_complex() {
     eqstr("qux/quux", req.contenttype);
     eqstr("foobar", req.useragent);
     eqstr("*/*", req.accept);
+    eqstr("100-continue", req.expect);
     eqint(124, req.contentlength);
     eqstr("foo", chttpd_request_header_get(&req, "host"));
     eqstr("bar", chttpd_request_header_get(&req, "foo"));
     isnull(chttpd_request_header_get(&req, "content-type"));
     isnull(chttpd_request_header_get(&req, "content-length"));
     isnull(chttpd_request_header_get(&req, "bar"));
-    eqint(116, req.header_len);
+    eqint(138, req.header_len);
     eqint(37, req.startline_len);
     chttpd_request_reset(&req);
 
@@ -115,8 +117,8 @@ test_request_parse_complex() {
     isnull(chttpd_request_header_get(&req, "content-length"));
     isnull(chttpd_request_header_get(&req, "bar"));
     eqint(83, req.header_len);
-    chttpd_request_reset(&req);
 
+    chttpd_request_reset(&req);
     mrb_destroy(req.inbuff);
     mrb_destroy(req.outbuff);
     fclose(infile.file);
@@ -175,8 +177,8 @@ test_request_parse_headers() {
     eqint(HTTP_CT_NONE, req.connection);
     isnull(req.contenttype);
     eqint(-1, req.contentlength);
-    chttpd_request_reset(&req);
 
+    chttpd_request_reset(&req);
     mrb_destroy(req.inbuff);
     mrb_destroy(req.outbuff);
     fclose(infile.file);
@@ -246,6 +248,12 @@ test_request_parse_malformed() {
     /* Connection header with no value */
     REQ("GET /foo/bar HTTP/1.1\r\n"
         "Connection:\r\n\r\n");
+    eqint(-1, chttpd_request_parse(&req));
+    chttpd_request_reset(&req);
+
+    /* Invalid expect header */
+    REQ("GET / HTTP/1.1\r\n"
+        "Expect: foo\r\n\r\n");
     eqint(-1, chttpd_request_parse(&req));
     chttpd_request_reset(&req);
 

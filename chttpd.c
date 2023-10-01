@@ -71,6 +71,20 @@ parse:
         req->handler = chttpd->defaulthandler;
     }
 
+    if (req->expect) {
+        /* OR: 417 Expectation Failed */
+        chttpd_response_print(req, "100 Continue\r\n");
+
+        /* Force to send 100 Continue */
+        while (chttpd_response_flush(req)) {
+            if (CORO_MUSTWAITFD()) {
+                CORO_WAITFD((req)->fd, e | CAIO_OUT);
+                continue;
+            }
+            req->closing = true;
+            goto finally;
+        }
+    }
     CORO_WAIT(req->handler, req);
 
 flush:
@@ -91,6 +105,7 @@ flush:
 
 finally:
     CORO_FINALLY;
+
     /* free request resources */
     chttpd_request_reset(req);
 

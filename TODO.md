@@ -1,20 +1,19 @@
 ## high priority
-- http 100 continue
-
-
-## backlog
-- gzip, deflate
 - Form parsing
   - url formencodded 
   - multipart
   - json form parsing
+- static content
+
+
+## backlog
+- gzip, deflate
 - access log: one line per request
 - cookie
 - etag
 - http 1.0, 1.1 and 2.0
-- make cpack
 - http decoding/encoding
-- static content
+- make cpack
 - readme
 - documentation
 

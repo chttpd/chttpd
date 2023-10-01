@@ -247,6 +247,13 @@ chttpd_request_headers_parse(struct chttpd_connection *req) {
         else if (strcasestr(line, "accept:") == line) {
             req->accept = trim(line + 7);
         }
+        else if (strcasestr(line, "expect:") == line) {
+            req->expect = trim(line + 7);
+            if (strcmp("100-continue", req->expect)) {
+                errno = 0;
+                goto failed;
+            }
+        }
         else if (strcasestr(line, "user-agent:") == line) {
             req->useragent = trim(line + 11);
         }
