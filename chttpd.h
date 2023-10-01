@@ -118,6 +118,11 @@ struct chttpd_connection {
 };
 
 
+typedef int (*chttpd_connection_hook) (struct chttpd *chttpd, int fd,
+        struct sockaddr addr);
+typedef int (*chttpd_request_hook) (struct chttpd_connection *req);
+
+
 /* Router entry */
 struct chttpd_route {
     const char *pattern;
@@ -145,6 +150,12 @@ struct chttpd {
     /* Routes */
     struct chttpd_route *routes;
     caio_coro defaulthandler;
+
+    /* Hooks */
+    chttpd_connection_hook on_connection_open;
+    chttpd_connection_hook on_connection_close;
+    chttpd_request_hook on_request_begin;
+    chttpd_request_hook on_request_end;
 };
 
 
@@ -192,6 +203,15 @@ trim(char *s);
 
 int
 urldecode(char *encoded);
+
+
+/* Networking helpers */
+int
+sockaddr_parse(struct sockaddr *saddr, const char *addr, unsigned short port);
+
+
+char *
+sockaddr_dump(struct sockaddr *addr);
 
 
 /* Helper Macros */

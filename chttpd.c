@@ -30,11 +30,11 @@
 #include "router.h"
 
 
-ASYNC
+static ASYNC
 requestA(struct caio_task *self, struct chttpd_connection *req) {
     int e = CAIO_ET;
+    struct chttpd *chttpd = req->chttpd;
     CORO_START;
-    INFO("new connection: %s", sockaddr_dump(&req->remoteaddr));
 
 parse:
     /* Try to parse the request and perhapse wait for more data if the header
@@ -49,10 +49,17 @@ parse:
         CORO_RETURN;
     }
 
+    /* Begin request hook */
+    if (chttpd->on_request_begin && chttpd->on_request_begin(req)) {
+        /* Connection canceled by the hook */
+        req->closing = true;
+        CORO_RETURN;
+    }
+
     /* Route(Find handler) */
     if (chttpd_route(req) == -1) {
         /* Raise 404 if default handler is not specified */
-        if (req->chttpd->defaulthandler == NULL) {
+        if (chttpd->defaulthandler == NULL) {
             chttpd_response(req, "404 Not Found", "text/html", NULL);
             req->closing = true;
 
@@ -61,7 +68,7 @@ parse:
         }
 
         /* Set to default handler */
-        req->handler = req->chttpd->defaulthandler;
+        req->handler = chttpd->defaulthandler;
     }
 
     CORO_WAIT(req->handler, req);
@@ -76,6 +83,12 @@ flush:
         req->closing = true;
     }
 
+    /* End request hook */
+    if (chttpd->on_request_end && chttpd->on_request_end(req)) {
+        /* Connection canceled by the hook */
+        req->closing = true;
+    }
+
     CORO_FINALLY;
 
     /* free request resources */
@@ -86,8 +99,15 @@ flush:
         goto parse;
     }
 
+    /* close connection hook */
+    if (chttpd->on_connection_close && chttpd->on_connection_close(
+                chttpd, req->fd, req->remoteaddr)) {
+        /* connection closing has canceled by the hook */
+        goto parse;
+    }
+
     /* free connection resources */
-    chttpd_connection_free(req);
+    chttpd_connection_dispose(req);
 }
 
 
@@ -119,11 +139,22 @@ chttpdA(struct caio_task *self, struct chttpd *chttpd) {
             CORO_REJECT("accept4");
         }
 
+        /* New connection hook */
+        if (chttpd->on_connection_open &&
+                chttpd->on_connection_open(chttpd, reqfd, connaddr)) {
+            /* Connection canceled by the hook */
+            close(reqfd);
+            continue;
+        }
+
         /* New Connection */
         req = chttpd_connection_new(chttpd, reqfd, connaddr);
         if (req == NULL) {
-            CORO_REJECT("Out of memory");
+            /* Out of memory or calcelled by the hook, retrying next. */
+            close(reqfd);
+            continue;
         }
+
         CAIO_RUN(requestA, req);
     }
 
@@ -151,6 +182,12 @@ chttpd_defaults(struct chttpd *restrict chttpd) {
     /* Route */
     chttpd->routes = NULL;
     chttpd->defaulthandler = NULL;
+
+    /* Hooks */
+    chttpd->on_connection_open = NULL;
+    chttpd->on_connection_close = NULL;
+    chttpd->on_request_begin = NULL;
+    chttpd->on_request_end = NULL;
 }
 
 

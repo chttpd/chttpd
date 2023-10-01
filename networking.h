@@ -27,14 +27,6 @@
 
 
 int
-sockaddr_parse(struct sockaddr *saddr, const char *addr, unsigned short port);
-
-
-char *
-sockaddr_dump(struct sockaddr *addr);
-
-
-int
 chttpd_listen(struct chttpd *chttpd);
 
 

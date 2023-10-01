@@ -27,6 +27,34 @@
 #define RESP_FOOTER "</body></html>"
 
 
+static int
+newconnection(struct chttpd *chttpd, int fd, struct sockaddr addr) {
+    INFO("new connection: %s", sockaddr_dump(&addr));
+    return 0;
+}
+
+
+static int
+closeconnection(struct chttpd *chttpd, int fd, struct sockaddr addr) {
+    INFO("close connection: %s", sockaddr_dump(&addr));
+    return 0;
+}
+
+
+static int
+newrequest(struct chttpd_connection *req) {
+    INFO("new request: %s %s", req->verb, req->path);
+    return 0;
+}
+
+
+static int
+endrequest(struct chttpd_connection *req) {
+    INFO("end request: %s %s", req->verb, req->path);
+    return 0;
+}
+
+
 static ASYNC
 indexA(struct caio_task *self, struct chttpd_connection *req) {
     CORO_START;
@@ -51,6 +79,9 @@ main() {
     chttpd.backlog = 1000;
     chttpd.maxconn = 1000;
     chttpd.routes = routes;
-
+    chttpd.on_connection_open = newconnection;
+    chttpd.on_connection_close = closeconnection;
+    chttpd.on_request_begin = newrequest;
+    chttpd.on_request_end = endrequest;
     return chttpd_forever(&chttpd);
 }

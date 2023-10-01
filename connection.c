@@ -26,9 +26,12 @@
 
 struct chttpd_connection*
 chttpd_connection_new(struct chttpd *chttpd, int fd, struct sockaddr addr) {
-    struct chttpd_connection *conn = malloc(sizeof(struct chttpd_connection));
+    struct chttpd_connection *conn;
+
+    conn = malloc(sizeof(struct chttpd_connection));
     if (conn == NULL) {
-        return conn;
+        ERROR("Out of memory when allocating new connection.");
+        return NULL;
     }
     memset(conn, 0, sizeof(struct chttpd_connection));
 
@@ -54,7 +57,7 @@ failed:
 
 
 void
-chttpd_connection_free(struct chttpd_connection *req) {
+chttpd_connection_dispose(struct chttpd_connection *req) {
     if (req == NULL) {
         return;
     }
