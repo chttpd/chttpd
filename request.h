@@ -20,6 +20,19 @@
 #define REQUEST_H_
 
 
+/**
+ * @brief Parses an HTTP request.
+ *
+ * This function parses the start line and headers of an HTTP request
+ * represented by the given chttpd_connection struct. It checks if the
+ * start line and headers have already been parsed and, if not, invokes the
+ * corresponding parsing functions. If any parsing operation fails, the
+ * function returns -1 to indicate an error.
+ *
+ * @param req Pointer to the chttpd_connection struct representing the
+ *        connection and request.
+ * @return 0 if the request parsing is successful, -1 otherwise.
+ */
 int
 chttpd_request_parse(struct chttpd_connection *req);
 

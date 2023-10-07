@@ -26,6 +26,17 @@
 #include <netinet/ip.h>
 
 
+/**
+ * @brief Listens for incoming connections on the specified address and port.
+ *
+ * This function creates a socket, binds it to the specified address and port,
+ * and listens for incoming connections. It supports both TCP and Unix domain
+ * sockets. The created socket is set to non-blocking mode.
+ *
+ * @param chttpd The struct containing the address and port to listen on.
+ * @return The file descriptor of the listening socket on success, or -1 if an
+ *         error occurs.
+ */
 int
 chttpd_listen(struct chttpd *chttpd);
 
