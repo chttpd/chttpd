@@ -36,7 +36,7 @@
  * @param fd The file descriptor associated with the connection.
  * @param addr The remote address of the connection.
  * @return A pointer to the newly created chttpd_connection struct, or NULL if
- * allocation fails.
+ *         allocation fails.
  */
 struct chttpd_connection*
 chttpd_connection_new(struct chttpd *chttpd, int fd, struct sockaddr addr);
