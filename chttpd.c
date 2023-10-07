@@ -35,8 +35,7 @@
  *
  * It parses the request, invokes request hooks, routes the request to the
  * appropriate handler, handles the "Expect: 100-continue" header if present,
- * flushes the response, and invokes response hooks. The function uses
- * coroutines to handle I/O operations efficiently.
+ * flushes the response, and invokes response hooks.
  *
  * @param self Pointer to the caio_task structure representing the coroutine.
  * @param req Pointer to the chttpd_connection structure representing the
