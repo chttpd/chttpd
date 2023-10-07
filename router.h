@@ -32,8 +32,8 @@
  * struct, and the function returns the index of the matched route. If no
  * match is found, -1 is returned.
  *
- * @param req Pointer to the chttpd_connection struct representing the request.
- * @return The index of the matched route on success, or -1 if no match is found.
+ * @param req Pointer to chttpd_connection struct representing the request.
+ * @return The index of the matched route on success, or -1 if no match found.
  */
 int
 chttpd_route(struct chttpd_connection *req);

@@ -261,20 +261,23 @@ chttpd_response_print(struct chttpd_connection *req, const char *format, ...);
 
 
 /**
- * @brief Generates an HTTP response with the given status, content type, and content.
+ * @brief Generates an HTTP response with the given status, content type, and
+ *        content.
  *
- * This function generates an HTTP response using the given chttpd_connection structure,
- * status, content type, and format string. It accepts a variable number of parameters
- * to be formatted and included in the response content. The response is constructed
- * by calling various chttpd_response_XXXX functions and writing the data to the
- * output buffer of the chttpd_connection structure.
+ * This function generates an HTTP response using the given chttpd_connection
+ * structure, status, content type, and format string. It accepts a variable
+ * number of parameters to be formatted and included in the response content.
+ * The response is constructed by calling various chttpd_response_XXXX
+ * functions and writing the data to the output buffer of the
+ * chttpd_connection structure.
  *
  * @param req Pointer to the chttpd_connection structure representing the
  *        connection and response.
  * @param status The HTTP status line to be included in the response.
  * @param contenttype The MIME type of the response content.
  * @param format Format string specifying the format of the response content.
- * @param ... Variable number of arguments to be formatted and included in the response content.
+ * @param ... Variable number of arguments to be formatted and included in the
+ *        response content.
  * @return The number of bytes written to the output buffer on success,
  *         or -1 on error.
  */
