@@ -92,7 +92,7 @@ chttpd_request_header_get(struct chttpd_connection *req, const char *name) {
  * indicate an error.
  *
  * @param req Pointer to the chttpd_connection sturct representing the
- * connection and request.
+ *        connection and request.
  * @return 0 if the start line parsing is successful, -1 otherwise.
  */
 int
@@ -195,7 +195,7 @@ failed:
  * an error.
  *
  * @param req Pointer to the chttpd_connection struct representing the
- * connection and request.
+ *        connection and request.
  * @return 0 if the header parsing is successful, -1 otherwise.
  */
 int

@@ -35,7 +35,7 @@
  *
  * @param chttpd The struct containing the address and port to listen on.
  * @return The file descriptor of the listening socket on success, or -1 if an
- * error occurs.
+ *         error occurs.
  */
 int
 chttpd_listen(struct chttpd *chttpd);

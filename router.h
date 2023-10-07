@@ -49,7 +49,7 @@ chttpd_route(struct chttpd_connection *req);
  * https://developer-old.gnome.org/glib/stable/glib-regex-syntax.html
  *
  * @param route The chttpd_route struct containing the route patterns to
- * be compiled.
+ *        be compiled.
  * @return 0 on success, or -1 if an error occurs during pattern compilation.
  */
 int

@@ -30,7 +30,7 @@
  * function returns -1 to indicate an error.
  *
  * @param req Pointer to the chttpd_connection struct representing the
- * connection and request.
+ *        connection and request.
  * @return 0 if the request parsing is successful, -1 otherwise.
  */
 int
