@@ -81,6 +81,20 @@ chttpd_request_header_get(struct chttpd_connection *req, const char *name) {
 }
 
 
+/**
+ * @brief Parses the start line of an HTTP request.
+ *
+ * This function parses the start line of an HTTP request represented by the
+ * given chttpd_connection sturct. It reads the start line from the request
+ * buffer, extracts the verb, path, query string, and HTTP version, and stores
+ * them in the appropriate fields of the chttpd_connection sturct. If any
+ * parsing operation fails or encounters an error, the function returns -1 to
+ * indicate an error.
+ *
+ * @param req Pointer to the chttpd_connection sturct representing the
+ * connection and request.
+ * @return 0 if the start line parsing is successful, -1 otherwise.
+ */
 int
 chttpd_request_startline_parse(struct chttpd_connection *req) {
     char *saveptr;
@@ -170,6 +184,20 @@ failed:
 }
 
 
+/**
+ * @brief Parses the headers of an HTTP request.
+ *
+ * This function parses the headers of an HTTP request represented by the
+ * given chttpd_connection struct. It reads the headers from the request
+ * buffer, extracts the various header fields, and stores them in the
+ * appropriate fields of the chttpd_connection struct. If any parsing
+ * operation fails or encounters an error, the function returns -1 to indicate
+ * an error.
+ *
+ * @param req Pointer to the chttpd_connection struct representing the
+ * connection and request.
+ * @return 0 if the header parsing is successful, -1 otherwise.
+ */
 int
 chttpd_request_headers_parse(struct chttpd_connection *req) {
     char *saveptr;

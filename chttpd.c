@@ -30,6 +30,19 @@
 #include "router.h"
 
 
+/**
+ * @brief Asynchronous function that handles an HTTP request.
+ *
+ * It parses the request, invokes request hooks, routes the request to the
+ * appropriate handler, handles the "Expect: 100-continue" header if present,
+ * flushes the response, and invokes response hooks. The function uses
+ * coroutines to handle I/O operations efficiently.
+ *
+ * @param self Pointer to the caio_task structure representing the coroutine.
+ * @param req Pointer to the chttpd_connection structure representing the
+ *        connection and request.
+ * @return An ASYNC value indicating the status of the coroutine.
+ */
 static ASYNC
 requestA(struct caio_task *self, struct chttpd_connection *req) {
     int e = CAIO_ET;

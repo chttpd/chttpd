@@ -160,32 +160,124 @@ struct chttpd {
 };
 
 
+/**
+ * @brief Asynchronous function that runs the chttpd server.
+ *
+ * It compiles the route patterns, listens for incoming connections, and
+ * handles each connection asynchronously.
+ *
+ * @param self Pointer to the caio_task struct representing the coroutine.
+ * @param chttpd Pointer to the chttpd struct representing the server.
+ * @return ASYNC
+ */
 ASYNC
 chttpdA(struct caio_task *self, struct chttpd *state);
 
 
+/**
+ * @brief Starts the chttpd server and runs it indefinitely.
+ *
+ * It performs some validation checks on the request and response buffer sizes
+ * to ensure they are multiples of the system's page size. If the buffer sizes
+ * are not valid, an error is logged, and the function returns -1. Otherwise,
+ * it calls the CAIO to start the chttpd server with the specified maximum
+ * number of connections.
+ *
+ * @param chttpd Pointer to the chttpd struct representing the server.
+ * @return 0 on success, or -1 if an error occurs.
+ */
 int
 chttpd_forever(struct chttpd *restrict state);
 
 
+/**
+ * @brief Sets the default values for a chttpd instance.
+ *
+ * It initializes various fields in the chttpd struct with default values.
+ * These include the socket binding address and port, limits such as backlog
+ * and maximum connections, buffer sizes for requests and responses, route
+ * information, and hooks for connection and request events. The default
+ * values are provided as constants or NULL pointers.
+ *
+ * @param chttpd Pointer to the chttpd struct to be initialized.
+ */
 void
 chttpd_defaults(struct chttpd *restrict chttpd);
 
 
 /* Request function, defined in request.c */
+/**
+ * @brief Retrieves the value of a specific header from the request.
+ *
+ * This function retrieves the value of a specific header from the given
+ * chttpd_connection struct. It searches for the header with the specified
+ * name in the array of headers stored in the chttpd_connection struct.
+ * If a matching header is found, the function returns a pointer to the value
+ * of the header. If no matching header is found, the function returns NULL.
+ *
+ * @param req Pointer to the chttpd_connection struct representing the
+ *        connection and request.
+ * @param name The name of the header to retrieve.
+ * @return A pointer to the value of the header if found, NULL otherwise.
+ */
 const char *
 chttpd_request_header_get(struct chttpd_connection *req, const char *name);
 
 
 /* Response function, defined in response.c */
+/**
+ * @brief Flushes the response data to the client socket.
+ *
+ * This function flushes the response data stored in the output buffer
+ * of the given chttpd_connection struct to the client socket. It writes
+ * as much data as possible from the output buffer to the socket until the
+ * output buffer becomes empty.
+ *
+ * @param req Pointer to the chttpd_connection struct representing the
+ *        connection and response.
+ * @return 0 on success, -1 on error.
+ */
 int
 chttpd_response_flush(struct chttpd_connection *req);
 
 
+/**
+ * @brief Prints formatted data to the response output buffer.
+ *
+ * This function formats and prints data to the output buffer of the given
+ * chttpd_connection struct representing the response. It accepts a format
+ * string and variable number of arguments, similar to the printf function.
+ * The formatted data is written to the output buffer using mrb_vprint.
+ *
+ * @param req Pointer to the chttpd_connection struct representing the
+ *        connection and response.
+ * @param format Format string specifying the format of the output.
+ * @param ... Variable number of arguments to be formatted and printed.
+ * @return The number of bytes written to the output buffer on success,
+ *         or -1 on error.
+ */
 ssize_t
 chttpd_response_print(struct chttpd_connection *req, const char *format, ...);
 
 
+/**
+ * @brief Generates an HTTP response with the given status, content type, and content.
+ *
+ * This function generates an HTTP response using the given chttpd_connection structure,
+ * status, content type, and format string. It accepts a variable number of parameters
+ * to be formatted and included in the response content. The response is constructed
+ * by calling various chttpd_response_XXXX functions and writing the data to the
+ * output buffer of the chttpd_connection structure.
+ *
+ * @param req Pointer to the chttpd_connection structure representing the
+ *        connection and response.
+ * @param status The HTTP status line to be included in the response.
+ * @param contenttype The MIME type of the response content.
+ * @param format Format string specifying the format of the response content.
+ * @param ... Variable number of arguments to be formatted and included in the response content.
+ * @return The number of bytes written to the output buffer on success,
+ *         or -1 on error.
+ */
 ssize_t
 chttpd_response(struct chttpd_connection *req, const char *restrict status,
         const char *restrict contenttype, const char *restrict format, ...);
@@ -207,10 +299,31 @@ urldecode(char *encoded);
 
 
 /* Networking helpers */
+/**
+ * @brief Parses string representation of an address and port into sockaddr
+ * struct.
+ *
+ * This function takes a string representation of an address and port and
+ * converts it into a sockaddr struct.
+ *
+ * @param saddr Pointer to the sockaddr struct to store the parsed address.
+ * @param addr Pointer to the string representation of the address.
+ * @param port The port number.
+ * @return The size of the sockaddr struct on success, or -1 if on error.
+ */
 int
 sockaddr_parse(struct sockaddr *saddr, const char *addr, unsigned short port);
 
 
+/**
+ * @brief Converts a sockaddr struct to a string representation.
+ *
+ * This function takes a sockaddr struct and converts it to a string
+ * representation. It supports both AF_UNIX sockets and AF_INET sockets.
+ *
+ * @param addr Pointer to the sockaddr struct to be converted.
+ * @return A pointer to the string representation of the sockaddr struct.
+ */
 char *
 sockaddr_dump(struct sockaddr *addr);
 
