@@ -66,7 +66,7 @@ indexA(struct caio_task *self, struct chttpd_connection *req) {
 
 static struct chttpd_route routes[] = {
     CHTTPD_ROUTE("^/$", NULL, indexA),
-    CHTTPD_ROUTE(NULL, NULL, NULL)
+    CHTTPD_ROUTE_TERMINATOR
 };
 
 

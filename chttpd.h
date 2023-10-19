@@ -217,6 +217,7 @@ sockaddr_dump(struct sockaddr *addr);
 
 /* Helper Macros */
 #define CHTTPD_ROUTE(p, v, h) {(p), (v), (caio_coro)h}
+#define CHTTPD_ROUTE_TERMINATOR CHTTPD_ROUTE(NULL, NULL, NULL)
 #define CHTTPD_RESPONSE_FLUSH(req) while (chttpd_response_flush(req)) { \
         if (CORO_MUSTWAITFD()) { \
             CORO_WAITFD((req)->fd, CAIO_ET | CAIO_OUT); \
