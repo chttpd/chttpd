@@ -253,7 +253,7 @@ chttpd_formfield_next(struct caio_task *self,
 #define CHTTPD_RESPONSE_WRITE(r, d, c) mrb_putall((r)->outbuff, d, c)
 #define CHTTPD_CONNECTION_CLOSE(r) (r)->closing = true
 #define CHTTPD_RESPONSE_TEXT(r, s, fmt, ...) \
-    chttpd_response(r, s, "text/html", fmt "\r\n" , # __VA_ARGS__)
+    chttpd_response(r, s, "text/html", fmt , # __VA_ARGS__)
 
 
 /* Router Macros */
@@ -327,7 +327,7 @@ chttpd_formfield_next(struct caio_task *self,
 
 #define CHTTPD_STATUS_INTERNALSERVERERROR(r) \
     CHTTPD_RESPONSE_TEXT(r, HTTPSTATUS_INTERNALSERVERERROR, \
-            "Internal Server Error"); \
+            "Internal Server Error"CR); \
     CHTTPD_CONNECTION_CLOSE(r)
 
 
