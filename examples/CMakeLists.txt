@@ -1,6 +1,7 @@
 list(APPEND examples
     tcp
     unix
+    multipart
 )
 set(profilerules ${examples})
 list(TRANSFORM profilerules PREPEND profile_)

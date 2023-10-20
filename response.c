@@ -124,13 +124,13 @@ chttpd_response(struct chttpd_connection *req, const char *restrict status,
     written += bytes;
 
     if (contentlen) {
-        bytes = chttpd_response_write(req, tmp, contentlen);
+        bytes = CHTTPD_RESPONSE_WRITE(req, tmp, contentlen);
         if (bytes == -1) {
             goto failed;
         }
         written += contentlen;
 
-        bytes = chttpd_response_write(req, "\r\n", 2);
+        bytes = CHTTPD_RESPONSE_WRITE(req, "\r\n", 2);
         if (bytes == -1) {
             goto failed;
         }

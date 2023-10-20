@@ -48,7 +48,7 @@ chttpd_request_reset(struct chttpd_connection *req) {
     req->path = NULL;
     req->query = NULL;
     req->version = NULL;
-    req->connection = HTTP_CT_NONE;
+    req->connection = HTTP_CONNECTIONTOKEN_NONE;
     req->contenttype = NULL;
     req->accept = NULL;
     req->useragent = NULL;
@@ -231,10 +231,10 @@ chttpd_request_headers_parse(struct chttpd_connection *req) {
         if (strcasestr(line, "connection:") == line) {
             tmp = trim(line + 11);
             if (strcasecmp("close", tmp) == 0) {
-                req->connection = HTTP_CT_CLOSE;
+                req->connection = HTTP_CONNECTIONTOKEN_CLOSE;
             }
             else if (strcasecmp("keep-alive", tmp) == 0) {
-                req->connection = HTTP_CT_KEEPALIVE;
+                req->connection = HTTP_CONNECTIONTOKEN_KEEPALIVE;
             }
             else {
                 errno = 0;

@@ -80,7 +80,7 @@ test_request_parse_complex() {
     eqstr("/foo/bar", req.path);
     eqstr("1.1", req.version);
     eqstr("foo=bar&baz=qux", req.query);
-    eqint(HTTP_CT_CLOSE, req.connection);
+    eqint(HTTP_CONNECTIONTOKEN_CLOSE, req.connection);
     eqstr("qux/quux", req.contenttype);
     eqstr("foobar", req.useragent);
     eqstr("*/*", req.accept);
@@ -106,7 +106,7 @@ test_request_parse_complex() {
     eqstr("GET", req.verb);
     eqstr("/foo/bar", req.path);
     eqstr("1.1", req.version);
-    eqint(HTTP_CT_CLOSE, req.connection);
+    eqint(HTTP_CONNECTIONTOKEN_CLOSE, req.connection);
     eqstr("qux/quux", req.contenttype);
     isnull(req.useragent);
     isnull(req.accept);
@@ -145,7 +145,7 @@ test_request_parse_headers() {
         "Foo: bar\r\n"
         "Bar: baz\r\n\r\n");
     eqint(0, chttpd_request_parse(&req));
-    eqint(HTTP_CT_CLOSE, req.connection);
+    eqint(HTTP_CONNECTIONTOKEN_CLOSE, req.connection);
     eqstr("qux/quux", req.contenttype);
     eqint(124, req.contentlength);
     eqstr("foo", chttpd_request_header_get(&req, "host"));
@@ -164,7 +164,7 @@ test_request_parse_headers() {
     eqstr("/foo/bar", req.path);
     eqstr("1.1", req.version);
     isnull(req.contenttype);
-    eqint(HTTP_CT_NONE, req.connection);
+    eqint(HTTP_CONNECTIONTOKEN_NONE, req.connection);
     eqint(-1, req.contentlength);
     chttpd_request_reset(&req);
 
@@ -174,7 +174,7 @@ test_request_parse_headers() {
     eqstr("GET", req.verb);
     eqstr("/foo/bar", req.path);
     eqstr("1.1", req.version);
-    eqint(HTTP_CT_NONE, req.connection);
+    eqint(HTTP_CONNECTIONTOKEN_NONE, req.connection);
     isnull(req.contenttype);
     eqint(-1, req.contentlength);
 

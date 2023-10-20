@@ -68,9 +68,9 @@
 
 
 enum http_connection_token {
-    HTTP_CT_NONE,
-    HTTP_CT_KEEPALIVE,
-    HTTP_CT_CLOSE,
+    HTTP_CONNECTIONTOKEN_NONE,
+    HTTP_CONNECTIONTOKEN_KEEPALIVE,
+    HTTP_CONNECTIONTOKEN_CLOSE,
 };
 
 
@@ -116,6 +116,10 @@ struct chttpd_connection {
 
     /* Handler */
     caio_coro handler;
+
+    /* Form */
+    // TODO: Dispose it
+    struct chttpd_formparser *formparser;
 };
 
 
@@ -157,6 +161,26 @@ struct chttpd {
     chttpd_connection_hook on_connection_close;
     chttpd_request_hook on_request_begin;
     chttpd_request_hook on_request_end;
+};
+
+
+/* HTTP form */
+struct chttpd_formparser{
+    int flags;
+};
+
+
+enum chttpd_formfield_type {
+    CHTTPD_FORMFIELD_TYPE_SCALAR,
+    CHTTPD_FORMFIELD_TYPE_FILE,
+    CHTTPD_FORMFIELD_TYPE_LIST,
+    CHTTPD_FORMFIELD_TYPE_OBJECT,
+};
+
+
+struct chttpd_formfield {
+    enum chttpd_formfield_type type;
+
 };
 
 
@@ -215,9 +239,29 @@ char *
 sockaddr_dump(struct sockaddr *addr);
 
 
-/* Helper Macros */
+/* HTTP Form */
+int
+chttpd_formparser_new(struct chttpd_connection *req);
+
+
+ASYNC
+chttpd_formfield_next(struct caio_task *self,
+        struct chttpd_formparser *parser);
+
+
+/* Helper aliases, using macro for speeds-up. */
+#define CHTTPD_RESPONSE_WRITE(r, d, c) mrb_putall((r)->outbuff, d, c)
+#define CHTTPD_CONNECTION_CLOSE(r) (r)->closing = true
+#define CHTTPD_RESPONSE_TEXT(r, s, fmt, ...) \
+    chttpd_response(r, s, "text/html", fmt "\r\n" , # __VA_ARGS__)
+
+
+/* Router Macros */
 #define CHTTPD_ROUTE(p, v, h) {(p), (v), (caio_coro)h}
 #define CHTTPD_ROUTE_TERMINATOR CHTTPD_ROUTE(NULL, NULL, NULL)
+
+
+/* Response Macros */
 #define CHTTPD_RESPONSE_FLUSH(req) while (chttpd_response_flush(req)) { \
         if (CORO_MUSTWAITFD()) { \
             CORO_WAITFD((req)->fd, CAIO_ET | CAIO_OUT); \
@@ -228,9 +272,77 @@ sockaddr_dump(struct sockaddr *addr);
     }
 
 
-/* Helper aliases, using macro for speed-up. */
-#define chttpd_response_write(r, d, c) mrb_putall((r)->outbuff, d, c)
-#define chttpd_connection_close(r) (r)->closing = true
+/* HTTP Status codes */
+#define HTTPSTATUS_CONTINUE             "100 Continue"
+#define HTTPSTATUS_SWITCHINGPROTOCOLS   "101 Switching Protocols"
+#define HTTPSTATUS_EARLYHINTS           "103 Early Hints"
+
+#define HTTPSTATUS_OK                   "200 OK"
+#define HTTPSTATUS_CREATED              "201 Created"
+#define HTTPSTATUS_ACCEPTED             "202 Accepted"
+#define HTTPSTATUS_NOCONTENT            "204 No Content"
+#define HTTPSTATUS_RESETCONTENT         "205 Reset Content"
+#define HTTPSTATUS_PARTIALCONTENT       "206 Partial Content"
+#define HTTPSTATUS_IMUSED               "226 IM Used"
+
+#define HTTPSTATUS_MULTIPLECHOICES      "300 Multiple Choices"
+#define HTTPSTATUS_MOVEDPERMANENTLY     "301 Moved Permanently"
+#define HTTPSTATUS_FOUND                "302 Moved temporarily"
+#define HTTPSTATUS_SEEOTHER             "303 See Other"
+#define HTTPSTATUS_NOTMODIFIED          "304 Not Modified"
+#define HTTPSTATUS_USEPROXY             "305 Use Proxy"
+#define HTTPSTATUS_SWITCHPROXY          "306 Switch Proxy"
+#define HTTPSTATUS_TEMPORARYREDIRECT    "307 Temporary Redirect"
+#define HTTPSTATUS_PERMANENTREDIRECT    "308 Permanent Redirect"
+
+#define HTTPSTATUS_BADREQUEST           "400 Bad Request"
+#define HTTPSTATUS_UNAUTHORIZED         "401 Unauthorized"
+#define HTTPSTATUS_PAYMENTREQUIRED      "402 Payment Required"
+#define HTTPSTATUS_FORBIDDEN            "403 Forbidden"
+#define HTTPSTATUS_NOTFOUND             "404 Not Found"
+#define HTTPSTATUS_METHODNOTALLOWED     "405 Method Not Allowed"
+#define HTTPSTATUS_NOTACCEPTABLE        "406 Not Acceptable"
+#define HTTPSTATUS_REQUESTTIMEOUT       "408 Request Timeout"
+#define HTTPSTATUS_CONFLICT             "409 Conflict"
+#define HTTPSTATUS_GONE                 "410 Gone"
+#define HTTPSTATUS_LENGTHREQUIRED       "411 Length Required"
+#define HTTPSTATUS_PRECONDITIONFAILED   "412 Precondition Failed"
+#define HTTPSTATUS_PAYLOADTOOLARGE      "413 Payload Too Large"
+#define HTTPSTATUS_URITOOLONG           "414 URI Too Long"
+#define HTTPSTATUS_UNSUPPORTEDMEDIATYPE "415 Unsupported Media Type"
+#define HTTPSTATUS_RANGENOTSATISFIABLE  "416 Range Not Satisfiable"
+#define HTTPSTATUS_EXPECTATIONFAILED    "417 Expectation Failed"
+#define HTTPSTATUS_MISDIRECTEDREQUEST   "421 Misdirected Request"
+#define HTTPSTATUS_UNPROCESSABLEENTITY  "422 Unprocessable Entity"
+#define HTTPSTATUS_UPGRADEREQUIRED      "426 Upgrade Required"
+#define HTTPSTATUS_PRECONDITIONREQUIRED "428 Precondition Required"
+#define HTTPSTATUS_TOOMANYREQUESTS      "429 Too Many Requests"
+
+#define HTTPSTATUS_INTERNALSERVERERROR  "500 Internal Server Error"
+#define HTTPSTATUS_NOTIMPLEMENTED       "501 Not Implemented"
+#define HTTPSTATUS_BADGATEWAY           "502 Bad Gateway"
+#define HTTPSTATUS_SERVICEUNAVAILABLE   "503 Service Unavailable"
+#define HTTPSTATUS_GATEWAYTIMEOUT       "504 Gateway Timeout"
+
+
+#define CHTTPD_STATUS_INTERNALSERVERERROR(r) \
+    CHTTPD_RESPONSE_TEXT(r, HTTPSTATUS_INTERNALSERVERERROR, \
+            "Internal Server Error"); \
+    CHTTPD_CONNECTION_CLOSE(r)
+
+
+/* Form Macros */
+#define CHTTPD_FORMFIELD_NEXT(req, field, flags) \
+    if (req->formparser == NULL) { \
+        if (chttpd_formparser_new(req)) { \
+            ERROR("Out of memory"); \
+            CHTTPD_STATUS_INTERNALSERVERERROR(req); \
+            CORO_RETURN; \
+        } \
+    } \
+    req->formparser->flags = flags; \
+    CORO_YIELDFROM(chttpd_formfield_next, (req)->formparser, field, \
+            struct chttpd_formfield*)
 
 
 #endif  // CHTTPD_H_
