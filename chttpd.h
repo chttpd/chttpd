@@ -273,10 +273,12 @@ chttpd_formfield_next(struct caio_task *self,
 
 
 /* HTTP Status codes */
+/* 1xx */
 #define HTTPSTATUS_CONTINUE             "100 Continue"
 #define HTTPSTATUS_SWITCHINGPROTOCOLS   "101 Switching Protocols"
 #define HTTPSTATUS_EARLYHINTS           "103 Early Hints"
 
+/* 2xx */
 #define HTTPSTATUS_OK                   "200 OK"
 #define HTTPSTATUS_CREATED              "201 Created"
 #define HTTPSTATUS_ACCEPTED             "202 Accepted"
@@ -285,6 +287,7 @@ chttpd_formfield_next(struct caio_task *self,
 #define HTTPSTATUS_PARTIALCONTENT       "206 Partial Content"
 #define HTTPSTATUS_IMUSED               "226 IM Used"
 
+/* 3xx */
 #define HTTPSTATUS_MULTIPLECHOICES      "300 Multiple Choices"
 #define HTTPSTATUS_MOVEDPERMANENTLY     "301 Moved Permanently"
 #define HTTPSTATUS_FOUND                "302 Moved temporarily"
@@ -295,6 +298,7 @@ chttpd_formfield_next(struct caio_task *self,
 #define HTTPSTATUS_TEMPORARYREDIRECT    "307 Temporary Redirect"
 #define HTTPSTATUS_PERMANENTREDIRECT    "308 Permanent Redirect"
 
+/* 4xx */
 #define HTTPSTATUS_BADREQUEST           "400 Bad Request"
 #define HTTPSTATUS_UNAUTHORIZED         "401 Unauthorized"
 #define HTTPSTATUS_PAYMENTREQUIRED      "402 Payment Required"
@@ -318,6 +322,7 @@ chttpd_formfield_next(struct caio_task *self,
 #define HTTPSTATUS_PRECONDITIONREQUIRED "428 Precondition Required"
 #define HTTPSTATUS_TOOMANYREQUESTS      "429 Too Many Requests"
 
+/* 5xx */
 #define HTTPSTATUS_INTERNALSERVERERROR  "500 Internal Server Error"
 #define HTTPSTATUS_NOTIMPLEMENTED       "501 Not Implemented"
 #define HTTPSTATUS_BADGATEWAY           "502 Bad Gateway"

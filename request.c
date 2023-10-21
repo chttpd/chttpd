@@ -18,6 +18,7 @@
  */
 #include "chttpd.h"
 #include "request.h"
+#include "form.h"
 
 
 void
@@ -59,6 +60,10 @@ chttpd_request_reset(struct chttpd_connection *req) {
         free(req->_url);
         req->_url = NULL;
     }
+
+    /* Form parser */
+    chttpd_formparser_dispose(req);
+    req->formparser = NULL;
 
     /* Handler */
     req->handler = NULL;

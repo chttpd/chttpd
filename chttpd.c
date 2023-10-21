@@ -171,6 +171,10 @@ chttpdA(struct caio_task *self, struct chttpd *chttpd) {
             continue;
         }
 
+        /* Prepare the new request object */
+        chttpd_request_reset(req);
+
+        /* Spawn a new virtual-thread (coroutine) for the new connection. */
         CAIO_RUN(requestA, req);
     }
 
