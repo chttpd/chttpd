@@ -4,7 +4,7 @@ list(APPEND testrules
     querystring
     request_parser
     router
-
+    form_parser
 )
 list(TRANSFORM testrules PREPEND test_)
 set(profilerules ${testrules})
@@ -17,7 +17,7 @@ foreach (t IN LISTS testrules)
     add_executable(${t} ${t}.c)
     target_include_directories(${t} PUBLIC "${PROJECT_BINARY_DIR}")
     add_test(NAME ${t} COMMAND ${t})
-    target_link_libraries(${t} PUBLIC clog mrb carrow)
+    target_link_libraries(${t} PUBLIC clog mrb caio)
     add_custom_target(${t}_exec 
         COMMAND ctest --verbose -R ${t}
     )

@@ -62,8 +62,8 @@ chttpd_request_reset(struct chttpd_connection *req) {
     }
 
     /* Form parser */
-    chttpd_formparser_dispose(req);
-    req->formparser = NULL;
+    chttpd_form_dispose(req);
+    req->form = NULL;
 
     /* Handler */
     req->handler = NULL;

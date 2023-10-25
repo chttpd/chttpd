@@ -16,15 +16,37 @@
  *
  *  Author: Vahid Mardani <vahid.mardani@gmail.com>
  */
-#ifndef FORM_H_
-#define FORM_H_
+#ifndef TESTS_TESTHELPERS_H_
+#define TESTS_TESTHELPERS_H_
 
 
-#include "chttpd.h"
+#include <stdio.h>
+#include <unistd.h>
 
 
-void
-chttpd_form_dispose(struct chttpd_connection *req);
+struct tfile {
+    FILE *file;
+    int fd;
+};
 
 
-#endif  // FORM_H_
+static struct tfile
+tmpfile_open() {
+    struct tfile t = {
+        .file = tmpfile(),
+    };
+
+    t.fd = fileno(t.file);
+    return t;
+}
+
+
+#define REQ(r) \
+    in = (r); \
+    lseek(req.fd, 0, SEEK_SET); \
+    ftruncate(req.fd, 0); \
+    write(req.fd, in, strlen(in)); \
+    lseek(req.fd, 0, SEEK_SET)
+
+
+#endif  // TESTS_TESTHELPERS_H_

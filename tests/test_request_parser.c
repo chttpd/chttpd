@@ -16,10 +16,6 @@
  *
  *  Author: Vahid Mardani <vahid.mardani@gmail.com>
  */
-#include <stdlib.h>
-#include <unistd.h>
-#include <sys/mman.h>
-
 #include <cutest.h>
 #include <clog.h>
 
@@ -28,30 +24,7 @@
 #include "form.c"
 #include "request.c"
 
-
-struct tfile {
-    FILE *file;
-    int fd;
-};
-
-
-static struct tfile
-tmpfile_open() {
-    struct tfile t = {
-        .file = tmpfile(),
-    };
-
-    t.fd = fileno(t.file);
-    return t;
-}
-
-
-#define REQ(r) \
-    in = (r); \
-    lseek(req.fd, 0, SEEK_SET); \
-    ftruncate(req.fd, 0); \
-    write(req.fd, in, strlen(in)); \
-    lseek(req.fd, 0, SEEK_SET)
+#include "testhelpers.h"
 
 
 void

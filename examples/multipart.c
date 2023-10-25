@@ -34,7 +34,7 @@ indexA(struct caio_task *self, struct chttpd_connection *req) {
     CORO_START;
 
     do {
-        CHTTPD_FORMFIELD_NEXT(req, field, flags);
+        CHTTPD_FORMFIELD_NEXT(req, &field, flags);
 
         // if (field
         switch (field->type) {
@@ -45,7 +45,7 @@ indexA(struct caio_task *self, struct chttpd_connection *req) {
             default:
             // Invalid type
         }
-    } while(field);
+    } while (field);
 
     chttpd_response(req, "200 OK", "text/html", RESP_HEADER
             "<h1>Hello %s!</h1>" RESP_FOOTER, "chttpd");
@@ -55,10 +55,10 @@ indexA(struct caio_task *self, struct chttpd_connection *req) {
 
 int
 main() {
-    struct chttpd chttpd;
+    struct chttpd state;
 
     clog_verbosity = CLOG_DEBUG;
-    chttpd_defaults(&chttpd);
-    chttpd.defaulthandler = (caio_coro)indexA;
-    return chttpd_forever(&chttpd);
+    chttpd_defaults(&state);
+    state.defaulthandler = (caio_coro)indexA;
+    return chttpd(&state);
 }

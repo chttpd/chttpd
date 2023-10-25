@@ -24,7 +24,7 @@
 #include <sys/socket.h>
 
 #include <mrb.h>
-#include <caio.h>
+#include <caio/caio.h>
 
 
 #ifndef CHTTPD_REQUEST_DEFAULT_BUFFSIZE
@@ -67,6 +67,35 @@
 #endif
 
 
+/* HTTP form */
+struct chttpd_form;
+enum chttpd_formfield_type {
+    CHTTPD_FORMFIELD_TYPE_SCALAR,
+    CHTTPD_FORMFIELD_TYPE_FILE,
+    CHTTPD_FORMFIELD_TYPE_LIST,
+    CHTTPD_FORMFIELD_TYPE_OBJECT,
+};
+
+
+typedef struct chttpd_form {
+    int flags;
+} chttpd_form_t;
+
+
+struct chttpd_formfield {
+    enum chttpd_formfield_type type;
+};
+
+
+#undef CAIO_ARG1
+#undef CAIO_ARG2
+#undef CAIO_ENTITY
+#define CAIO_ENTITY chttpd_form
+#define CAIO_ARG1 struct chttpd_formfield **
+#define CAIO_ARG2 int
+#include "caio/generic.h"
+
+
 enum http_connection_token {
     HTTP_CONNECTIONTOKEN_NONE,
     HTTP_CONNECTIONTOKEN_KEEPALIVE,
@@ -74,7 +103,7 @@ enum http_connection_token {
 };
 
 
-struct chttpd_connection {
+typedef struct chttpd_connection {
     /* state */
     bool closing;
     struct chttpd *chttpd;
@@ -118,9 +147,8 @@ struct chttpd_connection {
     caio_coro handler;
 
     /* Form */
-    // TODO: Dispose it
-    struct chttpd_formparser *formparser;
-};
+    struct chttpd_form *form;
+} chttpd_connection_t;
 
 
 typedef int (*chttpd_connection_hook) (struct chttpd *chttpd, int fd,
@@ -138,7 +166,7 @@ struct chttpd_route {
 
 
 /* chttpd state */
-struct chttpd {
+typedef struct chttpd {
     /* Socket */
     const char *bindaddr;
     unsigned short bindport;
@@ -161,27 +189,7 @@ struct chttpd {
     chttpd_connection_hook on_connection_close;
     chttpd_request_hook on_request_begin;
     chttpd_request_hook on_request_end;
-};
-
-
-/* HTTP form */
-struct chttpd_formparser{
-    int flags;
-};
-
-
-enum chttpd_formfield_type {
-    CHTTPD_FORMFIELD_TYPE_SCALAR,
-    CHTTPD_FORMFIELD_TYPE_FILE,
-    CHTTPD_FORMFIELD_TYPE_LIST,
-    CHTTPD_FORMFIELD_TYPE_OBJECT,
-};
-
-
-struct chttpd_formfield {
-    enum chttpd_formfield_type type;
-
-};
+} chttpd_t;
 
 
 ASYNC
@@ -189,7 +197,7 @@ chttpdA(struct caio_task *self, struct chttpd *state);
 
 
 int
-chttpd_forever(struct chttpd *restrict state);
+chttpd(struct chttpd *restrict state);
 
 
 void
@@ -241,12 +249,12 @@ sockaddr_dump(struct sockaddr *addr);
 
 /* HTTP Form */
 int
-chttpd_formparser_new(struct chttpd_connection *req);
+chttpd_form_new(struct chttpd_connection *req);
 
 
 ASYNC
-chttpd_formfield_next(struct caio_task *self,
-        struct chttpd_formparser *parser);
+chttpd_formfield_next(struct caio_task *self, struct chttpd_form *form,
+        struct chttpd_formfield **out, int flags);
 
 
 /* Helper aliases, using macro for speeds-up. */
@@ -338,16 +346,14 @@ chttpd_formfield_next(struct caio_task *self,
 
 /* Form Macros */
 #define CHTTPD_FORMFIELD_NEXT(req, field, flags) \
-    if (req->formparser == NULL) { \
-        if (chttpd_formparser_new(req)) { \
+    if (req->form == NULL) { \
+        if (chttpd_form_new(req)) { \
             ERROR("Out of memory"); \
             CHTTPD_STATUS_INTERNALSERVERERROR(req); \
             CORO_RETURN; \
         } \
     } \
-    req->formparser->flags = flags; \
-    CORO_YIELDFROM(chttpd_formfield_next, (req)->formparser, field, \
-            struct chttpd_formfield*)
+    AWAIT(chttpd_form, chttpd_formfield_next, (req)->form, field, flags)
 
 
 #endif  // CHTTPD_H_

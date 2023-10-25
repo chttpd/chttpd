@@ -31,12 +31,12 @@ indexA(struct caio_task *self, struct chttpd_connection *req) {
 
 int
 main() {
-    struct chttpd chttpd;
+    struct chttpd state;
 
     clog_verbosity = CLOG_DEBUG;
-    chttpd_defaults(&chttpd);
-    chttpd.bindaddr = "unix:///tmp/chttpd_examples_unix.s",
-    chttpd.defaulthandler = (caio_coro)indexA;
+    chttpd_defaults(&state);
+    state.bindaddr = "unix:///tmp/chttpd_examples_unix.s",
+    state.defaulthandler = (caio_coro)indexA;
 
-    return chttpd_forever(&chttpd);
+    return chttpd(&state);
 }

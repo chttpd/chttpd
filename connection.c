@@ -18,7 +18,7 @@
  */
 #include <unistd.h>
 
-#include <caio.h>
+#include <caio/caio.h>
 
 #include "chttpd.h"
 #include "connection.h"

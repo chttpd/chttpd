@@ -72,16 +72,16 @@ static struct chttpd_route routes[] = {
 
 int
 main() {
-    struct chttpd chttpd;
+    struct chttpd state;
 
     clog_verbosity = CLOG_DEBUG;
-    chttpd_defaults(&chttpd);
-    chttpd.backlog = 1000;
-    chttpd.maxconn = 1000;
-    chttpd.routes = routes;
-    chttpd.on_connection_open = newconnection;
-    chttpd.on_connection_close = closeconnection;
-    chttpd.on_request_begin = newrequest;
-    chttpd.on_request_end = endrequest;
-    return chttpd_forever(&chttpd);
+    chttpd_defaults(&state);
+    state.backlog = 1000;
+    state.maxconn = 1000;
+    state.routes = routes;
+    state.on_connection_open = newconnection;
+    state.on_connection_close = closeconnection;
+    state.on_request_begin = newrequest;
+    state.on_request_end = endrequest;
+    return chttpd(&state);
 }

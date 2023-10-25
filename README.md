@@ -1,11 +1,11 @@
 # chttpd
-Nonblocking IO HTTP server using Carrow.
+Nonblocking IO HTTP server using [caio](https://github.com/pylover/caio).
 
 
 #### Dependencies
 
-- [Carrow](https://github.com/pylover/carrow)
-- [Clog](https://github.com/pylover/clog)
+- [caio](https://github.com/pylover/caio)
+- [clog](https://github.com/pylover/clog)
 - [mrb](https://github.com/pylover/mrb)
 
 

@@ -21,13 +21,29 @@
 
 #include <clog.h>
 #include <mrb.h>
-#include <caio.h>
+#include <caio/caio.h>
 
 #include "chttpd.h"
 #include "networking.h"
 #include "connection.h"
 #include "request.h"
 #include "router.h"
+
+
+#undef CAIO_ARG1
+#undef CAIO_ARG2
+#undef CAIO_ENTITY
+#define CAIO_ENTITY chttpd
+#include "caio/generic.h"
+#include "caio/generic.c"
+
+
+#undef CAIO_ARG1
+#undef CAIO_ARG2
+#undef CAIO_ENTITY
+#define CAIO_ENTITY chttpd_connection
+#include "caio/generic.h"  // NOLINT
+#include "caio/generic.c"  // NOLINT
 
 
 static ASYNC
@@ -136,12 +152,13 @@ chttpdA(struct caio_task *self, struct chttpd *chttpd) {
     CORO_START;
 
     if (chttpd_router_compilepatterns(chttpd->routes)) {
-        CORO_REJECT("Route pattern error");
+        ERROR("Route pattern error");
+        CORO_RETURN;
     }
 
     chttpd->listenfd = chttpd_listen(chttpd);
     if (chttpd->listenfd == -1) {
-        CORO_REJECT(NULL);
+        CORO_RETURN;
     }
 
     while (true) {
@@ -152,7 +169,8 @@ chttpdA(struct caio_task *self, struct chttpd *chttpd) {
         }
 
         if (reqfd == -1) {
-            CORO_REJECT("accept4");
+            ERROR("accept4");
+            CORO_RETURN;
         }
 
         /* New connection hook */
@@ -175,7 +193,7 @@ chttpdA(struct caio_task *self, struct chttpd *chttpd) {
         chttpd_request_reset(req);
 
         /* Spawn a new virtual-thread (coroutine) for the new connection. */
-        CAIO_RUN(requestA, req);
+        chttpd_connection_spawn(requestA, req);
     }
 
     CORO_FINALLY;
@@ -212,7 +230,7 @@ chttpd_defaults(struct chttpd *restrict chttpd) {
 
 
 int
-chttpd_forever(struct chttpd *restrict chttpd) {
+chttpd(struct chttpd *restrict chttpd) {
     int pagesize = getpagesize();
 
     if (chttpd->request_buffsize % pagesize) {
@@ -229,5 +247,5 @@ chttpd_forever(struct chttpd *restrict chttpd) {
         return -1;
     }
 
-    return CAIO(chttpdA, chttpd, chttpd->maxconn + 1);
+    return chttpd_forever(chttpdA, chttpd, chttpd->maxconn + 1, CAIO_SIG);
 }

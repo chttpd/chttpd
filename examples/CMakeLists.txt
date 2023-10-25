@@ -11,7 +11,7 @@ foreach (t IN LISTS examples)
     # Test help
     add_executable(${t} ${t}.c)
     target_include_directories(${t} PUBLIC "${PROJECT_BINARY_DIR}")
-    target_link_libraries(${t} PUBLIC clog chttpd carrow)
+    target_link_libraries(${t} PUBLIC clog chttpd caio)
     add_custom_target(${t}_exec COMMAND ${t})
     add_custom_target(${t}_profile
         COMMAND "valgrind" ${VALGRIND_FLAGS} ./${t}
