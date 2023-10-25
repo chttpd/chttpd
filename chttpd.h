@@ -68,7 +68,6 @@
 
 
 /* HTTP form */
-struct chttpd_form;
 enum chttpd_formfield_type {
     CHTTPD_FORMFIELD_TYPE_SCALAR,
     CHTTPD_FORMFIELD_TYPE_FILE,
@@ -77,14 +76,18 @@ enum chttpd_formfield_type {
 };
 
 
-typedef struct chttpd_form {
-    int flags;
-} chttpd_form_t;
-
-
-struct chttpd_formfield {
-    enum chttpd_formfield_type type;
+enum chttpd_formtype {
+    CHTTPD_FORMTYPE_UNKNOWN,
+    CHTTPD_FORMTYPE_URLENCODED,
+    CHTTPD_FORMTYPE_MULTIPART,
+    CHTTPD_FORMTYPE_JSON,
 };
+
+
+struct chttpd_form;
+struct chttpd_connection;
+struct chttpd_formfield;
+typedef struct chttpd_form chttpd_form_t;
 
 
 #undef CAIO_ARG1
@@ -94,6 +97,19 @@ struct chttpd_formfield {
 #define CAIO_ARG1 struct chttpd_formfield **
 #define CAIO_ARG2 int
 #include "caio/generic.h"
+
+
+typedef struct chttpd_form {
+    struct chttpd_connection *req;
+    enum chttpd_formtype type;
+    chttpd_form_coro nextfield;
+} chttpd_form_t;
+
+
+struct chttpd_formfield {
+    enum chttpd_formfield_type type;
+    const char *name;
+};
 
 
 enum http_connection_token {
@@ -280,7 +296,12 @@ chttpd_formfield_next(struct caio_task *self, struct chttpd_form *form,
     }
 
 
-/* HTTP Status codes */
+/* HTTP content types */
+#define HTTP_CONTENTTYPE_FORM_URLENCODED "application/x-www-form-urlencoded"
+#define HTTP_CONTENTTYPE_FORM_MULTIPART "multipart/form-data"
+#define HTTP_CONTENTTYPE_FORM_JSON "application/json"
+
+/* HTTP status codes */
 /* 1xx */
 #define HTTPSTATUS_CONTINUE             "100 Continue"
 #define HTTPSTATUS_SWITCHINGPROTOCOLS   "101 Switching Protocols"
@@ -353,7 +374,10 @@ chttpd_formfield_next(struct caio_task *self, struct chttpd_form *form,
             CORO_RETURN; \
         } \
     } \
-    AWAIT(chttpd_form, chttpd_formfield_next, (req)->form, field, flags)
+    AWAIT(chttpd_form, (req)->form->nextfield, (req)->form, field, flags)
+
+
+#define STARTSWITH(a, b) (strncasecmp(a, b, strlen(b)) == 0)
 
 
 #endif  // CHTTPD_H_

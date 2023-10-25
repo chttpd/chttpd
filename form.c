@@ -31,6 +31,14 @@
 #include "caio/generic.c"
 
 
+static ASYNC
+urlencodedA(struct caio_task *self, struct chttpd_form *form,
+        struct chttpd_formfield **, int flags) {
+    CORO_START;
+    CORO_FINALLY;
+}
+
+
 int
 chttpd_form_new(struct chttpd_connection *req) {
     struct chttpd_form *form;
@@ -44,8 +52,25 @@ chttpd_form_new(struct chttpd_connection *req) {
         return -1;
     }
 
-    form->flags = 0;
     req->form = form;
+    form->req = req;
+
+    if (STARTSWITH(req->contenttype, HTTP_CONTENTTYPE_FORM_URLENCODED)) {
+        form->type = CHTTPD_FORMTYPE_URLENCODED;
+        form->nextfield = urlencodedA;
+    }
+    // else if (STARTSWITH(req->contenttype, HTTP_CONTENTTYPE_FORM_MULTIPART)) {
+    //     form->type = CHTTPD_FORMTYPE_MULTIPART;
+    //     form->nextfield = chttpd_form_multipart_next;
+    // }
+    // else if (STARTSWITH(req->contenttype, HTTP_CONTENTTYPE_FORM_MULTIPART)) {
+    //     form->type = CHTTPD_FORMTYPE_JSON;
+    //     form->nextfield = chttpd_form_json_next;
+    // }
+    else {
+        form->type = CHTTPD_FORMTYPE_UNKNOWN;
+        form->nextfield = NULL;
+    }
     return 0;
 }
 
@@ -57,14 +82,4 @@ chttpd_form_dispose(struct chttpd_connection *req) {
     }
 
     free(req->form);
-}
-
-
-ASYNC
-chttpd_formfield_next(struct caio_task *self, struct chttpd_form *form,
-        struct chttpd_formfield **out, int flags) {
-    CORO_START;
-
-    *out = NULL;
-    CORO_FINALLY;
 }

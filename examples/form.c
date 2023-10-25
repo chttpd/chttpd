@@ -36,7 +36,11 @@ indexA(struct caio_task *self, struct chttpd_connection *req) {
     do {
         CHTTPD_FORMFIELD_NEXT(req, &field, flags);
 
-        // if (field
+        if (field == NULL) {
+            break;
+        }
+
+        DEBUG("Field: %d %s", field->type, field->name);
         switch (field->type) {
             case CHTTPD_FORMFIELD_TYPE_SCALAR:
             case CHTTPD_FORMFIELD_TYPE_FILE:
@@ -47,7 +51,7 @@ indexA(struct caio_task *self, struct chttpd_connection *req) {
         }
     } while (field);
 
-    chttpd_response(req, "200 OK", "text/html", RESP_HEADER
+    CHTTPD_RESPONSE_TEXT(req, "200 OK", RESP_HEADER
             "<h1>Hello %s!</h1>" RESP_FOOTER, "chttpd");
     CORO_FINALLY;
 }
