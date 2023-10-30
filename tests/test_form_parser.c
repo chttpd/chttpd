@@ -21,6 +21,7 @@
 
 #include "chttpd.h"
 #include "helpers.c"
+#include "connection.c"
 #include "form.c"
 #include "request.c"
 

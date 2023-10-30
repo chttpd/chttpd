@@ -24,6 +24,13 @@
 #include "connection.h"
 
 
+#undef CAIO_ARG1
+#undef CAIO_ARG2
+#undef CAIO_ENTITY
+#define CAIO_ENTITY chttpd_connection
+#include "caio/generic.c"  // NOLINT
+
+
 struct chttpd_connection*
 chttpd_connection_new(struct chttpd *chttpd, int fd, struct sockaddr addr) {
     struct chttpd_connection *conn;

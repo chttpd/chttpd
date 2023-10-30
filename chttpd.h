@@ -167,6 +167,13 @@ typedef struct chttpd_connection {
 } chttpd_connection_t;
 
 
+#undef CAIO_ARG1
+#undef CAIO_ARG2
+#undef CAIO_ENTITY
+#define CAIO_ENTITY chttpd_connection
+#include "caio/generic.h"  // NOLINT
+
+
 typedef int (*chttpd_connection_hook) (struct chttpd *chttpd, int fd,
         struct sockaddr addr);
 typedef int (*chttpd_request_hook) (struct chttpd_connection *req);
@@ -206,6 +213,13 @@ typedef struct chttpd {
     chttpd_request_hook on_request_begin;
     chttpd_request_hook on_request_end;
 } chttpd_t;
+
+
+#undef CAIO_ARG1
+#undef CAIO_ARG2
+#undef CAIO_ENTITY
+#define CAIO_ENTITY chttpd
+#include "caio/generic.h"  // NOLINT
 
 
 ASYNC

@@ -32,9 +32,19 @@
 
 
 static ASYNC
-urlencodedA(struct caio_task *self, struct chttpd_form *form,
+bodyreadA(struct caio_task *self, struct chttpd_connection *req) {
+    CORO_START;
+    CORO_FINALLY;
+}
+
+
+static ASYNC
+form_urlencodedA(struct caio_task *self, struct chttpd_form *form,
         struct chttpd_formfield **, int flags) {
     CORO_START;
+
+    /* Ensure the entire body is already received. */
+    AWAIT(chttpd_connection, bodyreadA, form->req);
     CORO_FINALLY;
 }
 
@@ -57,7 +67,7 @@ chttpd_form_new(struct chttpd_connection *req) {
 
     if (STARTSWITH(req->contenttype, HTTP_CONTENTTYPE_FORM_URLENCODED)) {
         form->type = CHTTPD_FORMTYPE_URLENCODED;
-        form->nextfield = urlencodedA;
+        form->nextfield = form_urlencodedA;
     }
     // else if (STARTSWITH(req->contenttype, HTTP_CONTENTTYPE_FORM_MULTIPART)) {
     //     form->type = CHTTPD_FORMTYPE_MULTIPART;

@@ -34,16 +34,7 @@
 #undef CAIO_ARG2
 #undef CAIO_ENTITY
 #define CAIO_ENTITY chttpd
-#include "caio/generic.h"
 #include "caio/generic.c"
-
-
-#undef CAIO_ARG1
-#undef CAIO_ARG2
-#undef CAIO_ENTITY
-#define CAIO_ENTITY chttpd_connection
-#include "caio/generic.h"  // NOLINT
-#include "caio/generic.c"  // NOLINT
 
 
 static ASYNC
@@ -88,7 +79,7 @@ parse:
     }
 
     if (req->expect) {
-        /* OR: 417 Expectation Failed */
+        /* TODO: OR: 417 Expectation Failed */
         chttpd_response_print(req, "100 Continue\r\n");
 
         /* Force to send 100 Continue */
