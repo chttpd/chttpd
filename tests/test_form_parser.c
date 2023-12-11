@@ -49,7 +49,6 @@ test_request_form_urlencoded() {
     eqint(0, chttpd_request_parse(&req));
 
     chttpd_request_reset(&req);
-
     mrb_destroy(req.inbuff);
     mrb_destroy(req.outbuff);
     fclose(infile.file);

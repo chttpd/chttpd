@@ -92,7 +92,7 @@ parse:
             goto finally;
         }
     }
-    CORO_WAIT(req->handler, req);
+    CAIO_AWAIT(req->handler, req);
 
 flush:
     /* Flush the response */
