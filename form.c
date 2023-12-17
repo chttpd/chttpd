@@ -32,25 +32,17 @@
 
 
 static ASYNC
-bodyreadA(struct caio_task *self, struct chttpd_connection *req) {
-    CORO_START;
-
-    // TODO: Implement
-
-    CORO_FINALLY;
-}
-
-
-static ASYNC
 form_urlencodedA(struct caio_task *self, struct chttpd_form *form,
         struct chttpd_formfield **, int flags) {
     CORO_START;
 
     /* Ensure the entire body is already received. */
-    AWAIT(chttpd_connection, bodyreadA, form->req);
+    if (req->remainingbytes == -1) {
+        AWAIT(chttpd_connection, body_readA, form->req);
+    }
 
-    // /* Tokenize the body */
-    // chttpd_querystring_tokenize(char *query, char **saveptr, char **key,
+    /* Tokenize the body */
+    chttpd_querystring_tokenize(char *query, char **saveptr, char **key,
 
     CORO_FINALLY;
 }

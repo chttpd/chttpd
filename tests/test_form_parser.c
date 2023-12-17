@@ -22,10 +22,31 @@
 #include "chttpd.h"
 #include "helpers.c"
 #include "connection.c"
+#include "body.c"
 #include "form.c"
 #include "request.c"
+#include "response.c"
 
 #include "testhelpers.h"
+
+
+static ASYNC
+assert_formfields(struct caio_task *self, struct chttpd_connection *req) {
+    struct chttpd_formfield *field = NULL;
+    int flags = 0;
+    CORO_START;
+
+    CHTTPD_FORMFIELD_NEXT(req, &field, flags);
+    eqint(0, self->eno);
+    isfalse(req->closing);
+    isnotnull(field);
+    isnotnull(field->name);
+    // isnotnull(field->u.value);
+    // eqstr("foo", field->name);
+    // eqstr("bar", field->u.value);
+
+    CORO_FINALLY;
+}
 
 
 void
@@ -47,6 +68,8 @@ test_request_form_urlencoded() {
         "Content-Length: 15\r\n\r\n"
         "foo=bar&baz=qux\r\n");
     eqint(0, chttpd_request_parse(&req));
+
+    CAIO_FOREVER(assert_formfields, &req, 1);
 
     chttpd_request_reset(&req);
     mrb_destroy(req.inbuff);

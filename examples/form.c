@@ -35,6 +35,10 @@ indexA(struct caio_task *self, struct chttpd_connection *req) {
 
     do {
         CHTTPD_FORMFIELD_NEXT(req, &field, flags);
+        if (CAIO_HASERROR(self)) {
+            // TODO: Handle exception
+            break;
+        }
 
         if (field == NULL) {
             break;
@@ -50,6 +54,7 @@ indexA(struct caio_task *self, struct chttpd_connection *req) {
             // Invalid type
         }
     } while (field);
+
 
     CHTTPD_RESPONSE_TEXT(req, "200 OK", RESP_HEADER
             "<h1>Hello %s!</h1>" RESP_FOOTER, "chttpd");

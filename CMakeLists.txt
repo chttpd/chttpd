@@ -32,6 +32,7 @@ target_sources(chttpd
             connection.c
             request.c
             response.c
+            body.c
             form.c
 )
 target_link_libraries(chttpd

@@ -92,6 +92,8 @@ parse:
             goto finally;
         }
     }
+
+    /* Call handler */
     CAIO_AWAIT(req->handler, req);
 
 flush:

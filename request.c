@@ -54,6 +54,7 @@ chttpd_request_reset(struct chttpd_connection *req) {
     req->accept = NULL;
     req->useragent = NULL;
     req->contentlength = -1;
+    req->remainingbytes = -1;
     req->urlargscount = 0;
 
     if (req->_url) {

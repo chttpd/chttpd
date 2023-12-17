@@ -109,6 +109,9 @@ typedef struct chttpd_form {
 struct chttpd_formfield {
     enum chttpd_formfield_type type;
     const char *name;
+    union {
+        const char *value;
+    } u;
 };
 
 
@@ -158,6 +161,9 @@ typedef struct chttpd_connection {
     char *_url;
     const char *urlargs[CHTTPD_URLARGS_MAXCOUNT];
     unsigned int urlargscount;
+
+    /* State */
+    int remainingbytes;
 
     /* Handler */
     caio_coro handler;
@@ -283,6 +289,10 @@ chttpd_form_new(struct chttpd_connection *req);
 
 
 ASYNC
+body_readA(struct caio_task *self, struct chttpd_connection *req);
+
+
+ASYNC
 chttpd_formfield_next(struct caio_task *self, struct chttpd_form *form,
         struct chttpd_formfield **out, int flags);
 
@@ -388,10 +398,20 @@ chttpd_formfield_next(struct caio_task *self, struct chttpd_form *form,
             CORO_RETURN; \
         } \
     } \
-    AWAIT(chttpd_form, (req)->form->nextfield, (req)->form, field, flags)
+    if (req->form->nextfield) { \
+        AWAIT(chttpd_form, (req)->form->nextfield, (req)->form, field, flags); \
+    }
 
 
 #define STARTSWITH(a, b) (strncasecmp(a, b, strlen(b)) == 0)
+
+
+enum chttpd_eno {
+    CHTTPD_ENO_OK,
+    CHTTPD_ENO_CONTENTLENGTHMISSING,
+    CHTTPD_ENO_REQUESTTOOLONG,
+    CHTTPD_ENO_CONNECTIONCLOSED,
+};
 
 
 #endif  // CHTTPD_H_

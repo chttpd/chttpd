@@ -22,6 +22,7 @@
 #include "chttpd.h"
 #include "helpers.c"
 #include "connection.c"
+#include "body.c"
 #include "form.c"
 #include "request.c"
 
