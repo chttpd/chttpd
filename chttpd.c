@@ -41,14 +41,14 @@ static ASYNC
 requestA(struct caio_task *self, struct chttpd_connection *req) {
     int e = CAIO_ET;
     struct chttpd *chttpd = req->chttpd;
-    CORO_START;
+    CAIO_BEGIN(self);
 
 parse:
     /* Try to parse the request and perhapse wait for more data if the header
        is not transferred completely. */
     if (chttpd_request_parse(req)) {
-        if (CORO_MUSTWAITFD()) {
-            CORO_WAITFD(req->fd, e | CAIO_IN);
+        if (CAIO_MUSTWAITFD()) {
+            CAIO_WAITFD(self, req->fd, e | CAIO_IN);
             /* Try again */
             goto parse;
         }
@@ -80,12 +80,12 @@ parse:
 
     if (req->expect) {
         /* TODO: OR: 417 Expectation Failed */
-        chttpd_response_print(req, "100 Continue\r\n");
+        chttpd_response_print(req, "100 Continue" LE);
 
         /* Force to send 100 Continue */
         while (chttpd_response_flush(req)) {
-            if (CORO_MUSTWAITFD()) {
-                CORO_WAITFD((req)->fd, e | CAIO_OUT);
+            if (CAIO_MUSTWAITFD()) {
+                CAIO_WAITFD(self, (req)->fd, e | CAIO_OUT);
                 continue;
             }
             req->closing = true;
@@ -94,13 +94,18 @@ parse:
     }
 
     /* Call handler */
-    CAIO_AWAIT(req->handler, req);
+    CAIO_CLEARERROR(self);
+    CAIO_AWAIT(self, req->handler, req);
+    if (CAIO_HASERROR(self)) {
+        req->closing = true;
+        goto flush;
+    }
 
 flush:
     /* Flush the response */
     if (chttpd_response_flush(req)) {
-        if (CORO_MUSTWAITFD()) {
-            CORO_WAITFD((req)->fd, e | CAIO_OUT);
+        if (CAIO_MUSTWAITFD()) {
+            CAIO_WAITFD(self, (req)->fd, e | CAIO_OUT);
             goto flush;
         }
         req->closing = true;
@@ -113,7 +118,7 @@ flush:
     }
 
 finally:
-    CORO_FINALLY;
+    CAIO_FINALLY(self);
 
     /* free request resources */
     chttpd_request_reset(req);
@@ -142,28 +147,28 @@ chttpdA(struct caio_task *self, struct chttpd *chttpd) {
     struct sockaddr connaddr;
     int reqfd;
     struct chttpd_connection *req;
-    CORO_START;
+    CAIO_BEGIN(self);
 
     if (chttpd_router_compilepatterns(chttpd->routes)) {
         ERROR("Route pattern error");
-        CORO_RETURN;
+        CAIO_RETURN(self);
     }
 
     chttpd->listenfd = chttpd_listen(chttpd);
     if (chttpd->listenfd == -1) {
-        CORO_RETURN;
+        CAIO_RETURN(self);
     }
 
     while (true) {
         reqfd = accept4(chttpd->listenfd, &connaddr, &addrlen, SOCK_NONBLOCK);
-        if ((reqfd == -1) && CORO_MUSTWAITFD()) {
-            CORO_WAITFD(chttpd->listenfd, CAIO_IN | CAIO_ET);
+        if ((reqfd == -1) && CAIO_MUSTWAITFD()) {
+            CAIO_WAITFD(self, chttpd->listenfd, CAIO_IN | CAIO_ET);
             continue;
         }
 
         if (reqfd == -1) {
             ERROR("accept4");
-            CORO_RETURN;
+            CAIO_RETURN(self);
         }
 
         /* New connection hook */
@@ -189,7 +194,7 @@ chttpdA(struct caio_task *self, struct chttpd *chttpd) {
         chttpd_connection_spawn(requestA, req);
     }
 
-    CORO_FINALLY;
+    CAIO_FINALLY(self);
     caio_evloop_unregister(chttpd->listenfd);
     close(chttpd->listenfd);
     chttpd_router_cleanup(chttpd->routes);

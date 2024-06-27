@@ -23,9 +23,9 @@
 
 static ASYNC
 indexA(struct caio_task *self, struct chttpd_connection *req) {
-    CORO_START;
+    CAIO_BEGIN(self);
     chttpd_response(req, "200 OK", "text/plain", NULL);
-    CORO_FINALLY;
+    CAIO_FINALLY(self);
 }
 
 

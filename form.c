@@ -20,6 +20,7 @@
 
 #include "chttpd.h"
 #include "form.h"
+#include "helpers.h"
 
 
 #undef CAIO_ARG1
@@ -34,17 +35,18 @@
 static ASYNC
 form_urlencodedA(struct caio_task *self, struct chttpd_form *form,
         struct chttpd_formfield **, int flags) {
-    CORO_START;
+    CAIO_BEGIN(self);
 
     /* Ensure the entire body is already received. */
-    if (req->remainingbytes == -1) {
-        AWAIT(chttpd_connection, body_readA, form->req);
+    if (form->req->remainingbytes != 0) {
+        AWAIT(self, chttpd_connection, body_readA, form->req);
+        // if (CAIO_HASERROR(self)
     }
 
-    /* Tokenize the body */
-    chttpd_querystring_tokenize(char *query, char **saveptr, char **key,
+    // /* Tokenize the body */
+    // chttpd_querystring_tokenize(char *query, char **saveptr, char **key,
 
-    CORO_FINALLY;
+    CAIO_FINALLY(self);
 }
 
 
@@ -53,11 +55,13 @@ chttpd_form_new(struct chttpd_connection *req) {
     struct chttpd_form *form;
 
     if (req->form) {
+        ERRNO_SET(CHTTPD_ENO_FORMALREADYINITIALIZED);
         return -1;
     }
 
     form = malloc(sizeof(struct chttpd_form));
     if (form == NULL) {
+        ERRNO_SET(CHTTPD_ENO_OUTOFMEMORY);
         return -1;
     }
 
@@ -79,6 +83,7 @@ chttpd_form_new(struct chttpd_connection *req) {
     else {
         form->type = CHTTPD_FORMTYPE_UNKNOWN;
         form->nextfield = NULL;
+        return -1;
     }
     return 0;
 }

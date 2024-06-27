@@ -26,6 +26,8 @@
 #include <mrb.h>
 #include <caio/caio.h>
 
+#include "tunning.h"
+
 
 #ifndef CHTTPD_REQUEST_DEFAULT_BUFFSIZE
 #define CHTTPD_REQUEST_DEFAULT_BUFFSIZE(pagesize) ((pagesize) * 8)
@@ -64,6 +66,11 @@
 
 #ifndef CHTTPD_RESPONSE_BODY_MAXLEN
 #define CHTTPD_RESPONSE_BODY_MAXLEN 8192
+#endif
+
+
+#ifndef CHTTPD_LINEENDING
+#define CHTTPD_LINEENDING "\r\n"
 #endif
 
 
@@ -299,7 +306,6 @@ chttpd_formfield_next(struct caio_task *self, struct chttpd_form *form,
 
 /* Helper aliases, using macro for speeds-up. */
 #define CHTTPD_RESPONSE_WRITE(r, d, c) mrb_putall((r)->outbuff, d, c)
-#define CHTTPD_CONNECTION_CLOSE(r) (r)->closing = true
 #define CHTTPD_RESPONSE_TEXT(r, s, fmt, ...) \
     chttpd_response(r, s, "text/html", fmt , # __VA_ARGS__)
 
@@ -385,32 +391,22 @@ chttpd_formfield_next(struct caio_task *self, struct chttpd_form *form,
 
 #define CHTTPD_STATUS_INTERNALSERVERERROR(r) \
     CHTTPD_RESPONSE_TEXT(r, HTTPSTATUS_INTERNALSERVERERROR, \
-            "Internal Server Error"CR); \
-    CHTTPD_CONNECTION_CLOSE(r)
+            "Internal Server Error"CR);
 
 
 /* Form Macros */
-#define CHTTPD_FORMFIELD_NEXT(req, field, flags) \
-    if (req->form == NULL) { \
-        if (chttpd_form_new(req)) { \
-            ERROR("Out of memory"); \
-            CHTTPD_STATUS_INTERNALSERVERERROR(req); \
-            CORO_RETURN; \
-        } \
-    } \
-    if (req->form->nextfield) { \
-        AWAIT(chttpd_form, (req)->form->nextfield, (req)->form, field, flags); \
-    }
-
-
-#define STARTSWITH(a, b) (strncasecmp(a, b, strlen(b)) == 0)
+#define CHTTPD_FORMFIELD_NEXT(self, req, field, flags) \
+    AWAIT(self, chttpd_form, (req)->form->nextfield, (req)->form, field, \
+            flags); \
 
 
 enum chttpd_eno {
-    CHTTPD_ENO_OK,
-    CHTTPD_ENO_CONTENTLENGTHMISSING,
-    CHTTPD_ENO_REQUESTTOOLONG,
-    CHTTPD_ENO_CONNECTIONCLOSED,
+    CHTTPD_ENO_OK = 0,
+    CHTTPD_ENO_CONTENTLENGTHMISSING = -1,
+    CHTTPD_ENO_REQUESTTOOLONG = -2,
+    CHTTPD_ENO_CONNECTIONCLOSED = -3,
+    CHTTPD_ENO_FORMALREADYINITIALIZED = -4,
+    CHTTPD_ENO_OUTOFMEMORY = -5,
 };
 
 

@@ -94,20 +94,21 @@ chttpd_request_startline_parse(struct chttpd_connection *req) {
     char *tmp;
     ssize_t bytes;
     ssize_t sllen;
+    size_t lelen = strlen(LE);
 
     /* Try to parse request start line */
     while (true) {
-search:
         if (!mrb_isempty(req->inbuff)) {
             /* Try to read the start line */
-            sllen = mrb_search(req->inbuff, "\r\n", 2, 0,
+            sllen = mrb_search(req->inbuff, LE, lelen, 0,
                     CHTTPD_REQUEST_STARTLINE_MAXLEN);
             if (sllen == 0) {
                 /* Ignore starting dummy newline */
-                mrb_skip(req->inbuff, 2);
-                goto search;
+                mrb_skip(req->inbuff, lelen);
+                continue;
             }
             if (sllen > 0) {
+                /* Found */
                 break;
             }
 
@@ -118,7 +119,7 @@ search:
         }
 
         errno = 0;
-        bytes = mrb_readin(req->inbuff, req->fd, mrb_available(req->inbuff));
+        bytes = mrb_readin(req->inbuff, req->fd, sllen);
         if (bytes <= 0) {
             goto failed;
         }
@@ -182,17 +183,17 @@ chttpd_request_headers_parse(struct chttpd_connection *req) {
     char *line;
     char *tmp;
     ssize_t bytes;
-    ssize_t headerlen;
+    ssize_t headerslen;
 
     /* Try gather request header */
     while (true) {
         /* Check the whole header is available or not */
-        headerlen = mrb_search(req->inbuff, "\r\n\r\n", 4, 0,
+        headerslen = mrb_search(req->inbuff, "\r\n\r\n", 4, 0,
                 CHTTPD_REQUEST_HEADER_BUFFSIZE);
-        if (headerlen == 0) {
+        if (headerslen == 0) {
             return 0;
         }
-        else if (headerlen > 0) {
+        else if (headerslen > 0) {
             break;
         }
 
@@ -211,19 +212,19 @@ chttpd_request_headers_parse(struct chttpd_connection *req) {
     }
 
     /* Skip the primitive(startline) CRLF */
-    headerlen -= 2;
+    headerslen -= 2;
     mrb_skip(req->inbuff, 2);
 
     /* Allocate memory for request header */
-    req->header = malloc(headerlen + 1);
+    req->header = malloc(headerslen + 1);
     if (req->header == NULL) {
         goto failed;
     }
-    req->header_len = headerlen;
+    req->header_len = headerslen;
 
     /* Read whole HTTP header from the request buffer */
-    mrb_get(req->inbuff, req->header, headerlen);
-    req->header[headerlen] = 0;
+    mrb_get(req->inbuff, req->header, headerslen);
+    req->header[headerslen] = 0;
 
     /* Skip the second CRLF */
     mrb_skip(req->inbuff, 2);

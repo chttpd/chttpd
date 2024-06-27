@@ -34,18 +34,19 @@ static ASYNC
 assert_formfields(struct caio_task *self, struct chttpd_connection *req) {
     struct chttpd_formfield *field = NULL;
     int flags = 0;
-    CORO_START;
+    CAIO_BEGIN(self);
 
-    CHTTPD_FORMFIELD_NEXT(req, &field, flags);
+    DEBUG("%p", req->form->nextfield);
+    CHTTPD_FORMFIELD_NEXT(self, req, &field, flags);
     eqint(0, self->eno);
     isfalse(req->closing);
     isnotnull(field);
     isnotnull(field->name);
-    // isnotnull(field->u.value);
-    // eqstr("foo", field->name);
-    // eqstr("bar", field->u.value);
+    isnotnull(field->u.value);
+    eqstr("foo", field->name);
+    eqstr("bar", field->u.value);
 
-    CORO_FINALLY;
+    CAIO_FINALLY(self);
 }
 
 
@@ -64,11 +65,12 @@ test_request_form_urlencoded() {
     /* Complex request */
     REQ("GET /foo/bar?foo=bar&baz=qux HTTP/1.1\r\n"
         "Connection: close\r\n"
-        "Content-Type: qux/quux\r\n"
+        "Content-Type: application/x-www-form-urlencoded\r\n"
         "Content-Length: 15\r\n\r\n"
         "foo=bar&baz=qux\r\n");
     eqint(0, chttpd_request_parse(&req));
 
+    eqint(0, chttpd_form_new(&req));
     CAIO_FOREVER(assert_formfields, &req, 1);
 
     chttpd_request_reset(&req);

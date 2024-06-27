@@ -6,7 +6,9 @@
 - static content
 
 
+
 ## backlog
+- connection timeout/keepalive
 - HTTP_STATUS_505_HTTPVERSIONNOTSUPPORTED "505 HTTP Version Not Supported"
 - 494 Request header too large
 - HTTP_STATUS_431_REQUESTHEADERFIELDSTOOLARGE "431 Request Header Fields Too Large"

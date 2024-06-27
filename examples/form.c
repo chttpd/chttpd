@@ -31,13 +31,16 @@ static ASYNC
 indexA(struct caio_task *self, struct chttpd_connection *req) {
     struct chttpd_formfield *field = NULL;
     int flags = 0;
-    CORO_START;
+    CAIO_BEGIN(self);
+
+    if (chttpd_form_new(req)) {
+        CAIO_THROW(self, errno);
+    }
 
     do {
-        CHTTPD_FORMFIELD_NEXT(req, &field, flags);
+        CHTTPD_FORMFIELD_NEXT(self, req, &field, flags);
         if (CAIO_HASERROR(self)) {
-            // TODO: Handle exception
-            break;
+            CAIO_RETHROW(self);
         }
 
         if (field == NULL) {
@@ -58,7 +61,7 @@ indexA(struct caio_task *self, struct chttpd_connection *req) {
 
     CHTTPD_RESPONSE_TEXT(req, "200 OK", RESP_HEADER
             "<h1>Hello %s!</h1>" RESP_FOOTER, "chttpd");
-    CORO_FINALLY;
+    CAIO_FINALLY(self);
 }
 
 

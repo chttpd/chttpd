@@ -16,25 +16,11 @@
  *
  *  Author: Vahid Mardani <vahid.mardani@gmail.com>
  */
-#ifndef HELPERS_H_
-#define HELPERS_H_
+#ifndef TUNNING_H_
+#define TUNNING_H_
 
 
-#include <errno.h>
-#include <clog.h>
+#define LE CHTTPD_LINEENDING
 
 
-#define MIN(a, b) ((a) < (b)? (a): (b))
-
-
-#define ERRNO_SET(eno_) \
-    if (errno != 0) { \
-        WARN("Overwriting errno from %d to %d", errno, eno_); \
-    } \
-    errno = eno_
-
-
-#define STARTSWITH(a, b) (strncasecmp(a, b, strlen(b)) == 0)
-
-
-#endif  // HELPERS_H_
+#endif  // TUNNING_H_

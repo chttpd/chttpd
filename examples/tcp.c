@@ -57,10 +57,10 @@ endrequest(struct chttpd_connection *req) {
 
 static ASYNC
 indexA(struct caio_task *self, struct chttpd_connection *req) {
-    CORO_START;
+    CAIO_BEGIN(self);
     chttpd_response(req, "200 OK", "text/html", RESP_HEADER
             "<h1>Hello %s!</h1>" RESP_FOOTER, "chttpd");
-    CORO_FINALLY;
+    CAIO_FINALLY(self);
 }
 
 
