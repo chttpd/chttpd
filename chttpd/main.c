@@ -41,7 +41,7 @@ chttpd_main(struct chttpd *s) {
     }
 
     task = pcaio_task_new((pcaio_taskmain_t)chttpdA, 1, s);
-    if (task) {
+    if (task == NULL) {
         return -1;
     }
 

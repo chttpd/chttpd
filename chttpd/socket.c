@@ -134,21 +134,27 @@ _inet_bind(const char *addr, const char *service, union saddr *out) {
 
 int
 socket_bind(const char *addr, union saddr *out) {
+    int ret;
+    char *tmp;
     char *service;
 
     if (strncmp(addr, "unix://", 7) == 0) {
         return _unix_bind(addr + 7, out);
     }
 
-    service = strchr(addr, ':');
+    tmp = strdup(addr);
+    service = strchr(tmp, ':');
     if (service == NULL) {
         return -1;
     }
+    service[0] = 0;
     service++;
 
     if (service[0] == 0) {
         return -1;
     }
 
-    return _inet_bind(addr, service, out);
+    ret = _inet_bind(tmp, service, out);
+    free(tmp);
+    return ret;
 }

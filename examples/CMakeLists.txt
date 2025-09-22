@@ -11,18 +11,18 @@ foreach (t IN LISTS examples)
   target_link_libraries(${t} pcaio clog chttpd)
   target_include_directories(${t} PUBLIC "${PROJECT_BINARY_DIR}")
 
-  add_custom_target(${t}_exec 
+  add_custom_target(${t}-exec 
     COMMAND ./${t}
     DEPENDS ${t}
   )
-  add_custom_target(${t}_debug 
+  add_custom_target(${t}-debug 
     COMMAND gdb 
       --command=${PROJECT_SOURCE_DIR}/examples/${t}.gdb
       ./${t} 
     DEPENDS ${t}
   )
 
-  add_custom_target(${t}_profile
+  add_custom_target(${t}-profile
     COMMAND "valgrind" ${VALGRIND_FLAGS} ./${t}
     DEPENDS ${t}
   )

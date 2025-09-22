@@ -55,10 +55,15 @@ struct chttpd {
 };
 
 
+static struct chttpd_config _defaultconfig = {
+    .bind = "127.0.0.1:8080",
+    .backlog = 10,
+};
+
+
 void
 chttpd_config_default(struct chttpd_config *c) {
-    c->bind = "127.0.0.1:80";
-    c->backlog = 10;
+    memcpy(c, &_defaultconfig, sizeof(_defaultconfig));
 }
 
 
@@ -74,7 +79,7 @@ chttpd_new(struct chttpd_config *c) {
     s->fd = -1;
     s->routescount = 0;
     s->config = c;
-    return NULL;
+    return s;
 }
 
 
