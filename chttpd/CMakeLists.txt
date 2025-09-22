@@ -6,3 +6,4 @@ add_library(chttpd STATIC
   chttpd.c ${PROJECT_SOURCE_DIR}/include/chttpd/chttpd.h
   $<TARGET_OBJECTS:main>
 )
+target_link_libraries(chttpd PUBLIC clog pcaio chttp)
