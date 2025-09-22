@@ -40,6 +40,10 @@ struct chttpd *
 chttpd_new(struct chttpd_config *c);
 
 
+void
+chttpd_free(struct chttpd *s);
+
+
 int
 chttpd_route(struct chttpd *s, const char *verb, const char *path,
         chttpd_handler_t handler, void *ptr);

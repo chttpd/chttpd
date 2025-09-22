@@ -16,38 +16,18 @@
  *
  *  Author: Vahid Mardani <vahid.mardani@gmail.com>
  */
-/* thirdparty */
-#include <pcaio/pcaio.h>
-#include <pcaio/modio.h>
-#include <pcaio/modepoll.h>
+#ifndef CHTTPD_SOCKET_H_
+#define CHTTPD_SOCKET_H_
+
 
 /* local public */
-#include "chttpd/chttpd.h"
+#include "chttpd/addr.h"
 
 
 int
-chttpd_main(struct chttpd *s) {
-    int ret;
-    struct pcaio_task *task;
-    struct pcaio_iomodule *modepoll;
+socket_bind(const char *addr, union saddr *out);
 
-    /* register modules and tasks */
-    if (pcaio_modepoll_use(16, &modepoll)) {
-        return -1;
-    }
 
-    if (pcaio_modio_use(modepoll)) {
-        return -1;
-    }
+#endif  // CHTTPD_SOCKET_H_
 
-    task = pcaio_task_new((pcaio_taskmain_t)chttpdA, 1, s);
-    if (task) {
-        return -1;
-    }
 
-    /* run event loop */
-    ret = pcaio(1, &task, 1);
-    chttpd_free(s);
-
-    return ret;
-}

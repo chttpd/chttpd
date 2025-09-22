@@ -18,12 +18,21 @@
  */
 /* standard */
 #include <stddef.h>
+#include <errno.h>
+
+/* thirdparty */
+#include <clog.h>
+#include <pcaio/pcaio.h>
+#include <pcaio/modio.h>
 
 /* local private */
 #include "config.h"
+#include "socket.h"
+#include "connection.h"
 
 /* local public */
 #include "chttpd/chttpd.h"
+#include "chttpd/addr.h"
 
 
 struct route {
@@ -35,8 +44,12 @@ struct route {
 
 
 struct chttpd {
+    struct chttpd_config *config;
+
+    /* bind file */
     int fd;
-    int backlog;
+
+    /* routes */
     unsigned char routescount;
     struct route routes[CONFIG_CHTTPD_ROUTES_MAX];
 };
@@ -51,7 +64,26 @@ chttpd_config_default(struct chttpd_config *c) {
 
 struct chttpd *
 chttpd_new(struct chttpd_config *c) {
+    struct chttpd *s;
+
+    s = malloc(sizeof(struct chttpd));
+    if (s == NULL) {
+        return NULL;
+    }
+
+    s->fd = -1;
+    s->routescount = 0;
+    s->config = c;
     return NULL;
+}
+
+
+void
+chttpd_free(struct chttpd *s) {
+    if (s == NULL) {
+        return;
+    }
+    free(s);
 }
 
 
@@ -75,5 +107,44 @@ chttpd_route(struct chttpd *s, const char *verb, const char *path,
 
 int
 chttpdA(int argc, void *argv[]) {
-    return -1;
+    struct chttpd *s = (struct chttpd *) argv[0];
+    union saddr listenaddr;
+    struct sockaddr_storage caddrbuff;
+    union saddr *caddr = (union saddr *)&caddrbuff;
+    socklen_t socklen;
+    int cfd;
+
+    s->fd = socket_bind(s->config->bind, &listenaddr);
+    if (s->fd == -1) {
+        return -1;
+    }
+
+    /* listen */
+    if (listen(s->fd, s->config->backlog)) {
+        return -1;
+    }
+
+    INFO("listening on: %s", saddr2a(&listenaddr));
+    for (;;) {
+        socklen = sizeof(caddrbuff);
+        cfd = accept4A(s->fd, &caddr->sa, &socklen, SOCK_NONBLOCK);
+        if (cfd == -1) {
+            if (errno == ECONNABORTED) {
+                /* ignore and continue */
+                continue;
+            }
+
+            if ((errno == ENFILE) || (errno == EMFILE)) {
+                /* open files limit, retry */
+                WARN("open files linit reached");
+                continue;
+            }
+
+            return -1;
+        }
+
+        pcaio_fschedule(connectionA, 3, s, cfd, caddr);
+    }
+
+    return 0;
 }

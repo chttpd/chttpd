@@ -16,38 +16,27 @@
  *
  *  Author: Vahid Mardani <vahid.mardani@gmail.com>
  */
+#ifndef CHTTPD_CONNECTION_H_
+#define CHTTPD_CONNECTION_H_
+
+
 /* thirdparty */
-#include <pcaio/pcaio.h>
-#include <pcaio/modio.h>
-#include <pcaio/modepoll.h>
+#include <mrb.h>
 
 /* local public */
-#include "chttpd/chttpd.h"
+#include "chttpd/addr.h"
+
+
+struct connection {
+    int fd;
+    union saddr peeraddr;
+
+    mrb_t ring;
+};
 
 
 int
-chttpd_main(struct chttpd *s) {
-    int ret;
-    struct pcaio_task *task;
-    struct pcaio_iomodule *modepoll;
+connectionA(int argc, void *argv[]);
 
-    /* register modules and tasks */
-    if (pcaio_modepoll_use(16, &modepoll)) {
-        return -1;
-    }
 
-    if (pcaio_modio_use(modepoll)) {
-        return -1;
-    }
-
-    task = pcaio_task_new((pcaio_taskmain_t)chttpdA, 1, s);
-    if (task) {
-        return -1;
-    }
-
-    /* run event loop */
-    ret = pcaio(1, &task, 1);
-    chttpd_free(s);
-
-    return ret;
-}
+#endif  // CHTTPD_CONNECTION_H_
