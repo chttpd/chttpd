@@ -16,12 +16,14 @@ include(config.cmake)
 # public include directory
 include_directories(
   ${CMAKE_SOURCE_DIR}/include
+  ${CMAKE_SOURCE_DIR}/chttpd
+  ${CMAKE_BINARY_DIR}/chttpd
 )
-# configure_file(
-#   include/chttpd.h.in 
-#   include/chttpd.h 
-#   @ONLY
-# )
+configure_file(
+  chttpd/config.h.in 
+  chttpd/config.h
+  @ONLY
+)
 
 
 # cmake libs

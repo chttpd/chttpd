@@ -16,41 +16,11 @@
  *
  *  Author: Vahid Mardani <vahid.mardani@gmail.com>
  */
-#ifndef INCLUDE_CHTTPD_CHTTPD_H_
-#define INCLUDE_CHTTPD_CHTTPD_H_
+#ifndef CHTTPD_CONFIG_H_IN_
+#define CHTTPD_CONFIG_H_IN_
 
 
-/* thirdparty */
-#include <chttp.h>
+#cmakedefine CONFIG_CHTTPD_ROUTES_MAX @CONFIG_CHTTPD_ROUTES_MAX@
 
 
-typedef int (*chttpd_handler_t)(struct chttp_request *req, void *ptr);
-typedef struct chttpd *chttpd_t;
-struct chttpd_config {
-    const char *bind;
-    unsigned short backlog;
-};
-
-
-void
-chttpd_config_default(struct chttpd_config *c);
-
-
-struct chttpd *
-chttpd_new(struct chttpd_config *c);
-
-
-int
-chttpd_route(struct chttpd *s, const char *verb, const char *path,
-        chttpd_handler_t handler, void *ptr);
-
-
-int
-chttpd_main(struct chttpd *s);
-
-
-int
-chttpdA(int argc, void *argv[]);
-
-
-#endif  // INCLUDE_CHTTPD_CHTTPD_H_
+#endif  // CHTTPD_CONFIG_H_IN_

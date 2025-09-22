@@ -19,8 +19,27 @@
 /* standard */
 #include <stddef.h>
 
+/* local private */
+#include "config.h"
+
 /* local public */
 #include "chttpd/chttpd.h"
+
+
+struct route {
+    const char *verb;
+    const char *path;
+    chttpd_handler_t handler;
+    void *ptr;
+};
+
+
+struct chttpd {
+    int fd;
+    int backlog;
+    unsigned char routescount;
+    struct route routes[CONFIG_CHTTPD_ROUTES_MAX];
+};
 
 
 void
@@ -33,6 +52,24 @@ chttpd_config_default(struct chttpd_config *c) {
 struct chttpd *
 chttpd_new(struct chttpd_config *c) {
     return NULL;
+}
+
+
+int
+chttpd_route(struct chttpd *s, const char *verb, const char *path,
+        chttpd_handler_t handler, void *ptr) {
+    struct route *r;
+
+    if (s->routescount >= CONFIG_CHTTPD_ROUTES_MAX) {
+        return -1;
+    }
+
+    r = &s->routes[s->routescount++];
+    r->verb = verb;
+    r->path = path;
+    r->handler = handler;
+    r->ptr = ptr;
+    return 0;
 }
 
 
