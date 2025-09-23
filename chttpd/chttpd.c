@@ -111,6 +111,32 @@ chttpd_route(struct chttpd *s, const char *verb, const char *path,
 
 
 int
+chttpd_rejectA(struct chttp_request *req, int status, const char *text) {
+    // int bytes;
+    // struct conection *c = (struct connection *)req;
+    // // TODO: config
+    // char body[512];
+
+    // if (chttp_response_start(req, statuscode, statustext)) {
+    //     return -1;
+    // }
+
+    // if (http_response_header(req,
+    //             "Content-Type = text/plain; charset=utf-8")) {
+    //     return -1;
+    // }
+
+    // bytes = sprintf(body, "\r\n%d %s\r\n", statuscode, statustext);
+    // if (http_response_body_start(req, statuscode, statustext)) {
+    //     return -1;
+    // }
+
+    // return writeA(req->fd, body, bytes);
+    return -1;
+}
+
+
+int
 chttpdA(int argc, void *argv[]) {
     struct chttpd *s = (struct chttpd *) argv[0];
     union saddr listenaddr;

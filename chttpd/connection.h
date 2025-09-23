@@ -29,11 +29,13 @@
 
 
 struct connection {
+    /* this member should be always the first */
+    struct chttp_request req;
+
     int fd;
     union saddr peeraddr;
 
     mrb_t ring;
-    struct chttp_request req;
 };
 
 

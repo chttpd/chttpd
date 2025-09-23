@@ -167,18 +167,27 @@ connectionA(int argc, void *argv[]) {
             goto done;
         }
 
-        DEBUG("Header found(%dB): %.*s", headerlen, headerlen,
-                mrb_readerptr(c->ring));
-
         status = request_frombuffer(&c->req, mrb_readerptr(c->ring),
                 headerlen + seplen);
+        mrb_skip(c->ring, headerlen + seplen);
+        if (status > 0) {
+            // TODO: continue from here
+            // chttpd_rejectA(&c->req, status, http_status_text(status));
+        }
+
         if (status) {
             ERROR("status: %d", status);
             ret = -1;
             goto done;
         }
+
+        // /* find handler */
+        // if (_findroute(&c->req, &r)) {
+        //     http_response_rejectA(req, 404, http_status_text(404));
+        //     goto done;
+        // }
+
         INFO("new request: %s %s %s", c->req.verb, c->req.path, c->req.query);
-        mrb_skip(c->ring, headerlen + seplen);
     }
 
 done:
@@ -188,12 +197,6 @@ done:
 
     // INFO("new request: %s, fd: %d, %s %s",  saddr2a(caddr), fd,
     //         req->verb, req->path);
-
-    // /* find handler */
-    // if (_findroute(req, &r)) {
-    //     http_response_rejectA(req, 404, http_status_text(404));
-    //     goto done;
-    // }
 
     // /* parse headers */
     // status = http_request_header_parse(req);
