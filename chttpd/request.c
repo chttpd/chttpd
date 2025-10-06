@@ -26,4 +26,7 @@
 /* local public */
 #include "chttpd/chttpd.h"
 
+/* local private */
+#include "request.h"
+
 

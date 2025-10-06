@@ -18,4 +18,4 @@
  */
 #ifndef CHTTPD_RESPONSE_H_
 #define CHTTPD_RESPONSE_H_
-#endif CHTTPD_RESPONSE_H_
+#endif  // CHTTPD_RESPONSE_H_

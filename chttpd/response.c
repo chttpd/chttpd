@@ -20,14 +20,15 @@
 
 /* thirdparty */
 #include <clog.h>
+#include <chttp.h>
 #include <pcaio/pcaio.h>
 #include <pcaio/modio.h>
 
-/* local private */
-#include <chttp.h>
-
 /* local public */
 #include "chttpd/chttpd.h"
+
+/* local private */
+#include "response.h"
 
 
 int

@@ -18,4 +18,4 @@
  */
 #ifndef CHTTPD_REQUEST_H_
 #define CHTTPD_REQUEST_H_
-#endif CHTTPD_REQUEST_H_
+#endif  // CHTTPD_REQUEST_H_
