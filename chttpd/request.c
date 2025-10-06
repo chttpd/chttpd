@@ -16,30 +16,14 @@
  *
  *  Author: Vahid Mardani <vahid.mardani@gmail.com>
  */
-#ifndef CHTTPD_CONNECTION_H_
-#define CHTTPD_CONNECTION_H_
-
+/* standard */
 
 /* thirdparty */
-#include <mrb.h>
+
+/* local private */
 #include <chttp.h>
 
 /* local public */
 #include "chttpd/chttpd.h"
 
 
-int
-connectionA(int argc, void *argv[]);
-
-
-/** search inside the input ring buffer.
- * returns:
- * -1: not found
- * -2: buffer is full and not found.
- *  n: length of found string.
- */
-int
-connection_ring_search(struct chttpd_connection *c, const char *s);
-
-
-#endif  // CHTTPD_CONNECTION_H_

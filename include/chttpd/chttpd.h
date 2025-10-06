@@ -21,7 +21,11 @@
 
 
 /* thirdparty */
+#include <mrb.h>
 #include <chttp.h>
+
+/* local public */
+#include "chttpd/addr.h"
 
 
 typedef int (*chttpd_handler_t)(struct chttp_request *req, void *ptr);
@@ -29,6 +33,17 @@ typedef struct chttpd *chttpd_t;
 struct chttpd_config {
     const char *bind;
     unsigned short backlog;
+};
+
+
+struct chttpd_connection {
+    /* this member should be always the first */
+    struct chttp_request req;
+    struct chttp_response resp;
+
+    int fd;
+    union saddr peeraddr;
+    mrb_t ring;
 };
 
 
@@ -55,6 +70,14 @@ chttpd_main(struct chttpd *s);
 
 int
 chttpdA(int argc, void *argv[]);
+
+
+int
+chttpd_rejectA(struct chttp_request *req, int status, const char *text);
+
+
+int
+chttpd_response_tofileA(struct chttp_response *resp, int fd);
 
 
 #endif  // INCLUDE_CHTTPD_CHTTPD_H_

@@ -18,6 +18,7 @@
  */
 /* standard */
 #include <stddef.h>
+#include <stdio.h>
 #include <errno.h>
 
 /* thirdparty */
@@ -112,27 +113,18 @@ chttpd_route(struct chttpd *s, const char *verb, const char *path,
 
 int
 chttpd_rejectA(struct chttp_request *req, int status, const char *text) {
-    // int bytes;
-    // struct conection *c = (struct connection *)req;
-    // // TODO: config
-    // char body[512];
+    struct chttpd_connection *c = (struct chttpd_connection *)req;
 
-    // if (chttp_response_start(req, statuscode, statustext)) {
-    //     return -1;
-    // }
+    if (chttp_response_start(&c->resp, status, text)) {
+        return -1;
+    }
 
-    // if (http_response_header(req,
-    //             "Content-Type = text/plain; charset=utf-8")) {
-    //     return -1;
-    // }
+    if (chttp_response_contenttype(&c->resp, "text/plain", "utf-8")) {
+        return -1;
+    }
 
-    // bytes = sprintf(body, "\r\n%d %s\r\n", statuscode, statustext);
-    // if (http_response_body_start(req, statuscode, statustext)) {
-    //     return -1;
-    // }
-
-    // return writeA(req->fd, body, bytes);
-    return -1;
+    chttp_response_write(&c->resp, "%d %s\r\n", status, c->resp.text);
+    return chttpd_response_tofileA(&c->resp, c->fd);
 }
 
 

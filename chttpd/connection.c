@@ -29,9 +29,33 @@
 #include "config.h"
 #include "connection.h"
 
+/* local public */
+#include "chttpd/chttpd.h"
+
+
+struct chttpd_connection *
+connection_new(int fd, union saddr *peer) {
+    struct chttpd_connection *c;
+
+    c = malloc(sizeof(struct chttpd_connection));
+    if (c == NULL) {
+        return NULL;
+    }
+
+    c->ring = mrb_create(CONFIG_CHTTPD_REQUEST_RINGSIZE);
+    if (c->ring == NULL) {
+        free(c);
+        return NULL;
+    }
+
+    c->fd = fd;
+    memcpy(&c->peeraddr, peer, sizeof(union saddr));
+    return c;
+}
+
 
 int
-connection_readA(struct connection *c, size_t len) {
+connection_readA(struct chttpd_connection *c, size_t len) {
     ssize_t bytes;
 
     pcaio_relaxA(0);
@@ -56,7 +80,7 @@ retry:
 
 
 ssize_t
-connection_readallA(struct connection *c) {
+connection_readallA(struct chttpd_connection *c) {
     size_t avail;
 
     avail = mrb_available(c->ring);
@@ -68,29 +92,8 @@ connection_readallA(struct connection *c) {
 }
 
 
-struct connection *
-connection_new(int fd, union saddr *peer) {
-    struct connection *c;
-
-    c = malloc(sizeof(struct connection));
-    if (c == NULL) {
-        return NULL;
-    }
-
-    c->ring = mrb_create(CONFIG_CHTTPD_REQUEST_RINGSIZE);
-    if (c->ring == NULL) {
-        free(c);
-        return NULL;
-    }
-
-    c->fd = fd;
-    memcpy(&c->peeraddr, peer, sizeof(union saddr));
-    return c;
-}
-
-
 int
-connection_free(struct connection *c) {
+connection_free(struct chttpd_connection *c) {
     if (mrb_destroy(c->ring)) {
         return -1;
     }
@@ -100,7 +103,7 @@ connection_free(struct connection *c) {
 
 
 int
-connection_ring_search(struct connection *c, const char *s) {
+connection_ring_search(struct chttpd_connection *c, const char *s) {
     ssize_t ret;
 
     ret = mrb_search(c->ring, s, strlen(s), 0, -1);
@@ -117,15 +120,22 @@ connection_ring_search(struct connection *c, const char *s) {
 
 
 int
+connection_ring_reset(struct chttpd_connection *c, const char *s) {
+    // TODO: implement
+    return -1;
+}
+
+
+int
 connectionA(int argc, void *argv[]) {
-    struct connection *c;
+    struct chttpd_connection *c;
     // struct chttpd *s = argv[0];
     int fd = (long) argv[1];
     union saddr *caddr = (union saddr *)argv[2];
     int ret = 0;
     int seplen;
     int headerlen;
-    httpstatus_t status;
+    chttp_status_t status;
     // struct route *r;
 
     INFO("new connection: %s, fd: %d",  saddr2a(caddr), fd);
@@ -139,6 +149,8 @@ connectionA(int argc, void *argv[]) {
         if (connection_readallA(c) < 16) {
             /* less than minimum startline: "GET / HTTP/1.1"
              */
+            chttpd_rejectA(&c->req, 400, NULL);
+            // connection_ring_reset(&c);
             continue;
         }
 
@@ -156,6 +168,7 @@ connectionA(int argc, void *argv[]) {
         if (headerlen == -1) {
             continue;
         }
+
         if (headerlen == -2) {
             /* buffer is full and expression not found */
             ret = -1;
@@ -167,12 +180,12 @@ connectionA(int argc, void *argv[]) {
             goto done;
         }
 
-        status = request_frombuffer(&c->req, mrb_readerptr(c->ring),
+        status = chttp_request_frombuffer(&c->req, mrb_readerptr(c->ring),
                 headerlen + seplen);
         mrb_skip(c->ring, headerlen + seplen);
         if (status > 0) {
-            // TODO: continue from here
-            // chttpd_rejectA(&c->req, status, http_status_text(status));
+            chttpd_rejectA(&c->req, status, NULL);
+            continue;
         }
 
         if (status) {

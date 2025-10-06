@@ -16,12 +16,14 @@
  *
  *  Author: Vahid Mardani <vahid.mardani@gmail.com>
  */
-#ifndef CHTTPD_CONNECTION_H_
-#define CHTTPD_CONNECTION_H_
-
+/* standard */
 
 /* thirdparty */
-#include <mrb.h>
+#include <clog.h>
+#include <pcaio/pcaio.h>
+#include <pcaio/modio.h>
+
+/* local private */
 #include <chttp.h>
 
 /* local public */
@@ -29,17 +31,19 @@
 
 
 int
-connectionA(int argc, void *argv[]);
+chttpd_response_tofileA(struct chttp_response *resp, int fd) {
+    char buff[CONFIG_CHTTP_RESPONSE_BUFFSIZE];
+    int len = sizeof(buff);
+    int written;
 
+    if (chttp_response_tobuff(resp, buff, &len)) {
+        return -1;
+    }
 
-/** search inside the input ring buffer.
- * returns:
- * -1: not found
- * -2: buffer is full and not found.
- *  n: length of found string.
- */
-int
-connection_ring_search(struct chttpd_connection *c, const char *s);
+    written = writeA(fd, buff, len);
+    if (written != len) {
+        return -1;
+    }
 
-
-#endif  // CHTTPD_CONNECTION_H_
+    return len;
+}
