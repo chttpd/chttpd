@@ -50,7 +50,7 @@ install(FILES
 add_subdirectory(examples)
 
 
-# # test
-# enable_testing()
-# add_subdirectory(tests)
-# list(APPEND CMAKE_CTEST_ARGUMENTS "--output-on-failure")
+# test
+enable_testing()
+add_subdirectory(tests)
+list(APPEND CMAKE_CTEST_ARGUMENTS "--output-on-failure")
