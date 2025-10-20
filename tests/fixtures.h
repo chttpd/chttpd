@@ -16,29 +16,19 @@
  *
  *  Author: Vahid Mardani <vahid.mardani@gmail.com>
  */
-/* standard */
-/* thirdparty */
-#include <cutest.h>
+#ifndef TESTS_FIXTURES_H_
+#define TESTS_FIXTURES_H_
+
 
 /* local public */
 #include "chttpd/chttpd.h"
 
-/* local private */
-#include "tests/fixtures.h"
+
+extern struct chttpd_connection testconn;
 
 
-
-void
-test_connection() {
-    struct chttp_response *resp = &testconn.request->response;
-
-    eqint(400, request("foo"));
-    eqnstr("Bad Request", resp->header, resp->headerlen);
-}
+chttp_status_t
+request(const char *fmt, ...);
 
 
-int
-main() {
-    test_connection();
-    return EXIT_SUCCESS;
-}
+#endif  // TESTS_FIXTURES_H_

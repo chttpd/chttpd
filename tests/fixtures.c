@@ -17,28 +17,24 @@
  *  Author: Vahid Mardani <vahid.mardani@gmail.com>
  */
 /* standard */
-/* thirdparty */
-#include <cutest.h>
+#include <socket.h>
 
+/* thirdparty */
+/* local private */
 /* local public */
 #include "chttpd/chttpd.h"
 
-/* local private */
-#include "tests/fixtures.h"
+
+struct chttpd_connection testconn;
 
 
+chttp_status_t
+request(const char *fmt, ...) {
+    int socks[2];
 
-void
-test_connection() {
-    struct chttp_response *resp = &testconn.request->response;
+    if (socketpair(AF_UNIX, SOCK_STREAM | SOCK_NONBLOCK, 0, socks)) {
+        return -2;
+    }
 
-    eqint(400, request("foo"));
-    eqnstr("Bad Request", resp->header, resp->headerlen);
-}
-
-
-int
-main() {
-    test_connection();
-    return EXIT_SUCCESS;
+    return 0;
 }

@@ -27,6 +27,7 @@
 #include <pcaio/modio.h>
 
 /* local private */
+#include "privatetypes.h"
 #include "config.h"
 #include "socket.h"
 #include "connection.h"
@@ -36,29 +37,10 @@
 #include "chttpd/addr.h"
 
 
-struct route {
-    const char *verb;
-    const char *path;
-    chttpd_handler_t handler;
-    void *ptr;
-};
-
-
-struct chttpd {
-    struct chttpd_config *config;
-
-    /* bind file */
-    int fd;
-
-    /* routes */
-    unsigned char routescount;
-    struct route routes[CONFIG_CHTTPD_ROUTES_MAX];
-};
-
-
 static struct chttpd_config _defaultconfig = {
     .bind = "127.0.0.1:8080",
     .backlog = 10,
+    .connections_max = 10,
 };
 
 
@@ -111,21 +93,21 @@ chttpd_route(struct chttpd *s, const char *verb, const char *path,
 }
 
 
-int
-chttpd_rejectA(struct chttp_request *req, int status, const char *text) {
-    struct chttpd_connection *c = (struct chttpd_connection *)req;
-
-    if (chttp_response_start(&c->resp, status, text)) {
-        return -1;
-    }
-
-    if (chttp_response_contenttype(&c->resp, "text/plain", "utf-8")) {
-        return -1;
-    }
-
-    chttp_response_write(&c->resp, "%d %s\r\n", status, c->resp.text);
-    return chttpd_response_tofileA(&c->resp, c->fd);
-}
+// int
+// chttpd_rejectA(struct chttp_request *req, int status, const char *text) {
+//     struct chttpd_connection *c = (struct chttpd_connection *)req;
+//
+//     if (chttp_response_start(&c->resp, status, text)) {
+//         return -1;
+//     }
+//
+//     if (chttp_response_contenttype(&c->resp, "text/plain", "utf-8")) {
+//         return -1;
+//     }
+//
+//     chttp_response_write(&c->resp, "%d %s\r\n", status, c->resp.text);
+//     return chttpd_response_tofileA(&c->resp, c->fd);
+// }
 
 
 int

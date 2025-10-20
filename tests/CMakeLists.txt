@@ -15,10 +15,13 @@ include_directories(
   ${PROJECT_SOURCE_DIR}/chttpd
 )
 
+add_library(fixtures OBJECT fixtures.c fixtures.h)
+
+
 foreach (t IN LISTS testrules) 
     # Test help
   add_executable(${t} ${t}.c 
-    # $<TARGET_OBJECTS:helpers>
+    $<TARGET_OBJECTS:fixtures>
   )
   target_include_directories(${t} PUBLIC 
     "${PROJECT_BINARY_DIR}"

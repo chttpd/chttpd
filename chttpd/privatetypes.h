@@ -16,29 +16,34 @@
  *
  *  Author: Vahid Mardani <vahid.mardani@gmail.com>
  */
-/* standard */
-/* thirdparty */
-#include <cutest.h>
+#ifndef CHTTPD_PRIVATETYPES_H_
+#define CHTTPD_PRIVATETYPES_H_
+
+/* local private */
+#include "config.h"
 
 /* local public */
 #include "chttpd/chttpd.h"
 
-/* local private */
-#include "tests/fixtures.h"
+
+struct route {
+    const char *verb;
+    const char *path;
+    chttpd_handler_t handler;
+    void *ptr;
+};
 
 
+struct chttpd {
+    struct chttpd_config *config;
 
-void
-test_connection() {
-    struct chttp_response *resp = &testconn.request->response;
+    /* bind file */
+    int fd;
 
-    eqint(400, request("foo"));
-    eqnstr("Bad Request", resp->header, resp->headerlen);
-}
+    /* routes */
+    unsigned char routescount;
+    struct route routes[CONFIG_CHTTPD_ROUTES_MAX];
+};
 
 
-int
-main() {
-    test_connection();
-    return EXIT_SUCCESS;
-}
+#endif  // CHTTPD_PRIVATETYPES_H_

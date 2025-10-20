@@ -32,14 +32,4 @@ int
 connectionA(int argc, void *argv[]);
 
 
-/** search inside the input ring buffer.
- * returns:
- * -1: not found
- * -2: buffer is full and not found.
- *  n: length of found string.
- */
-int
-connection_ring_search(struct chttpd_connection *c, const char *s);
-
-
 #endif  // CHTTPD_CONNECTION_H_
