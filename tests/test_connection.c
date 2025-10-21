@@ -23,7 +23,7 @@
 /* local public */
 #include "chttpd/chttpd.h"
 
-/* local private */
+/* test private */
 #include "tests/fixtures.h"
 
 

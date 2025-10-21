@@ -75,7 +75,7 @@ chttpdA(int argc, void *argv[]);
 
 
 int
-chttpd_rejectA(struct chttp_request *req, int status, const char *text);
+chttpd_responseA(struct chttp_request *req, int status, const char *text);
 
 
 #endif  // INCLUDE_CHTTPD_CHTTPD_H_

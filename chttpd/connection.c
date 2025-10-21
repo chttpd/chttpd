@@ -54,7 +54,7 @@ _init(struct chttpd *s, struct chttpd_connection *c, int fd,
 
 
 static int
-_deinit(struct chttpd_connection *c) {
+_free(struct chttpd_connection *c) {
     int ret = 0;
 
     ret |= mrb_deinit(&c->ring);
@@ -63,101 +63,135 @@ _deinit(struct chttpd_connection *c) {
 }
 
 
+static int
+_readA(struct chttpd_connection *c, size_t len) {
+    ssize_t bytes;
+
+    pcaio_relaxA(0);
+
+retry:
+    bytes = mrb_readin(&c->ring, c->fd, len);
+    if (bytes == -1) {
+        if (!RETRY(errno)) {
+            return -1;
+        }
+
+        if (pcaio_modio_await(c->fd, IOIN)) {
+            return -1;
+        }
+
+        goto retry;
+    }
+
+    errno = 0;
+    return bytes;
+}
+
+
+static ssize_t
+_readallA(struct chttpd_connection *c) {
+    size_t avail;
+
+    avail = mrb_available(&c->ring);
+    if ((avail) && _readA(c, avail) == -1) {
+        return -1;
+    }
+
+    return mrb_used(&c->ring);
+}
+
+
+/** search inside the input ring buffer.
+ * returns:
+ * -1: not found
+ * -2: buffer is full and not found.
+ *  n: length of found string.
+ */
+static ssize_t
+_ring_search(struct chttpd_connection *c, const char *s) {
+    ssize_t ret;
+
+    ret = mrb_search(&c->ring, s, strlen(s), 0, -1);
+    if (ret == -1) {
+        if (mrb_isfull(&c->ring)) {
+            return -2;
+        }
+
+        return -1;
+    }
+
+    return ret;
+}
+
+
 int
 connectionA(int argc, void *argv[]) {
+    int ret = 0;
     struct chttpd *s = argv[0];
     int fd = (long) argv[1];
     union saddr *peer = (union saddr *)argv[2];
     struct chttpd_connection c;
+    ssize_t headerlen;
+    chttp_status_t status;
 
     INFO("new connection: %s, fd: %d",  saddr2a(peer), fd);
     if (_init(s, &c, fd, peer)) {
         return -1;
     }
 
+    for (;;) {
+        /* read as much as possible from the socket */
+        if (_readallA(&c) < 16) {
+            /* less than minimum startline: "GET / HTTP/1.1" */
+            chttpd_responseA(c.request, 400, NULL);
+            ret = -1;
+            break;
+        }
 
-    if (_deinit(&c)) {
-        return -1;
+        /* search for the end of the request's header */
+        headerlen = _ring_search(&c, "\r\n\r\n");
+        if (headerlen < 16) {
+            chttpd_responseA(c.request, 400, NULL);
+            ret = -1;
+            break;
+        }
+
+        headerlen += 2;
+        status = chttp_request_parse(c.request, mrb_readerptr(&c.ring),
+                headerlen);
+        mrb_skip(&c.ring, headerlen);
+        if (status > 0) {
+            chttpd_responseA(c.request, status, NULL);
+            ret = -1;
+            break;
+        }
+
+        if (status < 0) {
+            ERROR("status: %d", status);
+            ret = -1;
+            break;
+        }
+
+        // /* find handler */
+        // if (_findroute(&c->req, &r)) {
+        //     http_response_rejectA(req, 404, http_status_text(404));
+        //     goto done;
+        // }
+
+        INFO("new request: %s %s %s", c.request->verb, c.request->path,
+                c.request->query);
     }
-    return 0;
+
+    close(fd);
+    if (_free(&c)) {
+        ret = -1;
+    }
+
+    return ret;
 }
-
-
-//     struct chttpd_connection *c;
-//     int ret = 0;
-//     int seplen;
-//     int headerlen;
-//     chttp_status_t status;
-//     // struct route *r;
-//
-//     c = connection_new(fd, peer);
-//     if (c == NULL) {
-//         return -1;
-//     }
-//
 //     for (;;) {
-//         /* read as much as possible from the socket */
-//         if (connection_readallA(c) < 16) {
-//             /* less than minimum startline: "GET / HTTP/1.1"
-//              */
-//             chttpd_rejectA(&c->req, 400, NULL);
-//             // connection_ring_reset(&c);
-//             continue;
-//         }
-//
-//         headerlen = connection_ring_search(c, "\r\n\r\n");
-//         if (headerlen < 0) {
-//             headerlen = connection_ring_search(c, "\n\n");
-//             if (headerlen >= 0) {
-//                 seplen = 2;
-//             }
-//         }
-//         else {
-//             seplen = 4;
-//         }
-//
-//         if (headerlen == -1) {
-//             continue;
-//         }
-//
-//         if (headerlen == -2) {
-//             /* buffer is full and expression not found */
-//             ret = -1;
-//             break;
-//         }
-//
-//         if (headerlen < 14) {
-//             ret = -1;
-//             goto done;
-//         }
-//
-//         status = chttp_request_frombuffer(&c->req, mrb_readerptr(c->ring),
-//                 headerlen + seplen);
-//         mrb_skip(c->ring, headerlen + seplen);
-//         if (status > 0) {
-//             chttpd_rejectA(&c->req, status, NULL);
-//             continue;
-//         }
-//
-//         if (status) {
-//             ERROR("status: %d", status);
-//             ret = -1;
-//             goto done;
-//         }
-//
-//         // /* find handler */
-//         // if (_findroute(&c->req, &r)) {
-//         //     http_response_rejectA(req, 404, http_status_text(404));
-//         //     goto done;
-//         // }
-//
-//         INFO("new request: %s %s %s", c->req.verb, c->req.path, c->req.query);
 //     }
 //
-// done:
-//     close(fd);
-//     connection_free(c);
-//     return ret;
 //
 //     // INFO("new request: %s, fd: %d, %s %s",  saddr2a(caddr), fd,
 //     //         req->verb, req->path);
@@ -177,68 +211,19 @@ connectionA(int argc, void *argv[]) {
 //     //     // TODO: log the unhandled server error
 //     //     http_response_rejectA(req, 500, http_status_text(500));
 //     // }
-// }
-// int
-// connection_readA(struct chttpd_connection *c, size_t len) {
-//     ssize_t bytes;
+
+
+//     struct chttpd_connection *c;
+//     int seplen;
+//     chttp_status_t status;
+//     // struct route *r;
 //
-//     pcaio_relaxA(0);
-//
-// retry:
-//     bytes = mrb_readin(c->ring, c->fd, len);
-//     if (bytes == -1) {
-//         if (!RETRY(errno)) {
-//             return -1;
-//         }
-//
-//         if (pcaio_modio_await(c->fd, IOIN)) {
-//             return -1;
-//         }
-//
-//         goto retry;
-//     }
-//
-//     errno = 0;
-//     return bytes;
-// }
-//
-//
-// ssize_t
-// connection_readallA(struct chttpd_connection *c) {
-//     size_t avail;
-//
-//     avail = mrb_available(c->ring);
-//     if ((avail) && connection_readA(c, avail) == -1) {
+//     c = connection_new(fd, peer);
+//     if (c == NULL) {
 //         return -1;
 //     }
 //
-//     return mrb_used(c->ring);
 // }
-//
-//
-// /** search inside the input ring buffer.
-//  * returns:
-//  * -1: not found
-//  * -2: buffer is full and not found.
-//  *  n: length of found string.
-//  */
-// int
-// connection_ring_search(struct chttpd_connection *c, const char *s) {
-//     ssize_t ret;
-//
-//     ret = mrb_search(c->ring, s, strlen(s), 0, -1);
-//     if (ret == -1) {
-//         if (mrb_isfull(c->ring)) {
-//             return -2;
-//         }
-//
-//         return -1;
-//     }
-//
-//     return ret;
-// }
-//
-//
 // int
 // connection_ring_reset(struct chttpd_connection *c, const char *s) {
 //     // TODO: implement

@@ -24,6 +24,10 @@
 /* local public */
 #include "chttpd/chttpd.h"
 
+/* test private */
+#include "fixtures.h"
+
+
 
 struct chttpd_connection testconn;
 

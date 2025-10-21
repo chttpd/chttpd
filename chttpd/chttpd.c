@@ -93,21 +93,32 @@ chttpd_route(struct chttpd *s, const char *verb, const char *path,
 }
 
 
-// int
-// chttpd_rejectA(struct chttp_request *req, int status, const char *text) {
-//     struct chttpd_connection *c = (struct chttpd_connection *)req;
-//
-//     if (chttp_response_start(&c->resp, status, text)) {
-//         return -1;
-//     }
-//
-//     if (chttp_response_contenttype(&c->resp, "text/plain", "utf-8")) {
-//         return -1;
-//     }
-//
-//     chttp_response_write(&c->resp, "%d %s\r\n", status, c->resp.text);
-//     return chttpd_response_tofileA(&c->resp, c->fd);
-// }
+int
+chttpd_responseA(struct chttp_request *req, int status, const char *text) {
+    int contentlen;
+
+    struct chttpd_connection *c = (struct chttpd_connection *)req;
+
+    if (chttp_response_start(c->request, status, text)) {
+        return -1;
+    }
+
+    if (chttp_response_contenttype(c->request, "text/plain", "utf-8")) {
+        return -1;
+    }
+
+    // TODO: config the content size
+    if (chttp_response_content_allocate(c->request, 512)) {
+        return -1;
+    }
+
+    contentlen = chttp_response_content_write(c->request,
+            "%d %s\r\n", status, text);
+
+    DEBUG("content len: %d", contentlen);
+    // return chttpd_response_tofileA(c->request->response, c->fd);
+    return -1;
+}
 
 
 int
