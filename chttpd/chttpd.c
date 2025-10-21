@@ -26,20 +26,23 @@
 #include <pcaio/pcaio.h>
 #include <pcaio/modio.h>
 
+/* local public */
+#include "chttpd/chttpd.h"
+#include "chttpd/addr.h"
+
 /* local private */
 #include "privatetypes.h"
 #include "config.h"
 #include "socket.h"
 #include "connection.h"
-
-/* local public */
-#include "chttpd/chttpd.h"
-#include "chttpd/addr.h"
+#include "response.h"
 
 
 static struct chttpd_config _defaultconfig = {
     .bind = "127.0.0.1:8080",
     .backlog = 10,
+    .requestbuffer_mempages = 1,
+    .connectionbuffer_mempages = 1,
     .connections_max = 10,
 };
 
@@ -94,10 +97,12 @@ chttpd_route(struct chttpd *s, const char *verb, const char *path,
 
 
 int
-chttpd_responseA(struct chttp_request *req, int status, const char *text) {
+chttpd_responseA(struct chttpd_connection *c, int status, const char *text) {
     int contentlen;
 
-    struct chttpd_connection *c = (struct chttpd_connection *)req;
+    if (text == NULL) {
+        text = chttp_status_text(status);
+    }
 
     if (chttp_response_start(c->request, status, text)) {
         return -1;
@@ -116,8 +121,7 @@ chttpd_responseA(struct chttp_request *req, int status, const char *text) {
             "%d %s\r\n", status, text);
 
     DEBUG("content len: %d", contentlen);
-    // return chttpd_response_tofileA(c->request->response, c->fd);
-    return -1;
+    return response_tofileA(&c->request->response, c->fd);
 }
 
 

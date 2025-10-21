@@ -28,5 +28,3 @@
 
 /* local private */
 #include "request.h"
-
-

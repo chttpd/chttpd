@@ -19,6 +19,9 @@
 /* standard */
 #include <stddef.h>
 
+/* thirdparty */
+#include <clog.h>
+
 /* local public */
 #include "chttpd/chttpd.h"
 
@@ -38,6 +41,7 @@ int
 main() {
     chttpd_t server;
     struct chttpd_config c;
+    clog_verbositylevel = CLOG_DEBUG;
 
     chttpd_config_default(&c);
     server = chttpd_new(&c);

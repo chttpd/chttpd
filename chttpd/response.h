@@ -18,4 +18,10 @@
  */
 #ifndef CHTTPD_RESPONSE_H_
 #define CHTTPD_RESPONSE_H_
+
+
+int
+response_tofileA(struct chttp_response *resp, int fd);
+
+
 #endif  // CHTTPD_RESPONSE_H_

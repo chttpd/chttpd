@@ -67,6 +67,7 @@ static int
 _readA(struct chttpd_connection *c, size_t len) {
     ssize_t bytes;
 
+    DEBUG("fd: %d", c->fd);
     pcaio_relaxA(0);
 
 retry:
@@ -143,7 +144,7 @@ connectionA(int argc, void *argv[]) {
         /* read as much as possible from the socket */
         if (_readallA(&c) < 16) {
             /* less than minimum startline: "GET / HTTP/1.1" */
-            chttpd_responseA(c.request, 400, NULL);
+            chttpd_responseA(&c, 400, NULL);
             ret = -1;
             break;
         }
@@ -151,7 +152,7 @@ connectionA(int argc, void *argv[]) {
         /* search for the end of the request's header */
         headerlen = _ring_search(&c, "\r\n\r\n");
         if (headerlen < 16) {
-            chttpd_responseA(c.request, 400, NULL);
+            chttpd_responseA(&c, 400, NULL);
             ret = -1;
             break;
         }
@@ -161,7 +162,7 @@ connectionA(int argc, void *argv[]) {
                 headerlen);
         mrb_skip(&c.ring, headerlen);
         if (status > 0) {
-            chttpd_responseA(c.request, status, NULL);
+            chttpd_responseA(&c, status, NULL);
             ret = -1;
             break;
         }
@@ -191,41 +192,7 @@ connectionA(int argc, void *argv[]) {
 }
 //     for (;;) {
 //     }
-//
-//
-//     // INFO("new request: %s, fd: %d, %s %s",  saddr2a(caddr), fd,
-//     //         req->verb, req->path);
-//
-//     // /* parse headers */
-//     // status = http_request_header_parse(req);
-//     // if (status == -1) {
-//     //     ret = -1;
-//     //     goto done;
-//     // }
-//     // if (status > 0) {
-//     //     http_response_rejectA(req, status, http_status_text(status));
-//     //     goto done;
-//     // }
-//
 //     // if (r->handler(req, r->ptr)) {
 //     //     // TODO: log the unhandled server error
 //     //     http_response_rejectA(req, 500, http_status_text(500));
 //     // }
-
-
-//     struct chttpd_connection *c;
-//     int seplen;
-//     chttp_status_t status;
-//     // struct route *r;
-//
-//     c = connection_new(fd, peer);
-//     if (c == NULL) {
-//         return -1;
-//     }
-//
-// }
-// int
-// connection_ring_reset(struct chttpd_connection *c, const char *s) {
-//     // TODO: implement
-//     return -1;
-// }

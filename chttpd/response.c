@@ -32,19 +32,21 @@
 
 
 int
-chttpd_response_tofileA(struct chttp_response *resp, int fd) {
-    char buff[CONFIG_CHTTP_RESPONSE_BUFFSIZE];
-    int len = sizeof(buff);
-    int written;
+response_tofileA(struct chttp_response *resp, int fd) {
+    struct iovec v[2];
+    size_t totallen = resp->headerlen + resp->contentlength;
+    size_t written;
 
-    if (chttp_response_tobuff(resp, buff, &len)) {
+    v[0].iov_base = (void *)resp->header;
+    v[0].iov_len = resp->headerlen;
+    v[1].iov_base = resp->content;
+    v[1].iov_len = resp->contentlength;
+
+    written = writevA(fd, v, 2);
+    if (written != totallen) {
+        // TODO: write the rest of the buffer later after pcaio_relaxA
         return -1;
     }
 
-    written = writeA(fd, buff, len);
-    if (written != len) {
-        return -1;
-    }
-
-    return len;
+    return totallen;
 }
