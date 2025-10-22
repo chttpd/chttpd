@@ -6,6 +6,7 @@ add_library(addr OBJECT addr.c
 )
 add_library(socket OBJECT socket.c socket.h)
 add_library(connection OBJECT connection.c connection.h)
+add_library(route OBJECT route.c route.h)
 add_library(response OBJECT response.c response.h)
 add_library(main OBJECT main.c)
 add_library(chttpd STATIC 
@@ -13,6 +14,7 @@ add_library(chttpd STATIC
   $<TARGET_OBJECTS:addr>
   $<TARGET_OBJECTS:socket>
   $<TARGET_OBJECTS:connection>
+  $<TARGET_OBJECTS:route>
   $<TARGET_OBJECTS:response>
   $<TARGET_OBJECTS:main>
 )

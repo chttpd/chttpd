@@ -25,13 +25,13 @@
 #include <pcaio/pcaio.h>
 #include <pcaio/modio.h>
 
-/* local private */
-#include "privatetypes.h"
-#include "connection.h"
-
 /* local public */
 #include "chttpd/chttpd.h"
 
+/* local private */
+#include "privatetypes.h"
+#include "route.h"
+#include "connection.h"
 
 
 static int
@@ -134,6 +134,7 @@ connectionA(int argc, void *argv[]) {
     struct chttpd_connection c;
     ssize_t headerlen;
     chttp_status_t status;
+    struct route *route;
 
     INFO("new connection: %s, fd: %d",  saddr2a(peer), fd);
     if (_init(s, &c, fd, peer)) {
@@ -173,14 +174,20 @@ connectionA(int argc, void *argv[]) {
             break;
         }
 
-        // /* find handler */
-        // if (_findroute(&c->req, &r)) {
-        //     http_response_rejectA(req, 404, http_status_text(404));
-        //     goto done;
-        // }
+        if (mrb_skip(&c.ring, headerlen)) {
+            ERROR("mrb_skip");
+            ret = -1;
+            break;
+        }
 
-        INFO("new request: %s %s %s", c.request->verb, c.request->path,
-                c.request->query);
+        route = route_find(s, c.request);
+        if (route == NULL) {
+            chttpd_responseA(&c, 404, NULL);
+            continue;
+        }
+
+        INFO("new request: %s %s %s, route: %p",
+                c.request->verb, c.request->path, c.request->query, route);
     }
 
     close(fd);

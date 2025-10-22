@@ -79,24 +79,6 @@ chttpd_free(struct chttpd *s) {
 
 
 int
-chttpd_route(struct chttpd *s, const char *verb, const char *path,
-        chttpd_handler_t handler, void *ptr) {
-    struct route *r;
-
-    if (s->routescount >= CONFIG_CHTTPD_ROUTES_MAX) {
-        return -1;
-    }
-
-    r = &s->routes[s->routescount++];
-    r->verb = verb;
-    r->path = path;
-    r->handler = handler;
-    r->ptr = ptr;
-    return 0;
-}
-
-
-int
 chttpdA(int argc, void *argv[]) {
     struct chttpd *s = (struct chttpd *) argv[0];
     union saddr listenaddr;
