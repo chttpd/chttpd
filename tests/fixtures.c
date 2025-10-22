@@ -40,5 +40,6 @@ request(const char *fmt, ...) {
         return -2;
     }
 
-    return 0;
+    // TODO: send request using sicketpair
+    return -1;
 }

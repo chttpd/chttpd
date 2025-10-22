@@ -50,3 +50,32 @@ response_tofileA(struct chttp_response *resp, int fd) {
 
     return totallen;
 }
+
+
+int
+chttpd_responseA(struct chttpd_connection *c, int status, const char *text) {
+    int contentlen;
+
+    if (text == NULL) {
+        text = chttp_status_text(status);
+    }
+
+    if (chttp_response_start(c->request, status, text)) {
+        return -1;
+    }
+
+    if (chttp_response_contenttype(c->request, "text/plain", "utf-8")) {
+        return -1;
+    }
+
+    // TODO: config the content size
+    if (chttp_response_content_allocate(c->request, 512)) {
+        return -1;
+    }
+
+    contentlen = chttp_response_content_write(c->request,
+            "%d %s\r\n", status, text);
+
+    DEBUG("content len: %d", contentlen);
+    return response_tofileA(&c->request->response, c->fd);
+}

@@ -190,8 +190,6 @@ connectionA(int argc, void *argv[]) {
 
     return ret;
 }
-//     for (;;) {
-//     }
 //     // if (r->handler(req, r->ptr)) {
 //     //     // TODO: log the unhandled server error
 //     //     http_response_rejectA(req, 500, http_status_text(500));

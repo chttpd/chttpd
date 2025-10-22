@@ -27,7 +27,6 @@
 #include "tests/fixtures.h"
 
 
-
 void
 test_connection() {
     struct chttp_response *resp = &testconn.request->response;
