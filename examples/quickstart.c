@@ -40,11 +40,9 @@ _index(struct chttp_request *req, void *ptr) {
 int
 main() {
     chttpd_t server;
-    struct chttpd_config c;
     clog_verbositylevel = CLOG_DEBUG;
 
-    chttpd_config_default(&c);
-    server = chttpd_new(&c);
+    server = chttpd_new(&chttpd_defaultconfig);
     chttpd_route(server, "GET", "/", _index, NULL);
     return chttpd_main(server);
 }

@@ -38,7 +38,7 @@
 #include "response.h"
 
 
-static struct chttpd_config _defaultconfig = {
+const struct chttpd_config chttpd_defaultconfig = {
     .bind = "127.0.0.1:8080",
     .backlog = 10,
     .requestbuffer_mempages = 1,
@@ -47,14 +47,8 @@ static struct chttpd_config _defaultconfig = {
 };
 
 
-void
-chttpd_config_default(struct chttpd_config *c) {
-    memcpy(c, &_defaultconfig, sizeof(_defaultconfig));
-}
-
-
 struct chttpd *
-chttpd_new(struct chttpd_config *c) {
+chttpd_new(const struct chttpd_config *c) {
     struct chttpd *s;
 
     s = malloc(sizeof(struct chttpd));

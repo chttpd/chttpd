@@ -1,4 +1,5 @@
 ## high priority
+- delete chttpd_free function
 - Form parsing
   - url formencodded 
   - multipart

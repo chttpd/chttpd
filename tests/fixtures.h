@@ -28,7 +28,7 @@ extern struct chttpd_connection testconn;
 
 
 chttp_status_t
-request(const char *fmt, ...);
+testreq(const char *fmt, ...);
 
 
 #endif  // TESTS_FIXTURES_H_

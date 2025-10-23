@@ -35,7 +35,7 @@ struct route {
 
 
 struct chttpd {
-    struct chttpd_config *config;
+    const struct chttpd_config *config;
 
     /* bind file */
     int fd;

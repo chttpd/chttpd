@@ -41,6 +41,9 @@ struct chttpd_config {
 };
 
 
+extern const struct chttpd_config chttpd_defaultconfig;
+
+
 struct chttpd_connection {
     int fd;
     union saddr peer;
@@ -49,12 +52,8 @@ struct chttpd_connection {
 };
 
 
-void
-chttpd_config_default(struct chttpd_config *c);
-
-
 struct chttpd *
-chttpd_new(struct chttpd_config *c);
+chttpd_new(const struct chttpd_config *c);
 
 
 void

@@ -40,7 +40,7 @@ chttpd_main(struct chttpd *s) {
         return -1;
     }
 
-    task = pcaio_task_new((pcaio_taskmain_t)chttpdA, 1, s);
+    task = pcaio_task_new(chttpdA, 1, s);
     if (task == NULL) {
         return -1;
     }
