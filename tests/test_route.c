@@ -18,46 +18,39 @@
  */
 /* standard */
 /* thirdparty */
-#include <clog.h>
+#include <cutest.h>
 
 /* local public */
 #include "chttpd/chttpd.h"
 
 /* local private */
+#include "router.h"
 #include "privatetypes.h"
-#include "route.h"
+
+/* test private */
+#include "tests/fixtures.h"
 
 
-struct route *
-route_find(struct chttpd *s, struct chttp_request *r) {
-    int i;
-    struct route *route = NULL;
+static void
+test_route_find() {
+    struct route *r;
+    struct router router = {
+        .count = 0,
+    };
 
-    for (i = 0; i < s->routescount; i++) {
-        route = s->routes + i;
-        if ((strncmp(route->path, r->path, strlen(route->path)) == 0)
-                && (strcmp(route->verb, r->verb) == 0)) {
-                return route;
-        }
-    }
+    eqint(0, router_append(&router, "GET", "/foo", NULL, NULL));
 
-    return NULL;
+    r = router_find(&router, "GET", "/foo");
+    isnotnull(r);
+    eqstr("GET", r->verb);
+    eqstr("/foo", r->path);
+
+    isnull(router_find(&router, "GET", "/bar"));
 }
 
 
 int
-chttpd_route(struct chttpd *s, const char *verb, const char *path,
-        chttpd_handler_t handler, void *ptr) {
-    struct route *r;
-
-    if (s->routescount >= CONFIG_CHTTPD_ROUTES_MAX) {
-        return -1;
-    }
-
-    r = &s->routes[s->routescount++];
-    r->verb = verb;
-    r->path = path;
-    r->handler = handler;
-    r->ptr = ptr;
-    return 0;
+main() {
+    test_route_find();
+    return EXIT_SUCCESS;
 }

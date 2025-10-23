@@ -18,29 +18,46 @@
  */
 /* standard */
 /* thirdparty */
-#include <cutest.h>
+#include <clog.h>
 
 /* local public */
 #include "chttpd/chttpd.h"
 
-/* test private */
-#include "tests/fixtures.h"
+/* local private */
+#include "privatetypes.h"
+#include "router.h"
 
 
-static void
-test_connection() {
-    struct chttp_response *r = chttp_response_new(1);
+struct route *
+router_find(struct router *rt, const char *verb, const char *path) {
+    int i;
+    struct route *route = NULL;
 
-    eqint(400, testreq(r, "foo"));
-    eqint(400, r->status);
-    eqstr("Bad Request", r->text);
+    for (i = 0; i < rt->count; i++) {
+        route = rt->routes + i;
+        if ((strncmp(route->path, path, strlen(path)) == 0)
+                && (strcmp(route->verb, verb) == 0)) {
+                return route;
+        }
+    }
 
-    chttp_response_free(r);
+    return NULL;
 }
 
 
 int
-main() {
-    test_connection();
-    return EXIT_SUCCESS;
+router_append(struct router *rt, const char *verb, const char *path,
+        chttpd_handler_t handler, void *ptr) {
+    struct route *r;
+
+    if (rt->count >= CONFIG_CHTTPD_ROUTES_MAX) {
+        return -1;
+    }
+
+    r = &rt->routes[rt->count++];
+    r->verb = verb;
+    r->path = path;
+    r->handler = handler;
+    r->ptr = ptr;
+    return 0;
 }

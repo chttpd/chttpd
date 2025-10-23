@@ -30,7 +30,7 @@
 
 /* local private */
 #include "privatetypes.h"
-#include "route.h"
+#include "router.h"
 #include "connection.h"
 
 
@@ -180,7 +180,7 @@ connectionA(int argc, void *argv[]) {
             break;
         }
 
-        route = route_find(s, c.request);
+        route = router_find(&s->router, c.request->verb, c.request->path);
         if (route == NULL) {
             chttpd_responseA(&c, 404, NULL);
             continue;

@@ -43,8 +43,10 @@
 static char _buff[BUFFSIZE];
 struct chttpd _chttpd = {
     .config = &chttpd_defaultconfig,
-    .fd = -1,
-    .routescount = 0,
+    .listenfd = -1,
+    .router = {
+        .count = 0,
+    }
 };
 
 

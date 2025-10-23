@@ -16,12 +16,21 @@
  *
  *  Author: Vahid Mardani <vahid.mardani@gmail.com>
  */
-#ifndef CHTTPD_ROUTE_H_
-#define CHTTPD_ROUTE_H_
+#ifndef CHTTPD_ROUTER_H_
+#define CHTTPD_ROUTER_H_
+
+
+/* local private */
+#include "privatetypes.h"
 
 
 struct route *
-route_find(struct chttpd *s, struct chttp_request *r);
+router_find(struct router *rt, const char *verb, const char *path);
 
 
-#endif  // CHTTPD_ROUTE_H_
+int
+router_append(struct router *rt, const char *verb, const char *path,
+        chttpd_handler_t handler, void *ptr);
+
+
+#endif  // CHTTPD_ROUTER_H_

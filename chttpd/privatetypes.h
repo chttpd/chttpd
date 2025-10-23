@@ -34,15 +34,16 @@ struct route {
 };
 
 
+struct router {
+    struct route routes[CONFIG_CHTTPD_ROUTES_MAX];
+    unsigned char count;
+};
+
+
 struct chttpd {
     const struct chttpd_config *config;
-
-    /* bind file */
-    int fd;
-
-    /* routes */
-    unsigned char routescount;
-    struct route routes[CONFIG_CHTTPD_ROUTES_MAX];
+    int listenfd;
+    struct router router;
 };
 
 

@@ -34,6 +34,7 @@
 #include "privatetypes.h"
 #include "config.h"
 #include "socket.h"
+#include "router.h"
 #include "connection.h"
 #include "response.h"
 
@@ -56,8 +57,8 @@ chttpd_new(const struct chttpd_config *c) {
         return NULL;
     }
 
-    s->fd = -1;
-    s->routescount = 0;
+    s->listenfd = -1;
+    s->router.count = 0;
     s->config = c;
     return s;
 }
@@ -73,6 +74,13 @@ chttpd_free(struct chttpd *s) {
 
 
 int
+chttpd_route(struct chttpd *s, const char *verb, const char *path,
+        chttpd_handler_t handler, void *ptr) {
+    return router_append(&s->router, verb, path, handler, ptr);
+}
+
+
+int
 chttpdA(int argc, void *argv[]) {
     struct chttpd *s = (struct chttpd *) argv[0];
     union saddr listenaddr;
@@ -81,20 +89,20 @@ chttpdA(int argc, void *argv[]) {
     socklen_t socklen;
     int cfd;
 
-    s->fd = socket_bind(s->config->bind, &listenaddr);
-    if (s->fd == -1) {
+    s->listenfd = socket_bind(s->config->bind, &listenaddr);
+    if (s->listenfd == -1) {
         return -1;
     }
 
     /* listen */
-    if (listen(s->fd, s->config->backlog)) {
+    if (listen(s->listenfd, s->config->backlog)) {
         return -1;
     }
 
     INFO("listening on: %s", saddr2a(&listenaddr));
     for (;;) {
         socklen = sizeof(caddrbuff);
-        cfd = accept4A(s->fd, &caddr->sa, &socklen, SOCK_NONBLOCK);
+        cfd = accept4A(s->listenfd, &caddr->sa, &socklen, SOCK_NONBLOCK);
         if (cfd == -1) {
             if (errno == ECONNABORTED) {
                 /* ignore and continue */

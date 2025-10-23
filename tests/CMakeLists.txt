@@ -1,6 +1,7 @@
 include(CTest)
 list(APPEND testrules
   connection
+  route
 )
 
 
