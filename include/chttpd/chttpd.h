@@ -75,7 +75,13 @@ chttpdA(int argc, void *argv[]);
 
 
 int
-chttpd_responseA(struct chttpd_connection *c, int status, const char *text);
+chttpd_responseA(struct chttpd_connection *c, int status, const char *text,
+        const char *content, size_t contentlen);
+
+
+int
+chttpd_response_errorA(struct chttpd_connection *c, int status,
+        const char *text);
 
 
 #endif  // INCLUDE_CHTTPD_CHTTPD_H_

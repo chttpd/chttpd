@@ -27,13 +27,12 @@
 
 
 static int
-_index(struct chttpd_connection *c, void *ptr) {
-    // httpd_response_start(req, 200, NULL);
-    // httpd_response_contenttype_set(req, "text/plain", "utf-8");
-    // httpd_response_write(req, "Hello %s", __FILE__);
-    // httpd_response_send(req);
-    // return 0;
-    return -1;
+_indexA(struct chttpd_connection *c, void *ptr) {
+    if (14 != chttpd_responseA(c, 200, NULL, "Hello chttpd\r\n", 128)) {
+        return -1;
+    }
+
+    return 0;
 }
 
 
@@ -43,6 +42,6 @@ main() {
     clog_verbositylevel = CLOG_DEBUG;
 
     server = chttpd_new(&chttpd_defaultconfig);
-    chttpd_route(server, "GET", "/", _index, NULL);
+    chttpd_route(server, "GET", "/", _indexA, NULL);
     return chttpd_main(server);
 }

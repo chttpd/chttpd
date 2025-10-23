@@ -66,8 +66,6 @@ _free(struct chttpd_connection *c) {
 static int
 _readA(struct chttpd_connection *c, size_t len) {
     ssize_t bytes;
-
-    DEBUG("fd: %d", c->fd);
     pcaio_relaxA(0);
 
 retry:
@@ -145,15 +143,21 @@ connectionA(int argc, void *argv[]) {
         /* read as much as possible from the socket */
         if (_readallA(&c) < 16) {
             /* less than minimum startline: "GET / HTTP/1.1" */
-            chttpd_responseA(&c, 400, NULL);
+            chttpd_response_errorA(&c, 400, NULL);
             ret = -1;
             break;
         }
 
         /* search for the end of the request's header */
         headerlen = _ring_search(&c, "\r\n\r\n");
-        if (headerlen < 16) {
-            chttpd_responseA(&c, 400, NULL);
+        if (headerlen == -1) {
+            /* FIXME: check if this is a head-only request */
+            /* need more data */
+            continue;
+        }
+
+        if (headerlen < 14) {
+            chttpd_response_errorA(&c, 400, NULL);
             ret = -1;
             break;
         }
@@ -161,9 +165,8 @@ connectionA(int argc, void *argv[]) {
         headerlen += 2;
         status = chttp_request_parse(c.request, mrb_readerptr(&c.ring),
                 headerlen);
-        mrb_skip(&c.ring, headerlen);
         if (status > 0) {
-            chttpd_responseA(&c, status, NULL);
+            chttpd_response_errorA(&c, status, NULL);
             ret = -1;
             break;
         }
@@ -182,7 +185,7 @@ connectionA(int argc, void *argv[]) {
 
         route = router_find(&s->router, c.request->verb, c.request->path);
         if (route == NULL) {
-            chttpd_responseA(&c, 404, NULL);
+            chttpd_response_errorA(&c, 404, NULL);
             continue;
         }
 
@@ -191,7 +194,7 @@ connectionA(int argc, void *argv[]) {
 
         if (route->handler(&c, route->ptr)) {
             // TODO: log the unhandled server error
-            chttpd_responseA(&c, 500, NULL);
+            chttpd_response_errorA(&c, 500, NULL);
             ret = -1;
             break;
         }

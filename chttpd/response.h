@@ -20,7 +20,7 @@
 #define CHTTPD_RESPONSE_H_
 
 
-int
+ssize_t
 response_tofileA(struct chttp_responsemaker *resp, int fd);
 
 

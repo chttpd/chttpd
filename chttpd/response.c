@@ -31,7 +31,7 @@
 #include "response.h"
 
 
-int
+ssize_t
 response_tofileA(struct chttp_responsemaker *resp, int fd) {
     struct iovec v[3];
     size_t totallen = resp->headerlen + resp->contentlength;
@@ -44,7 +44,7 @@ response_tofileA(struct chttp_responsemaker *resp, int fd) {
     v[2].iov_base = resp->content;
     v[2].iov_len = resp->contentlength;
 
-    written = writevA(fd, v, 2);
+    written = writevA(fd, v, 3);
     if (written != totallen) {
         // TODO: write the rest of the buffer later after pcaio_relaxA
         return -1;
@@ -55,9 +55,8 @@ response_tofileA(struct chttp_responsemaker *resp, int fd) {
 
 
 int
-chttpd_responseA(struct chttpd_connection *c, int status, const char *text) {
-    int contentlen;
-
+chttpd_responseA(struct chttpd_connection *c, int status, const char *text,
+        const char *content, size_t contentlen) {
     if (text == NULL) {
         text = chttp_status_text(status);
     }
@@ -71,13 +70,24 @@ chttpd_responseA(struct chttpd_connection *c, int status, const char *text) {
     }
 
     // TODO: config the content size
-    if (chttp_responsemaker_content_allocate(c->request, 512)) {
+    if (chttp_responsemaker_content_allocate(c->request, contentlen)) {
         return -1;
     }
 
-    contentlen = chttp_responsemaker_content_write(c->request,
-            "%d %s\r\n", status, text);
+    chttp_responsemaker_content_write(c->request, content);
+    if (chttp_responsemaker_header_close(c->request)) {
+        return -1;
+    }
 
-    DEBUG("content len: %d", contentlen);
     return response_tofileA(&c->request->response, c->fd);
+}
+
+
+int
+chttpd_response_errorA(struct chttpd_connection *c, int status,
+        const char *text) {
+    const char *content;
+
+    content = chttp_status_text(status);
+    return chttpd_responseA(c, status, text, content, strlen(content));
 }
