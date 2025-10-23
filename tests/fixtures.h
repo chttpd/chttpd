@@ -24,9 +24,6 @@
 #include "chttpd/chttpd.h"
 
 
-extern struct chttpd_connection testconn;
-
-
 chttp_status_t
 testreq(const char *fmt, ...);
 

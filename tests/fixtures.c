@@ -39,7 +39,8 @@
 #include "fixtures.h"
 
 
-struct chttpd_connection testconn;
+#define BUFFSIZE 4096
+static char _buff[BUFFSIZE];
 struct chttpd _chttpd = {
     .config = &chttpd_defaultconfig,
     .fd = -1,
@@ -50,15 +51,20 @@ struct chttpd _chttpd = {
 static int
 _clientA(int argc, void *argv[]) {
     int fd = (long)argv[0];
-    char *req = (char *)argv[1];
-    ssize_t reqlen = (long)argv[2];
+    ssize_t reqlen = (long)argv[1];
     ssize_t bytes;
 
-    bytes = writeA(fd, req, reqlen);
+    bytes = writeA(fd, _buff, reqlen);
     if (bytes < reqlen) {
         return -1;
     }
 
+    bytes = readA(fd, _buff, BUFFSIZE);
+    if (bytes <= 0) {
+        return -1;
+    }
+
+    // chttp_response_startline_parse(
     return 0;
 }
 
@@ -71,6 +77,7 @@ _sockpair(int socks[2], union saddr *caddr) {
         return -1;
     }
 
+    // FIXME: delete
     addrlen = sizeof(struct sockaddr_storage);
     if (getsockname(socks[0], &caddr->sa, &addrlen)) {
         close(socks[0]);
@@ -86,50 +93,40 @@ chttp_status_t
 testreq(const char *fmt, ...) {
     chttp_status_t ret = 0;
     va_list args;
-    char buff[4096];
     int socks[2];
     int bytes;
     struct pcaio_task *tasks[2];
     struct pcaio_iomodule *modepoll;
     union saddr caddr;
+    int client_exitstatus;
+    int server_exitstatus;
 
     va_start(args, fmt);
-    bytes = vsnprintf(buff, sizeof(buff), fmt, args);
+    bytes = vsnprintf(_buff, BUFFSIZE, fmt, args);
     va_end(args);
 
-    if (bytes >= sizeof(buff)) {
-        /* output truncated */
-        return -2;
-    }
-
-    /* register modules */
-    if (pcaio_modepoll_use(2, &modepoll)) {
-        return -2;
-    }
-
-    if (pcaio_modio_use(modepoll)) {
-        return -2;
-    }
-
-    if (_sockpair(socks, &caddr)) {
-        return -2;
-    }
+    /* ensure the output is not truncated */
+    ASSRT(bytes >= BUFFSIZE);
+    ASSRT(pcaio_modepoll_use(2, &modepoll));
+    ASSRT(pcaio_modio_use(modepoll));
+    ASSRT(_sockpair(socks, &caddr));
 
     DEBUG("caddr: %s", saddr2a(&caddr));
-    tasks[0] = pcaio_task_new(_clientA, 3, socks[0], buff, bytes);
-    tasks[1] = pcaio_task_new(connectionA, 3, &_chttpd, socks[1], &caddr);
-    if ((tasks[0] == NULL) || (tasks[0] == NULL)) {
-        ret = -2;
-        goto done;
-    }
+    tasks[0] = pcaio_task_new(_clientA, &client_exitstatus, 2, socks[0],
+            bytes);
+    ASSRT(!tasks[0]);
+
+    tasks[1] = pcaio_task_new(connectionA, &server_exitstatus, 3, &_chttpd,
+            socks[1], &caddr);
+    ASSRT(!tasks[1]);
 
     /* run event loop */
-    ret = pcaio(1, tasks, 2);
+    ASSRT(pcaio(1, tasks, 2));
 
-done:
-    pcaio_task_free(tasks[0]);
-    pcaio_task_free(tasks[1]);
+    /* cleanup */
     close(socks[0]);
     close(socks[1]);
-    return ret;
+    ASSRT(ret);
+
+    return client_exitstatus;
 }

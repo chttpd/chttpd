@@ -21,7 +21,7 @@
 
 
 int
-response_tofileA(struct chttp_response *resp, int fd);
+response_tofileA(struct chttp_serverresponse *resp, int fd);
 
 
 #endif  // CHTTPD_RESPONSE_H_

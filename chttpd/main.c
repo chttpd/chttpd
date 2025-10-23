@@ -40,12 +40,15 @@ chttpd_main(struct chttpd *s) {
         return -1;
     }
 
-    task = pcaio_task_new(chttpdA, 1, s);
+    // TODO: task status
+    task = pcaio_task_new(chttpdA, NULL, 1, s);
     if (task == NULL) {
         return -1;
     }
 
     /* run event loop */
+    // TODO: only reflect the pcaio function result, and return task status
+    //       instead
     ret = pcaio(1, &task, 1);
     chttpd_free(s);
 
