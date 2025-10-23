@@ -28,7 +28,8 @@
 #include "chttpd/addr.h"
 
 
-typedef int (*chttpd_handler_t)(struct chttp_request *r, void *ptr);
+struct chttpd_connection;
+typedef int (*chttpd_handler_t)(struct chttpd_connection *c, void *ptr);
 typedef struct chttpd *chttpd_t;
 struct chttpd_config {
     const char *bind;

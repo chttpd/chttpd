@@ -27,7 +27,7 @@
 
 
 static int
-_index(struct chttp_request *req, void *ptr) {
+_index(struct chttpd_connection *c, void *ptr) {
     // httpd_response_start(req, 200, NULL);
     // httpd_response_contenttype_set(req, "text/plain", "utf-8");
     // httpd_response_write(req, "Hello %s", __FILE__);

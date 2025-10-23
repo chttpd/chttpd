@@ -188,6 +188,13 @@ connectionA(int argc, void *argv[]) {
 
         INFO("new request: %s %s %s, route: %p",
                 c.request->verb, c.request->path, c.request->query, route);
+
+        if (route->handler(&c, route->ptr)) {
+            // TODO: log the unhandled server error
+            chttpd_responseA(&c, 500, NULL);
+            ret = -1;
+            break;
+        }
     }
 
     close(fd);
@@ -197,7 +204,3 @@ connectionA(int argc, void *argv[]) {
 
     return ret;
 }
-//     // if (r->handler(req, r->ptr)) {
-//     //     // TODO: log the unhandled server error
-//     //     http_response_rejectA(req, 500, http_status_text(500));
-//     // }
