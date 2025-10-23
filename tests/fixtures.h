@@ -25,7 +25,7 @@
 
 
 chttp_status_t
-testreq(const char *fmt, ...);
+testreq(struct chttp_response *r, const char *fmt, ...);
 
 
 #endif  // TESTS_FIXTURES_H_

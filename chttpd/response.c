@@ -32,15 +32,17 @@
 
 
 int
-response_tofileA(struct chttp_serverresponse *resp, int fd) {
-    struct iovec v[2];
+response_tofileA(struct chttp_responsemaker *resp, int fd) {
+    struct iovec v[3];
     size_t totallen = resp->headerlen + resp->contentlength;
     size_t written;
 
     v[0].iov_base = (void *)resp->header;
     v[0].iov_len = resp->headerlen;
-    v[1].iov_base = resp->content;
-    v[1].iov_len = resp->contentlength;
+    v[1].iov_base = "\r\n";
+    v[1].iov_len = 2;
+    v[2].iov_base = resp->content;
+    v[2].iov_len = resp->contentlength;
 
     written = writevA(fd, v, 2);
     if (written != totallen) {
@@ -60,20 +62,20 @@ chttpd_responseA(struct chttpd_connection *c, int status, const char *text) {
         text = chttp_status_text(status);
     }
 
-    if (chttp_serverresponse_start(c->request, status, text)) {
+    if (chttp_responsemaker_start(c->request, status, text)) {
         return -1;
     }
 
-    if (chttp_serverresponse_contenttype(c->request, "text/plain", "utf-8")) {
+    if (chttp_responsemaker_contenttype(c->request, "text/plain", "utf-8")) {
         return -1;
     }
 
     // TODO: config the content size
-    if (chttp_serverresponse_content_allocate(c->request, 512)) {
+    if (chttp_responsemaker_content_allocate(c->request, 512)) {
         return -1;
     }
 
-    contentlen = chttp_serverresponse_content_write(c->request,
+    contentlen = chttp_responsemaker_content_write(c->request,
             "%d %s\r\n", status, text);
 
     DEBUG("content len: %d", contentlen);

@@ -52,7 +52,10 @@ static int
 _clientA(int argc, void *argv[]) {
     int fd = (long)argv[0];
     ssize_t reqlen = (long)argv[1];
+    struct chttp_response *r = (struct chttp_response*)argv[2];
     ssize_t bytes;
+    chttp_status_t status;
+    char *content;
 
     bytes = writeA(fd, _buff, reqlen);
     if (bytes < reqlen) {
@@ -64,33 +67,35 @@ _clientA(int argc, void *argv[]) {
         return -1;
     }
 
-    // chttp_response_startline_parse(
-    return 0;
+    content = memmem(_buff, bytes, "\r\n\r\n", 4);
+    if (content == NULL) {
+        return -1;
+    }
+
+    content += 2;
+    if (chttp_response_parse(r, _buff, content - _buff)) {
+        return -1;
+    }
+
+    status = r->status;
+    return status;
 }
 
 
 static int
 _sockpair(int socks[2], union saddr *caddr) {
-    socklen_t addrlen;
-
     if (socketpair(AF_UNIX, SOCK_STREAM | SOCK_NONBLOCK, 0, socks)) {
         return -1;
     }
 
-    // FIXME: delete
-    addrlen = sizeof(struct sockaddr_storage);
-    if (getsockname(socks[0], &caddr->sa, &addrlen)) {
-        close(socks[0]);
-        close(socks[1]);
-        return -1;
-    }
-
+    // TODO: mock socket address
+    memset(caddr, 0, sizeof(union saddr));
     return 0;
 }
 
 
 chttp_status_t
-testreq(const char *fmt, ...) {
+testreq(struct chttp_response *r, const char *fmt, ...) {
     chttp_status_t ret = 0;
     va_list args;
     int socks[2];
@@ -112,8 +117,8 @@ testreq(const char *fmt, ...) {
     ASSRT(_sockpair(socks, &caddr));
 
     DEBUG("caddr: %s", saddr2a(&caddr));
-    tasks[0] = pcaio_task_new(_clientA, &client_exitstatus, 2, socks[0],
-            bytes);
+    tasks[0] = pcaio_task_new(_clientA, &client_exitstatus, 3, socks[0],
+            bytes, r);
     ASSRT(!tasks[0]);
 
     tasks[1] = pcaio_task_new(connectionA, &server_exitstatus, 3, &_chttpd,

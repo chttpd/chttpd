@@ -29,10 +29,13 @@
 
 void
 test_connection() {
-    // struct chttp_response *resp = &testconn.request->response;
+    struct chttp_response *r = chttp_response_new(1);
 
-    eqint(400, testreq("foo"));
-    // eqnstr("Bad Request", resp->header, resp->headerlen);
+    eqint(400, testreq(r, "foo"));
+    eqint(400, r->status);
+    eqstr("Bad Request", r->text);
+
+    chttp_response_free(r);
 }
 
 
