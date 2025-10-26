@@ -17,6 +17,8 @@
  *  Author: Vahid Mardani <vahid.mardani@gmail.com>
  */
 /* standard */
+#include <stdio.h>
+#include <stdarg.h>
 
 /* thirdparty */
 #include <clog.h>
@@ -180,4 +182,39 @@ chttpd_response_content_flushA(struct chttpd_connection *c) {
 
     resp->contentlength = 0;
     return written;
+}
+
+
+int
+chttpd_response_chunk_flushA(struct chttpd_connection *c) {
+    struct chttp_responsemaker *resp = &c->request->response;
+    struct iovec v[3];
+    char head[32];
+    int headlen;
+    size_t totallen;
+    size_t written;
+
+    headlen = sprintf(head, "%X\r\n", (unsigned int)resp->contentlength);
+    v[0].iov_base = head;
+    v[0].iov_len = headlen;
+    v[1].iov_base = resp->content;
+    v[1].iov_len = resp->contentlength;
+    v[2].iov_base = "\r\n";
+    v[2].iov_len = 2;
+
+    totallen = headlen + resp->contentlength + 2;
+    written = writevA(c->fd, v, 3);
+    if (written != totallen) {
+        // TODO: write the rest of the buffer later after pcaio_relaxA
+        return -1;
+    }
+
+    resp->contentlength = 0;
+    return totallen;
+}
+
+
+int
+chttpd_response_chunk_end(struct chttpd_connection *c) {
+    return writeA(c->fd, "0\r\n\r\n", 5);
 }

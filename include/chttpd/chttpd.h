@@ -122,4 +122,12 @@ int
 chttpd_response_allocate(struct chttpd_connection *c, size_t size);
 
 
+int
+chttpd_response_chunk_flushA(struct chttpd_connection *c);
+
+
+int
+chttpd_response_chunk_end(struct chttpd_connection *c);
+
+
 #endif  // INCLUDE_CHTTPD_CHTTPD_H_

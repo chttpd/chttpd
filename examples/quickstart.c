@@ -38,14 +38,16 @@ _streamA(struct chttpd_connection *c, void *ptr) {
     OK(0 >= chttpd_response_header_flushA(c));
 
     OK(chttpd_response_allocate(c, 128));
-    OK(0 >= chttpd_response_write(c, "%X\r\nFoo\r\n", 3));
-    OK(0 >= chttpd_response_content_flushA(c));
-    OK(0 >= chttpd_response_write(c, "%X\r\nBar\r\n", 3));
-    OK(0 >= chttpd_response_content_flushA(c));
-    OK(0 >= chttpd_response_write(c, "%X\r\nBaz\r\n", 3));
-    OK(0 >= chttpd_response_content_flushA(c));
-    OK(0 >= chttpd_response_write(c, "0\r\n\r\n"));
-    OK(0 >= chttpd_response_content_flushA(c));
+
+    OK(0 >= chttpd_response_write(c, "Foo %s", "Bar"));
+    OK(0 >= chttpd_response_chunk_flushA(c));
+
+    OK(0 >= chttpd_response_write(c, " "));
+    OK(0 >= chttpd_response_write(c, "Baz %s", "Qux"));
+    OK(0 >= chttpd_response_write(c, "\r\n"));
+    OK(0 >= chttpd_response_chunk_flushA(c));
+
+    OK(0 >= chttpd_response_chunk_end(c));
     return 0;
 }
 
