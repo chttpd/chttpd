@@ -84,4 +84,42 @@ chttpd_response_errorA(struct chttpd_connection *c, int status,
         const char *text);
 
 
+ssize_t
+chttpd_response_flushA(struct chttpd_connection *c);
+
+
+int
+chttpd_response_start(struct chttpd_connection *c, int status,
+        const char *text);
+
+
+int
+chttpd_response_contenttype(struct chttpd_connection *c, const char *type,
+        const char *charset);
+
+
+int
+chttpd_response_header(struct chttpd_connection *c, const char *fmt, ...);
+
+
+int
+chttpd_response_write(struct chttpd_connection *c, const char *fmt, ...);
+
+
+int
+chttpd_response_header_close(struct chttpd_connection *c);
+
+
+ssize_t
+chttpd_response_header_flushA(struct chttpd_connection *c);
+
+
+ssize_t
+chttpd_response_content_flushA(struct chttpd_connection *c);
+
+
+int
+chttpd_response_allocate(struct chttpd_connection *c, size_t size);
+
+
 #endif  // INCLUDE_CHTTPD_CHTTPD_H_

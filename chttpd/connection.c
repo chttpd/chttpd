@@ -53,6 +53,13 @@ _init(struct chttpd *s, struct chttpd_connection *c, int fd,
 }
 
 
+static void
+_reset(struct chttpd_connection *c) {
+    mrb_reset(&c->ring);
+    chttp_request_reset(c->request);
+}
+
+
 static int
 _free(struct chttpd_connection *c) {
     int ret = 0;
@@ -143,6 +150,7 @@ connectionA(int argc, void *argv[]) {
         /* read as much as possible from the socket */
         if (_readallA(&c) < 16) {
             /* less than minimum startline: "GET / HTTP/1.1" */
+            DEBUG("less than minimum startline: GET / HTTP/1.1");
             chttpd_response_errorA(&c, 400, NULL);
             ret = -1;
             break;
@@ -198,6 +206,8 @@ connectionA(int argc, void *argv[]) {
             ret = -1;
             break;
         }
+
+        _reset(&c);
     }
 
     close(fd);

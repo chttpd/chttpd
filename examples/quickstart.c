@@ -26,12 +26,34 @@
 #include "chttpd/chttpd.h"
 
 
+#define OK(e) if (e) return -1
+
+
+static int
+_streamA(struct chttpd_connection *c, void *ptr) {
+    OK(chttpd_response_start(c, 200, NULL));
+    OK(chttpd_response_contenttype(c, "text/plain", "utf-8"));
+    OK(chttpd_response_header(c, "Transfer-Encoding: chunked"));
+    OK(chttpd_response_header_close(c));
+    OK(0 >= chttpd_response_header_flushA(c));
+
+    OK(chttpd_response_allocate(c, 128));
+    OK(0 >= chttpd_response_write(c, "%X\r\nFoo\r\n", 3));
+    OK(0 >= chttpd_response_content_flushA(c));
+    OK(0 >= chttpd_response_write(c, "%X\r\nBar\r\n", 3));
+    OK(0 >= chttpd_response_content_flushA(c));
+    OK(0 >= chttpd_response_write(c, "%X\r\nBaz\r\n", 3));
+    OK(0 >= chttpd_response_content_flushA(c));
+    OK(0 >= chttpd_response_write(c, "0\r\n\r\n"));
+    OK(0 >= chttpd_response_content_flushA(c));
+    return 0;
+}
+
+
 static int
 _indexA(struct chttpd_connection *c, void *ptr) {
-    if (14 != chttpd_responseA(c, 200, NULL, "Hello chttpd\r\n", 128)) {
-        return -1;
-    }
-
+    int bytes = chttpd_responseA(c, 200, NULL, "Hello chttpd\r\n", 128);
+    DEBUG("bytes: %d", bytes);
     return 0;
 }
 
@@ -43,5 +65,6 @@ main() {
 
     server = chttpd_new(&chttpd_defaultconfig);
     chttpd_route(server, "GET", "/", _indexA, NULL);
+    chttpd_route(server, "GET", "/stream", _streamA, NULL);
     return chttpd_main(server);
 }

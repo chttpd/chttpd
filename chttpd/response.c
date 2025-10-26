@@ -31,26 +31,55 @@
 #include "response.h"
 
 
-ssize_t
-response_tofileA(struct chttp_responsemaker *resp, int fd) {
-    struct iovec v[3];
-    size_t totallen = resp->headerlen + resp->contentlength;
-    size_t written;
+int
+chttpd_response_start(struct chttpd_connection *c, int status,
+        const char *text) {
+    return chttp_responsemaker_start(c->request, status, text);
+}
 
-    v[0].iov_base = (void *)resp->header;
-    v[0].iov_len = resp->headerlen;
-    v[1].iov_base = "\r\n";
-    v[1].iov_len = 2;
-    v[2].iov_base = resp->content;
-    v[2].iov_len = resp->contentlength;
 
-    written = writevA(fd, v, 3);
-    if (written != totallen) {
-        // TODO: write the rest of the buffer later after pcaio_relaxA
-        return -1;
-    }
+int
+chttpd_response_contenttype(struct chttpd_connection *c, const char *type,
+        const char *charset) {
+    return chttp_responsemaker_contenttype(c->request, type, charset);
+}
 
-    return totallen;
+
+int
+chttpd_response_header(struct chttpd_connection *c, const char *fmt, ...) {
+    int ret;
+    va_list args;
+
+    va_start(args, fmt);
+    ret = chttp_responsemaker_vheader(c->request, fmt, args);
+    va_end(args);
+
+    return ret;
+}
+
+
+int
+chttpd_response_header_close(struct chttpd_connection *c) {
+    return chttp_responsemaker_header_close(c->request);
+}
+
+
+int
+chttpd_response_allocate(struct chttpd_connection *c, size_t size) {
+    return chttp_responsemaker_content_allocate(c->request, size);
+}
+
+
+int
+chttpd_response_write(struct chttpd_connection *c, const char *fmt, ...) {
+    int ret;
+    va_list args;
+
+    va_start(args, fmt);
+    ret = chttp_responsemaker_content_vwrite(c->request, fmt, args);
+    va_end(args);
+
+    return ret;
 }
 
 
@@ -61,25 +90,27 @@ chttpd_responseA(struct chttpd_connection *c, int status, const char *text,
         text = chttp_status_text(status);
     }
 
-    if (chttp_responsemaker_start(c->request, status, text)) {
+    if (chttpd_response_start(c, status, text)) {
         return -1;
     }
 
-    if (chttp_responsemaker_contenttype(c->request, "text/plain", "utf-8")) {
+    if (chttpd_response_contenttype(c, "text/plain", "utf-8")) {
         return -1;
     }
 
-    // TODO: config the content size
-    if (chttp_responsemaker_content_allocate(c->request, contentlen)) {
+    if (chttpd_response_allocate(c, contentlen)) {
         return -1;
     }
 
-    chttp_responsemaker_content_write(c->request, content);
-    if (chttp_responsemaker_header_close(c->request)) {
+    if (chttpd_response_write(c, content) == -1) {
         return -1;
     }
 
-    return response_tofileA(&c->request->response, c->fd);
+    if (chttpd_response_header_close(c)) {
+        return -1;
+    }
+
+    return chttpd_response_flushA(c);
 }
 
 
@@ -90,4 +121,63 @@ chttpd_response_errorA(struct chttpd_connection *c, int status,
 
     content = chttp_status_text(status);
     return chttpd_responseA(c, status, text, content, strlen(content));
+}
+
+
+ssize_t
+chttpd_response_flushA(struct chttpd_connection *c) {
+    int vectors = 1;
+    struct iovec v[3];
+    struct chttp_responsemaker *resp = &c->request->response;
+    size_t totallen;
+    size_t written;
+
+    v[0].iov_base = (void *)resp->header;
+    v[0].iov_len = resp->headerlen;
+    totallen = resp->headerlen;
+    if (resp->content) {
+        v[1].iov_base = resp->content;
+        v[1].iov_len = resp->contentlength;
+        vectors++;
+        totallen += resp->contentlength;
+    }
+
+    written = writevA(c->fd, v, vectors);
+    if (written != totallen) {
+        // TODO: write the rest of the buffer later after pcaio_relaxA
+        return -1;
+    }
+
+    return totallen;
+}
+
+
+ssize_t
+chttpd_response_header_flushA(struct chttpd_connection *c) {
+    struct chttp_responsemaker *resp = &c->request->response;
+    size_t written;
+
+    written = writeA(c->fd, (void *)resp->header, resp->headerlen);
+    if (written != resp->headerlen) {
+        // TODO: write the rest of the buffer later after pcaio_relaxA
+        return -1;
+    }
+
+    return written;
+}
+
+
+ssize_t
+chttpd_response_content_flushA(struct chttpd_connection *c) {
+    struct chttp_responsemaker *resp = &c->request->response;
+    size_t written;
+
+    written = writeA(c->fd, resp->content, resp->contentlength);
+    if (written != resp->contentlength) {
+        // TODO: write the rest of the buffer later after pcaio_relaxA
+        return -1;
+    }
+
+    resp->contentlength = 0;
+    return written;
 }
