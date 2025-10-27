@@ -30,6 +30,32 @@
 
 
 static int
+_chatA(struct chttpd_connection *c, void *ptr) {
+#define BS 128
+    char buff[BS];
+    ssize_t bytes;
+
+    OK(chttpd_response_start(c, 200, NULL));
+    OK(chttpd_response_contenttype(c, "text/plain", "utf-8"));
+    OK(chttpd_response_header(c, "Transfer-Encoding: chunked"));
+    OK(chttpd_response_header_close(c));
+    OK(0 >= chttpd_response_header_flushA(c));
+
+    for (;;) {
+        bytes = chttpd_request_readchunkA(c, buff, BS);
+        if (bytes <= 0) {
+            break;
+        }
+        OK(0 >= chttpd_response_writechunkA(c, buff, bytes));
+    }
+
+    /* terminate */
+    OK(0 >= chttpd_response_chunk_end(c));
+    return 0;
+}
+
+
+static int
 _streamA(struct chttpd_connection *c, void *ptr) {
     OK(chttpd_response_start(c, 200, NULL));
     OK(chttpd_response_contenttype(c, "text/plain", "utf-8"));
@@ -37,16 +63,20 @@ _streamA(struct chttpd_connection *c, void *ptr) {
     OK(chttpd_response_header_close(c));
     OK(0 >= chttpd_response_header_flushA(c));
 
+    /* allocate chunk size */
     OK(chttpd_response_allocate(c, 128));
 
+    /* first chunk */
     OK(0 >= chttpd_response_write(c, "Foo %s", "Bar"));
     OK(0 >= chttpd_response_chunk_flushA(c));
 
+    /* second chunk */
     OK(0 >= chttpd_response_write(c, " "));
     OK(0 >= chttpd_response_write(c, "Baz %s", "Qux"));
     OK(0 >= chttpd_response_write(c, "\r\n"));
     OK(0 >= chttpd_response_chunk_flushA(c));
 
+    /* terminate */
     OK(0 >= chttpd_response_chunk_end(c));
     return 0;
 }
@@ -66,7 +96,8 @@ main() {
     clog_verbositylevel = CLOG_DEBUG;
 
     server = chttpd_new(&chttpd_defaultconfig);
-    chttpd_route(server, "GET", "/", _indexA, NULL);
+    chttpd_route(server, "POST", "/chat", _chatA, NULL);
     chttpd_route(server, "GET", "/stream", _streamA, NULL);
+    chttpd_route(server, "GET", "/", _indexA, NULL);
     return chttpd_main(server);
 }

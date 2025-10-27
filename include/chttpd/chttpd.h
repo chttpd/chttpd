@@ -102,7 +102,7 @@ int
 chttpd_response_header(struct chttpd_connection *c, const char *fmt, ...);
 
 
-int
+ssize_t
 chttpd_response_write(struct chttpd_connection *c, const char *fmt, ...);
 
 
@@ -122,12 +122,30 @@ int
 chttpd_response_allocate(struct chttpd_connection *c, size_t size);
 
 
-int
+ssize_t
 chttpd_response_chunk_flushA(struct chttpd_connection *c);
 
 
 int
+chttpd_response_writechunkA(struct chttpd_connection *c, const char *budd,
+        size_t len);
+
+
+int
 chttpd_response_chunk_end(struct chttpd_connection *c);
+
+
+ssize_t
+chttpd_connection_readallA(struct chttpd_connection *c);
+
+
+ssize_t
+chttpd_connection_search(struct chttpd_connection *c, const char *s);
+
+
+ssize_t
+chttpd_request_readchunkA(struct chttpd_connection *c, char *buff,
+        size_t max);
 
 
 #endif  // INCLUDE_CHTTPD_CHTTPD_H_

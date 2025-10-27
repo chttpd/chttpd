@@ -72,7 +72,7 @@ chttpd_response_allocate(struct chttpd_connection *c, size_t size) {
 }
 
 
-int
+ssize_t
 chttpd_response_write(struct chttpd_connection *c, const char *fmt, ...) {
     int ret;
     va_list args;
@@ -185,7 +185,7 @@ chttpd_response_content_flushA(struct chttpd_connection *c) {
 }
 
 
-int
+ssize_t
 chttpd_response_chunk_flushA(struct chttpd_connection *c) {
     struct chttp_responsemaker *resp = &c->request->response;
     struct iovec v[3];
@@ -215,6 +215,18 @@ chttpd_response_chunk_flushA(struct chttpd_connection *c) {
 
 
 int
+chttpd_response_writechunkA(struct chttpd_connection *c, const char *budd,
+        size_t len) {
+    // TODO: implement
+    return -1;
+}
+
+
+int
 chttpd_response_chunk_end(struct chttpd_connection *c) {
-    return writeA(c->fd, "0\r\n\r\n", 5);
+    if (writeA(c->fd, "0\r\n\r\n", 5) != 5) {
+        return -1;
+    }
+
+    return 0;
 }

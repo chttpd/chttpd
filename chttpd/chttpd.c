@@ -121,5 +121,7 @@ chttpdA(int argc, void *argv[]) {
         pcaio_fschedule(connectionA, NULL, 3, s, cfd, caddr);
     }
 
+    // TODO: move it to pcaio task disposation callback
+    close(s->listenfd);
     return 0;
 }
