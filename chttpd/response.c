@@ -186,39 +186,46 @@ chttpd_response_content_flushA(struct chttpd_connection *c) {
 
 
 ssize_t
-chttpd_response_chunk_flushA(struct chttpd_connection *c) {
+chttpd_response_flushchunkA(struct chttpd_connection *c) {
     struct chttp_responsemaker *resp = &c->request->response;
+    ssize_t len;
+
+    len = chttpd_response_writechunkA(c, resp->content, resp->contentlength);
+    if (len != resp->contentlength) {
+        // TODO: write the rest of the buffer later after pcaio_relaxA
+        return -1;
+    }
+
+    resp->contentlength = 0;
+    return len;
+}
+
+
+ssize_t
+chttpd_response_writechunkA(struct chttpd_connection *c, const char *buff,
+        size_t len) {
     struct iovec v[3];
     char head[32];
     int headlen;
     size_t totallen;
     size_t written;
 
-    headlen = sprintf(head, "%X\r\n", (unsigned int)resp->contentlength);
+    headlen = sprintf(head, "%X\r\n", (unsigned int)len);
     v[0].iov_base = head;
     v[0].iov_len = headlen;
-    v[1].iov_base = resp->content;
-    v[1].iov_len = resp->contentlength;
+    v[1].iov_base = (void *)buff;
+    v[1].iov_len = len;
     v[2].iov_base = "\r\n";
     v[2].iov_len = 2;
 
-    totallen = headlen + resp->contentlength + 2;
+    totallen = headlen + len + 2;
     written = writevA(c->fd, v, 3);
     if (written != totallen) {
         // TODO: write the rest of the buffer later after pcaio_relaxA
         return -1;
     }
 
-    resp->contentlength = 0;
     return totallen;
-}
-
-
-int
-chttpd_response_writechunkA(struct chttpd_connection *c, const char *budd,
-        size_t len) {
-    // TODO: implement
-    return -1;
 }
 
 

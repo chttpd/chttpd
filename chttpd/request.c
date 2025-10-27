@@ -30,6 +30,11 @@
 #include "request.h"
 
 
+/**
+ * return the number of characters which would have been written to the target
+ * buffer if enought space had been available. otherwise, chunksize and -1 for
+ * error.
+ */
 ssize_t
 chttpd_request_readchunkA(struct chttpd_connection *c, char *buff,
         size_t max) {
@@ -43,11 +48,15 @@ chttpd_request_readchunkA(struct chttpd_connection *c, char *buff,
         return -1;
     }
 
-    /* read as mush as possible into the ringbuffer */
-    bytes = chttpd_connection_readallA(c);
+    bytes = mrb_used(&c->ring);
     if (bytes < 5) {
-        return -1;
+        /* read as mush as possible into the ringbuffer */
+        bytes = chttpd_connection_readallA(c);
+        if (bytes < 5) {
+            return -1;
+        }
     }
+
 
     /* search for the first CRLF */
     headlen = chttpd_connection_search(c, "\r\n");
@@ -59,7 +68,18 @@ chttpd_request_readchunkA(struct chttpd_connection *c, char *buff,
     in = mrb_readerptr(&c->ring);
     errno = 0;
     chunksize = strtol(in, &endptr, 16);
-    if ((chunksize == 0) || (errno == ERANGE)) {
+    if (errno == ERANGE) {
+        /* value out of range */
+        return -1;
+    }
+
+    if (chunksize == 0) {
+        if (in[0] == '0') {
+            /* termination chunk */
+            return 0;
+        }
+
+        /* parse error */
         return -1;
     }
 
@@ -68,14 +88,27 @@ chttpd_request_readchunkA(struct chttpd_connection *c, char *buff,
         return -1;
     }
 
-    /* copy the chunk */
-    bytes = mrb_getmin(&c->ring, buff, chunksize, max);
-    if (bytes != chunksize) {
-        return -1;
+    /* check the target buffer has enought space to hold the chunk */
+    if (chunksize > max) {
+        /* return the number of characters which would have been written to
+           the target buffer if enought space had been available. */
+        return chunksize;
     }
 
-    /* mark the chunksize as read */
-    if (mrb_skip(&c->ring, chunksize)) {
+ensure:
+    /* ensure the whole chunk(including CRLF suffix) is received */
+    if ((chunksize + 2) > mrb_used(&c->ring)) {
+        /* read as mush as possible into the ringbuffer */
+        if (chttpd_connection_readallA(c) == -1) {
+            return -1;
+        }
+
+        goto ensure;
+    }
+
+    /* copy the chunk without the trailing CRLF*/
+    bytes = mrb_get(&c->ring, buff, chunksize);
+    if (bytes != chunksize) {
         return -1;
     }
 

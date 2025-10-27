@@ -53,6 +53,10 @@ struct chttpd_connection {
 };
 
 
+void
+chttpd_config_makedefaults(struct chttpd_config *c);
+
+
 struct chttpd *
 chttpd_new(const struct chttpd_config *c);
 
@@ -123,10 +127,10 @@ chttpd_response_allocate(struct chttpd_connection *c, size_t size);
 
 
 ssize_t
-chttpd_response_chunk_flushA(struct chttpd_connection *c);
+chttpd_response_flushchunkA(struct chttpd_connection *c);
 
 
-int
+ssize_t
 chttpd_response_writechunkA(struct chttpd_connection *c, const char *budd,
         size_t len);
 

@@ -39,15 +39,6 @@
 #include "response.h"
 
 
-const struct chttpd_config chttpd_defaultconfig = {
-    .bind = "127.0.0.1:8080",
-    .backlog = 10,
-    .requestbuffer_mempages = 1,
-    .connectionbuffer_mempages = 1,
-    .connections_max = 10,
-};
-
-
 struct chttpd *
 chttpd_new(const struct chttpd_config *c) {
     struct chttpd *s;

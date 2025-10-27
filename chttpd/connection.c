@@ -185,7 +185,7 @@ connectionA(int argc, void *argv[]) {
             break;
         }
 
-        if (mrb_skip(&c.ring, headerlen)) {
+        if (mrb_skip(&c.ring, headerlen + 2)) {
             ERROR("mrb_skip");
             ret = -1;
             break;
