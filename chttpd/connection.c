@@ -94,12 +94,21 @@ retry:
 }
 
 
+/** read as much as possible from the peer into the connection's circular
+ * buffer.
+ * returns -2 if buffer full, -1 if read error and total numbers of bytes
+ * inside the buffer on successful read.
+ */
 ssize_t
 chttpd_connection_readallA(struct chttpd_connection *c) {
     size_t avail;
 
     avail = mrb_available(&c->ring);
-    if ((avail) && _readA(c, avail) == -1) {
+    if (!avail) {
+        return -2;
+    }
+
+    if (_readA(c, avail) == -1) {
         return -1;
     }
 
@@ -107,10 +116,38 @@ chttpd_connection_readallA(struct chttpd_connection *c) {
 }
 
 
+/** ensure atleast count bytes are exists in the connection's circular
+ * buffer and tries to read the missing bytes.
+ * returns:
+ * -2: if the count is greater than the buffer size.
+ * -1: if read error and finally
+ *  0: if total numbers of bytes inside the buffer is less than or equals to
+ *     count.
+ */
+int
+chttpd_connection_atleastA(struct chttpd_connection *c, size_t count) {
+    size_t used;
+
+    if (count > c->ring.size) {
+        return -2;
+    }
+
+    used = mrb_used(&c->ring);
+    if (used >= count) {
+        return 0;
+    }
+
+    if (_readA(c, count - used) == -1) {
+        return -1;
+    }
+
+    return 0;
+}
+
+
 /** search inside the input ring buffer.
  * returns:
  * -1: not found
- * -2: buffer is full and not found.
  *  n: length of found string.
  */
 ssize_t
@@ -119,14 +156,38 @@ chttpd_connection_search(struct chttpd_connection *c, const char *s) {
 
     ret = mrb_search(&c->ring, s, strlen(s), 0, -1);
     if (ret == -1) {
-        if (mrb_isfull(&c->ring)) {
-            return -2;
-        }
-
         return -1;
     }
 
     return ret;
+}
+
+
+/** ensure atleast bytes are exists in the connection circular buffer and
+ * search inside the circular buffer for the given expression.
+ * returns:
+ * -1: read error
+ * -2: atleast is less than the buffer size.
+ * -3: atleast N chars are exists in the buffer and not found.
+ *  n: length of found string.
+ */
+ssize_t
+chttpd_connection_readsearchA(struct chttpd_connection *c, const char *s,
+        size_t atleast) {
+    ssize_t readret;
+    ssize_t searchret;
+
+    readret = chttpd_connection_atleastA(c, atleast);
+    if (readret) {
+        return readret;
+    }
+
+    searchret = chttpd_connection_search(c, "\r\n");
+    if (searchret == -1) {
+        return -3;
+    }
+
+    return searchret;
 }
 
 
@@ -148,23 +209,9 @@ connectionA(int argc, void *argv[]) {
 
     for (;;) {
         /* read as much as possible from the socket */
-        if (chttpd_connection_readallA(&c) < 16) {
-            /* less than minimum startline: "GET / HTTP/1.1" */
-            DEBUG("less than minimum startline: GET / HTTP/1.1");
-            chttpd_response_errorA(&c, 400, NULL);
-            ret = -1;
-            break;
-        }
-
-        /* search for the end of the request's header */
-        headerlen = chttpd_connection_search(&c, "\r\n\r\n");
-        if (headerlen == -1) {
-            /* FIXME: check if this is a head-only request */
-            /* need more data */
-            continue;
-        }
-
-        if (headerlen < 14) {
+        /* FIXME: check if this is a head-only request */
+        headerlen = chttpd_connection_readsearchA(&c, "\r\n\r\n", 16);
+        if (headerlen <= 0) {
             chttpd_response_errorA(&c, 400, NULL);
             ret = -1;
             break;

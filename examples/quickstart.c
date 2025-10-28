@@ -116,7 +116,7 @@ main() {
     struct chttpd_config config;
 
     chttpd_config_makedefaults(&config);
-    config.connectionbuffer_mempages = 16;
+    // config.connectionbuffer_mempages = 16;
     server = chttpd_new(&config);
     chttpd_route(server, "POST", "/chat", _chatA, NULL);
     chttpd_route(server, "GET", "/stream", _streamA, NULL);

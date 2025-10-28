@@ -152,4 +152,13 @@ chttpd_request_readchunkA(struct chttpd_connection *c, char *buff,
         size_t max);
 
 
+ssize_t
+chttpd_connection_readsearchA(struct chttpd_connection *c, const char *s,
+        size_t atleast);
+
+
+int
+chttpd_connection_atleastA(struct chttpd_connection *c, size_t count);
+
+
 #endif  // INCLUDE_CHTTPD_CHTTPD_H_

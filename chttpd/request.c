@@ -48,18 +48,8 @@ chttpd_request_readchunkA(struct chttpd_connection *c, char *buff,
         return -1;
     }
 
-    bytes = mrb_used(&c->ring);
-    if (bytes < 5) {
-        /* read as mush as possible into the ringbuffer */
-        bytes = chttpd_connection_readallA(c);
-        if (bytes < 5) {
-            return -1;
-        }
-    }
-
-
-    /* search for the first CRLF */
-    headlen = chttpd_connection_search(c, "\r\n");
+    /* read and search for the first CRLF */
+    headlen = chttpd_connection_readsearchA(c, "\r\n", 5);
     if (headlen <= 0) {
         return -1;
     }
@@ -95,26 +85,20 @@ chttpd_request_readchunkA(struct chttpd_connection *c, char *buff,
         return chunksize;
     }
 
-ensure:
     /* ensure the whole chunk(including CRLF suffix) is received */
-    if ((chunksize + 2) > mrb_used(&c->ring)) {
-        /* read as mush as possible into the ringbuffer */
-        if (chttpd_connection_readallA(c) == -1) {
-            return -1;
-        }
+    if (chttpd_connection_atleastA(c, chunksize + 2)) {
+        return -1;
+    }
 
-        goto ensure;
+    /* ensure the trailing CRLF */
+    in = mrb_readerptr(&c->ring) + chunksize;
+    if ((in[0] != '\r') || (in[1] != '\n')) {
+        return -1;
     }
 
     /* copy the chunk without the trailing CRLF*/
     bytes = mrb_get(&c->ring, buff, chunksize);
     if (bytes != chunksize) {
-        return -1;
-    }
-
-    /* ensure the trailing CRLF */
-    in = mrb_readerptr(&c->ring);
-    if ((in[0] != '\r') || (in[1] != '\n')) {
         return -1;
     }
 
