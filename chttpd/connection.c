@@ -254,6 +254,7 @@ connectionA(int argc, void *argv[]) {
             break;
         }
 
+        /* make everything fresh for the next request */
         _reset(&c);
     }
 

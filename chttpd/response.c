@@ -85,7 +85,7 @@ chttpd_response_write(struct chttpd_connection *c, const char *fmt, ...) {
 }
 
 
-int
+ssize_t
 chttpd_responseA(struct chttpd_connection *c, int status, const char *text,
         const char *content, size_t contentlen) {
     if (text == NULL) {
@@ -116,13 +116,13 @@ chttpd_responseA(struct chttpd_connection *c, int status, const char *text,
 }
 
 
-int
+ssize_t
 chttpd_response_errorA(struct chttpd_connection *c, int status,
         const char *text) {
     const char *content;
 
     content = chttp_status_text(status);
-    return chttpd_responseA(c, status, text, content, strlen(content));
+    return chttpd_responseA(c, status, text, content, strlen(content) + 1);
 }
 
 

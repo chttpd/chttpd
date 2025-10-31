@@ -28,10 +28,11 @@
 
 
 static void
-test_connection() {
+test_request_startline() {
     struct chttp_response *r = chttp_response_new(1);
 
-    eqint(400, testreq(r, "foo"));
+    eqint(-1, testreq(r, "foo"));
+    eqint(400, testreq(r, "GET / HTTP/1.1"));
     // eqint(400, r->status);
     // eqstr("Bad Request", r->text);
 
@@ -41,6 +42,6 @@ test_connection() {
 
 int
 main() {
-    test_connection();
+    test_request_startline();
     return EXIT_SUCCESS;
 }

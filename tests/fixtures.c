@@ -66,6 +66,7 @@ _clientA(int argc, void *argv[]) {
 
     bytes = readA(fd, _buff, BUFFSIZE);
     if (bytes <= 0) {
+        ERROR("readA");
         return -1;
     }
 
@@ -76,6 +77,7 @@ _clientA(int argc, void *argv[]) {
 
     content += 2;
     if (chttp_response_parse(r, _buff, content - _buff)) {
+        ERROR("chttp_response_parse");
         return -1;
     }
 

@@ -1,5 +1,6 @@
 ## high priority
 - why protocol is (null) at connection.c:200
+- tcp timeout and keep-alive
 - delete chttpd_free function
 - Form parsing
   - url formencodded 
