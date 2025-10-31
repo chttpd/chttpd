@@ -182,7 +182,7 @@ chttpd_connection_readsearchA(struct chttpd_connection *c, const char *s,
         return readret;
     }
 
-    searchret = chttpd_connection_search(c, "\r\n");
+    searchret = chttpd_connection_search(c, s);
     if (searchret == -1) {
         return -3;
     }
@@ -210,7 +210,7 @@ connectionA(int argc, void *argv[]) {
     for (;;) {
         /* read as much as possible from the socket */
         /* FIXME: check if this is a head-only request */
-        headerlen = chttpd_connection_readsearchA(&c, "\r\n\r\n", 16);
+        headerlen = chttpd_connection_readsearchA(&c, "\r\n\r\n", 18);
         if (headerlen <= 0) {
             chttpd_response_errorA(&c, 400, NULL);
             ret = -1;

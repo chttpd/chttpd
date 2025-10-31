@@ -31,11 +31,13 @@ static void
 test_request_startline() {
     struct chttp_response *r = chttp_response_new(1);
 
-    eqint(-1, testreq(r, "foo"));
+    eqint(400, testreq(r, "foo"));
     eqint(400, testreq(r, "GET / HTTP/1.1"));
-    // eqint(400, r->status);
-    // eqstr("Bad Request", r->text);
+    eqint(400, testreq(r, "GET / HTTP/1.1\r\n"));
+    eqint(400, r->status);
+    eqstr("Bad Request", r->text);
 
+    eqint(404, testreq(r, "GET / HTTP/1.1\r\n\r\n"));
     chttp_response_free(r);
 }
 

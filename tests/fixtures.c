@@ -82,6 +82,7 @@ _clientA(int argc, void *argv[]) {
     }
 
     status = r->status;
+    close(fd);
     return status;
 }
 
@@ -110,6 +111,10 @@ testreq(struct chttp_response *r, const char *fmt, ...) {
     int client_exitstatus;
     int server_exitstatus;
 
+    /* reset the response */
+    chttp_response_reset(r);
+
+    /* render request */
     va_start(args, fmt);
     bytes = vsnprintf(_buff, BUFFSIZE, fmt, args);
     va_end(args);
