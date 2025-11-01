@@ -41,7 +41,8 @@
 
 #define BUFFSIZE 4096
 static char _buff[BUFFSIZE];
-struct chttpd _chttpd = {
+static struct chttp_response *_resp  = NULL;
+static struct chttpd _chttpd = {
     .config = &chttpd_defaultconfig,
     .listenfd = -1,
     .router = {
@@ -54,7 +55,6 @@ static int
 _clientA(int argc, void *argv[]) {
     int fd = (long)argv[0];
     ssize_t reqlen = (long)argv[1];
-    struct chttp_response *r = (struct chttp_response*)argv[2];
     ssize_t bytes;
     chttp_status_t status;
     char *content;
@@ -76,12 +76,12 @@ _clientA(int argc, void *argv[]) {
     }
 
     content += 2;
-    if (chttp_response_parse(r, _buff, content - _buff)) {
+    if (chttp_response_parse(_resp, _buff, content - _buff)) {
         ERROR("chttp_response_parse");
         return -1;
     }
 
-    status = r->status;
+    status = _resp->status;
     close(fd);
     return status;
 }
@@ -99,8 +99,36 @@ _sockpair(int socks[2], union saddr *caddr) {
 }
 
 
+struct chttp_response *
+serverfixture_setup(unsigned char pages) {
+    if (_resp) {
+        return NULL;
+    }
+
+    _resp = chttp_response_new(pages);
+    if (_resp == NULL) {
+        return NULL;
+    }
+
+    return _resp;
+}
+
+
+void
+serverfixture_teardown() {
+    if (_resp) {
+        chttp_response_free(_resp);
+        _resp = NULL;
+    }
+
+    memset(&_chttpd, 0, sizeof(_chttpd));
+    _chttpd.listenfd = -1;
+    _chttpd.config = &chttpd_defaultconfig;
+}
+
+
 chttp_status_t
-testreq(struct chttp_response *r, const char *fmt, ...) {
+request(const char *fmt, ...) {
     chttp_status_t ret = 0;
     va_list args;
     int socks[2];
@@ -111,8 +139,9 @@ testreq(struct chttp_response *r, const char *fmt, ...) {
     int client_exitstatus;
     int server_exitstatus;
 
-    /* reset the response */
-    chttp_response_reset(r);
+    /* reset */
+    errno = 0;
+    chttp_response_reset(_resp);
 
     /* render request */
     va_start(args, fmt);
@@ -126,8 +155,8 @@ testreq(struct chttp_response *r, const char *fmt, ...) {
     ASSRT(_sockpair(socks, &caddr));
 
     DEBUG("caddr: %s", saddr2a(&caddr));
-    tasks[0] = pcaio_task_new(_clientA, &client_exitstatus, 3, socks[0],
-            bytes, r);
+    tasks[0] = pcaio_task_new(_clientA, &client_exitstatus, 2, socks[0],
+            bytes);
     ASSRT(!tasks[0]);
 
     tasks[1] = pcaio_task_new(connectionA, &server_exitstatus, 3, &_chttpd,
@@ -143,4 +172,11 @@ testreq(struct chttp_response *r, const char *fmt, ...) {
     ASSRT(ret);
 
     return client_exitstatus;
+}
+
+
+int
+route(const char *verb, const char *path, chttpd_handler_t handler,
+        void *ptr) {
+    return chttpd_route(&_chttpd, verb, path, handler, ptr);
 }

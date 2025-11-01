@@ -24,8 +24,24 @@
 #include "chttpd/chttpd.h"
 
 
+#define OK(e) if (e) return -1
+
+
 chttp_status_t
-testreq(struct chttp_response *r, const char *fmt, ...);
+request(const char *fmt, ...);
+
+
+struct chttp_response *
+serverfixture_setup(unsigned char pages);
+
+
+void
+serverfixture_teardown();
+
+
+int
+route(const char *verb, const char *path, chttpd_handler_t handler,
+        void *ptr);
 
 
 #endif  // TESTS_FIXTURES_H_

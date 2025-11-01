@@ -120,13 +120,14 @@ chttpd_connection_readallA(struct chttpd_connection *c) {
  * buffer and tries to read the missing bytes.
  * returns:
  * -2: if the count is greater than the buffer size.
- * -1: if read error and finally
+ * -1: if read error
  *  0: if total numbers of bytes inside the buffer is less than or equals to
  *     count.
  */
 int
 chttpd_connection_atleastA(struct chttpd_connection *c, size_t count) {
     size_t used;
+    ssize_t ret;
 
     if (count > c->ring.size) {
         return -2;
@@ -137,7 +138,8 @@ chttpd_connection_atleastA(struct chttpd_connection *c, size_t count) {
         return 0;
     }
 
-    if (_readA(c, count - used) == -1) {
+    ret = _readA(c, count - used);
+    if (ret <= 0) {
         return -1;
     }
 
@@ -211,6 +213,12 @@ connectionA(int argc, void *argv[]) {
         /* read as much as possible from the socket */
         /* FIXME: check if this is a head-only request */
         headerlen = chttpd_connection_readsearchA(&c, "\r\n\r\n", 18);
+        if (headerlen == -1) {
+            /* connection error */
+            ret = -1;
+            break;
+        }
+
         if (headerlen <= 0) {
             chttpd_response_errorA(&c, 400, NULL);
             ret = -1;

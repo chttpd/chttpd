@@ -27,23 +27,49 @@
 #include "tests/fixtures.h"
 
 
+static int
+_indexA(struct chttpd_connection *c, void *ptr) {
+    OK(-1 == chttpd_response_start(c, 200, NULL));
+    OK(chttpd_response_header(c, "x-headers: %d", c->request->headerscount));
+    OK(chttpd_response_header_close(c));
+    OK(-1 == chttpd_response_flushA(c));
+    return 0;
+}
+
+
+static void
+test_request_headers() {
+    struct chttp_response *r = serverfixture_setup(1);
+    isnotnull(r);
+
+    route("GET", "/", _indexA, NULL);
+    eqint(200, request("GET / HTTP/1.1\r\n\r\n"));
+    eqint(1, r->headerscount);
+    // eqstr("0", chttp_response_header_get(r, "x-headers"));
+    serverfixture_teardown();
+}
+
+
 static void
 test_request_startline() {
-    struct chttp_response *r = chttp_response_new(1);
+    struct chttp_response *r = serverfixture_setup(1);
+    isnotnull(r);
 
-    eqint(400, testreq(r, "foo"));
-    eqint(400, testreq(r, "GET / HTTP/1.1"));
-    eqint(400, testreq(r, "GET / HTTP/1.1\r\n"));
+    eqint(400, request("foo"));
+    eqint(400, request("GET / HTTP/1.1"));
+    eqint(400, request("GET / HTTP/1.1\r\n"));
     eqint(400, r->status);
     eqstr("Bad Request", r->text);
 
-    eqint(404, testreq(r, "GET / HTTP/1.1\r\n\r\n"));
-    chttp_response_free(r);
+    eqint(404, request("GET / HTTP/1.1\r\n\r\n"));
+    route("GET", "/", _indexA, NULL);
+    serverfixture_teardown();
 }
 
 
 int
 main() {
+    test_request_headers();
     test_request_startline();
     return EXIT_SUCCESS;
 }
