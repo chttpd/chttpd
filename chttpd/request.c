@@ -49,7 +49,7 @@ chttpd_request_readchunkA(struct chttpd_connection *c, char *buff,
     }
 
     /* read and search for the first CRLF */
-    headlen = chttpd_connection_readsearchA(c, "\r\n", 5);
+    headlen = chttpd_connection_readsearchA(c, "\r\n");
     if (headlen <= 0) {
         return -1;
     }

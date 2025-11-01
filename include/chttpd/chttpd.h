@@ -153,8 +153,7 @@ chttpd_request_readchunkA(struct chttpd_connection *c, char *buff,
 
 
 ssize_t
-chttpd_connection_readsearchA(struct chttpd_connection *c, const char *s,
-        size_t atleast);
+chttpd_connection_readsearchA(struct chttpd_connection *c, const char *s);
 
 
 int

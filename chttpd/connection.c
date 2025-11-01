@@ -34,6 +34,9 @@
 #include "connection.h"
 
 
+#define MIN(a, b) ((a) < (b)? a: b)
+
+
 static int
 _init(struct chttpd *s, struct chttpd_connection *c, int fd,
         union saddr *peer) {
@@ -70,13 +73,22 @@ _free(struct chttpd_connection *c) {
 }
 
 
+/** read as much as possible from the peer and returns length of the newly
+ * read data, -2 when buffer is full, 0 on end-of-file and -1 on error.
+ * The out ptr will set to the start of the received data on successfull read.
+ */
 static int
-_readA(struct chttpd_connection *c, size_t len) {
+_readA(struct chttpd_connection *c, char **out) {
     ssize_t bytes;
+    char *start = mrb_readerptr(&c->ring);
     pcaio_relaxA(0);
 
 retry:
-    bytes = mrb_readin(&c->ring, c->fd, len);
+    bytes = mrb_readallin(&c->ring, c->fd);
+    if (bytes == -2) {
+        return -2;
+    }
+
     if (bytes == -1) {
         if (!RETRY(errno)) {
             return -1;
@@ -86,34 +98,35 @@ retry:
             return -1;
         }
 
+        errno = 0;
         goto retry;
     }
 
-    errno = 0;
+    *out = start;
     return bytes;
 }
 
 
-/** read as much as possible from the peer into the connection's circular
- * buffer.
- * returns -2 if buffer full, -1 if read error and total numbers of bytes
- * inside the buffer on successful read.
- */
-ssize_t
-chttpd_connection_readallA(struct chttpd_connection *c) {
-    size_t avail;
-
-    avail = mrb_available(&c->ring);
-    if (!avail) {
-        return -2;
-    }
-
-    if (_readA(c, avail) == -1) {
-        return -1;
-    }
-
-    return mrb_used(&c->ring);
-}
+// /** read as much as possible from the peer into the connection's circular
+//  * buffer.
+//  * returns -2 if buffer full, -1 if read error and total numbers of bytes
+//  * inside the buffer on successful read.
+//  */
+// ssize_t
+// chttpd_connection_readallA(struct chttpd_connection *c) {
+//     size_t avail;
+//
+//     avail = mrb_available(&c->ring);
+//     if (!avail) {
+//         return -2;
+//     }
+//
+//     if (_readA(c, avail) == -1) {
+//         return -1;
+//     }
+//
+//     return mrb_used(&c->ring);
+// }
 
 
 /** ensure atleast count bytes are exists in the connection's circular
@@ -126,20 +139,15 @@ chttpd_connection_readallA(struct chttpd_connection *c) {
  */
 int
 chttpd_connection_atleastA(struct chttpd_connection *c, size_t count) {
-    size_t used;
-    ssize_t ret;
-
     if (count > c->ring.size) {
         return -2;
     }
 
-    used = mrb_used(&c->ring);
-    if (used >= count) {
+    if (mrb_used(&c->ring) >= count) {
         return 0;
     }
 
-    ret = _readA(c, count - used);
-    if (ret <= 0) {
+    if (_readA(c, NULL) <= 0) {
         return -1;
     }
 
@@ -165,31 +173,52 @@ chttpd_connection_search(struct chttpd_connection *c, const char *s) {
 }
 
 
-/** ensure atleast bytes are exists in the connection circular buffer and
+/** wait until read error, buffer become full or find the s inside the input
+ * buffer.
  * search inside the circular buffer for the given expression.
  * returns:
+ *  0: EOF
  * -1: read error
- * -2: atleast is less than the buffer size.
- * -3: atleast N chars are exists in the buffer and not found.
+ * -2: input buffer full
+ * -3: s is empty or NULL
  *  n: length of found string.
  */
 ssize_t
-chttpd_connection_readsearchA(struct chttpd_connection *c, const char *s,
-        size_t atleast) {
-    ssize_t readret;
-    ssize_t searchret;
+chttpd_connection_readsearchA(struct chttpd_connection *c, const char *s) {
+    size_t avail;
+    char *chunk;
+    ssize_t chunksize;
+    int slen;
+    char *found;
+    int lookbehind;
 
-    readret = chttpd_connection_atleastA(c, atleast);
-    if (readret) {
-        return readret;
-    }
-
-    searchret = chttpd_connection_search(c, s);
-    if (searchret == -1) {
+    if (s == NULL) {
         return -3;
     }
 
-    return searchret;
+    slen = strlen(s);
+    if (slen == 0) {
+        return -3;
+    }
+
+    while ((avail = mrb_available(&c->ring))) {
+        lookbehind = MIN(mrb_used(&c->ring), slen - 1);
+        chunksize = _readA(c, &chunk);
+        if (chunksize <= 0) {
+            return chunksize;
+        }
+
+        if (chunksize < slen) {
+            continue;
+        }
+
+        found = memmem(chunk - lookbehind, chunksize, s, slen);
+        if (found) {
+            return found - mrb_readerptr(&c->ring);
+        }
+    }
+
+    return -2;
 }
 
 
@@ -212,15 +241,9 @@ connectionA(int argc, void *argv[]) {
     for (;;) {
         /* read as much as possible from the socket */
         /* FIXME: check if this is a head-only request */
-        headerlen = chttpd_connection_readsearchA(&c, "\r\n\r\n", 18);
-        if (headerlen == -1) {
-            /* connection error */
-            ret = -1;
-            break;
-        }
-
+        headerlen = chttpd_connection_readsearchA(&c, "\r\n\r\n");
         if (headerlen <= 0) {
-            chttpd_response_errorA(&c, 400, NULL);
+            /* connection error */
             ret = -1;
             break;
         }
@@ -252,8 +275,8 @@ connectionA(int argc, void *argv[]) {
             continue;
         }
 
-        INFO("new request: %s %s %s, route: %p",
-                c.request->verb, c.request->path, c.request->query, route);
+        INFO("new request: %s %s %s, route: %p", c.request->verb,
+                c.request->path, c.request->query, route);
 
         if (route->handler(&c, route->ptr)) {
             // TODO: log the unhandled server error

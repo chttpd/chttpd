@@ -29,8 +29,17 @@
 
 static int
 _indexA(struct chttpd_connection *c, void *ptr) {
+    int i;
+    struct chttp_request *r = c->request;
+
     OK(-1 == chttpd_response_start(c, 200, NULL));
-    OK(chttpd_response_header(c, "x-headers: %d", c->request->headerscount));
+    OK(chttpd_response_header(c, "x-headers: %d", r->headers.count));
+
+    /* copy request headers to response headers */
+    for (i = 0; i < r->headers.count; i++) {
+        OK(chttpd_response_header(c, r->headers.list[i]));
+    }
+
     OK(chttpd_response_header_close(c));
     OK(-1 == chttpd_response_flushA(c));
     return 0;
@@ -41,11 +50,18 @@ static void
 test_request_headers() {
     struct chttp_response *r = serverfixture_setup(1);
     isnotnull(r);
-
     route("GET", "/", _indexA, NULL);
+
+    eqint(200, request("GET / HTTP/1.1\r\n"
+                "x-foo: bar\r\n\r\n"));
+    eqint(2, r->headers.count);
+    eqstr("1", chttp_headerset_get(&r->headers, "x-headers"));
+    eqstr("bar", chttp_headerset_get(&r->headers, "x-foo"));
+
     eqint(200, request("GET / HTTP/1.1\r\n\r\n"));
-    eqint(1, r->headerscount);
-    // eqstr("0", chttp_response_header_get(r, "x-headers"));
+    eqint(1, r->headers.count);
+    eqstr("0", chttp_headerset_get(&r->headers, "x-headers"));
+
     serverfixture_teardown();
 }
 
@@ -55,9 +71,8 @@ test_request_startline() {
     struct chttp_response *r = serverfixture_setup(1);
     isnotnull(r);
 
-    eqint(400, request("foo"));
-    eqint(400, request("GET / HTTP/1.1"));
-    eqint(400, request("GET / HTTP/1.1\r\n"));
+    eqint(400, request("foo\r\n\r\n"));
+    eqint(400, request("GET HTTP/1.1\r\n\r\n"));
     eqint(400, r->status);
     eqstr("Bad Request", r->text);
 
