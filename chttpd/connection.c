@@ -77,8 +77,8 @@ _free(struct chttpd_connection *c) {
  * read data, -2 when buffer is full, 0 on end-of-file and -1 on error.
  * The out ptr will set to the start of the received data on successfull read.
  */
-static int
-_readA(struct chttpd_connection *c, char **out) {
+int
+connection_readallA(struct chttpd_connection *c, char **out) {
     ssize_t bytes;
     char *start = mrb_readerptr(&c->ring);
     pcaio_relaxA(0);
@@ -102,16 +102,13 @@ retry:
         goto retry;
     }
 
-    *out = start;
+    if (out) {
+        *out = start;
+    }
     return bytes;
 }
 
 
-// /** read as much as possible from the peer into the connection's circular
-//  * buffer.
-//  * returns -2 if buffer full, -1 if read error and total numbers of bytes
-//  * inside the buffer on successful read.
-//  */
 // ssize_t
 // chttpd_connection_readallA(struct chttpd_connection *c) {
 //     size_t avail;
@@ -121,7 +118,7 @@ retry:
 //         return -2;
 //     }
 //
-//     if (_readA(c, avail) == -1) {
+//     if (connection_readallA(c, avail) == -1) {
 //         return -1;
 //     }
 //
@@ -147,7 +144,7 @@ chttpd_connection_atleastA(struct chttpd_connection *c, size_t count) {
         return 0;
     }
 
-    if (_readA(c, NULL) <= 0) {
+    if (connection_readallA(c, NULL) <= 0) {
         return -1;
     }
 
@@ -177,17 +174,17 @@ chttpd_connection_search(struct chttpd_connection *c, const char *s) {
  * buffer.
  * search inside the circular buffer for the given expression.
  * returns:
- *  0: EOF
+ *  0: EOF and not found
  * -1: read error
- * -2: input buffer full
+ * -2: input buffer full and not found
  * -3: s is empty or NULL
  *  n: length of found string.
  */
 ssize_t
 chttpd_connection_readsearchA(struct chttpd_connection *c, const char *s) {
     size_t avail;
-    char *chunk;
-    ssize_t chunksize;
+    char *chunk = mrb_readerptr(&c->ring);
+    ssize_t chunksize = mrb_used(&c->ring);
     int slen;
     char *found;
     int lookbehind;
@@ -201,20 +198,31 @@ chttpd_connection_readsearchA(struct chttpd_connection *c, const char *s) {
         return -3;
     }
 
+    if (chunksize) {
+        found = memmem(chunk, chunksize, s, slen);
+        if (found) {
+            return found - chunk;
+        }
+    }
+
     while ((avail = mrb_available(&c->ring))) {
         lookbehind = MIN(mrb_used(&c->ring), slen - 1);
-        chunksize = _readA(c, &chunk);
-        if (chunksize <= 0) {
+        chunksize = connection_readallA(c, &chunk);
+        if (chunksize < 0) {
             return chunksize;
         }
 
-        if (chunksize < slen) {
+        if (chunksize && (chunksize < slen)) {
             continue;
         }
 
         found = memmem(chunk - lookbehind, chunksize, s, slen);
         if (found) {
             return found - mrb_readerptr(&c->ring);
+        }
+
+        if (chunksize == 0) {
+            return 0;
         }
     }
 

@@ -26,35 +26,26 @@
 #include "chttpd/chttpd.h"
 
 
-#define OK(e) if (e) return -1
+#define ERR(e) if (e) return -1
 #define BS 0x10000
 
 
 static int
 _chatA(struct chttpd_connection *c, void *ptr) {
-    char *buff;
+    const char *buff;
     ssize_t bytes;
+    size_t total = 0;
 
-    OK(chttpd_response_start(c, 200, NULL));
-    OK(chttpd_response_contenttype(c, "text/plain", "utf-8"));
-    OK(chttpd_response_header(c, "Transfer-Encoding: chunked"));
-    OK(chttpd_response_header_close(c));
-    OK(0 >= chttpd_response_header_flushA(c));
-
-    buff = malloc(BS);
-    if (buff == NULL) {
-        ERROR("insufficient memory");
-    }
+    ERR(chttpd_response_start(c, 200, NULL));
+    ERR(chttpd_response_contenttype(c, "text/plain", "utf-8"));
+    ERR(chttpd_response_header(c, "Transfer-Encoding: chunked"));
+    ERR(chttpd_response_header_close(c));
+    ERR(-1 ==  chttpd_response_header_flushA(c));
 
     for (;;) {
-        bytes = chttpd_request_readchunkA(c, buff, BS);
-        if (bytes > BS) {
-            ERROR("buffer size is too low: %d", bytes);
-            break;
-        }
-
-        if (bytes == 0) {
-            INFO("termination chunk just received");
+        bytes = chttpd_request_readchunkA(c, &buff);
+        if (bytes == -2) {
+            ERROR("connection buffer size is too low");
             break;
         }
 
@@ -63,40 +54,46 @@ _chatA(struct chttpd_connection *c, void *ptr) {
             break;
         }
 
+        if (bytes == 0) {
+            INFO("termination chunk just received");
+            break;
+        }
+
+        total += bytes;
         INFO("echo chunksize: %ld", bytes);
-        OK(0 >= chttpd_response_writechunkA(c, buff, bytes));
+        ERR(0 >= chttpd_response_writechunkA(c, buff, bytes));
     }
 
     /* terminate */
-    free(buff);
-    OK(0 >= chttpd_response_chunk_end(c));
+    INFO("total: %ld", total);
+    ERR(-1 == chttpd_response_chunk_end(c));
     return 0;
 }
 
 
 static int
 _streamA(struct chttpd_connection *c, void *ptr) {
-    OK(chttpd_response_start(c, 200, NULL));
-    OK(chttpd_response_contenttype(c, "text/plain", "utf-8"));
-    OK(chttpd_response_header(c, "Transfer-Encoding: chunked"));
-    OK(chttpd_response_header_close(c));
-    OK(0 >= chttpd_response_header_flushA(c));
+    ERR(chttpd_response_start(c, 200, NULL));
+    ERR(chttpd_response_contenttype(c, "text/plain", "utf-8"));
+    ERR(chttpd_response_header(c, "Transfer-Encoding: chunked"));
+    ERR(chttpd_response_header_close(c));
+    ERR(-1 == chttpd_response_header_flushA(c));
 
     /* allocate chunk size */
-    OK(chttpd_response_allocate(c, 128));
+    ERR(-1 == chttpd_response_allocate(c, 128));
 
     /* first chunk */
-    OK(0 >= chttpd_response_write(c, "Foo %s", "Bar"));
-    OK(chttpd_response_flushchunkA(c));
+    ERR(-1 == chttpd_response_write(c, "Foo %s", "Bar"));
+    ERR(chttpd_response_flushchunkA(c));
 
     /* second chunk */
-    OK(0 >= chttpd_response_write(c, " "));
-    OK(0 >= chttpd_response_write(c, "Baz %s", "Qux"));
-    OK(0 >= chttpd_response_write(c, "\r\n"));
-    OK(chttpd_response_flushchunkA(c));
+    ERR(0 >= chttpd_response_write(c, " "));
+    ERR(0 >= chttpd_response_write(c, "Baz %s", "Qux"));
+    ERR(0 >= chttpd_response_write(c, "\r\n"));
+    ERR(chttpd_response_flushchunkA(c));
 
     /* terminate */
-    OK(0 >= chttpd_response_chunk_end(c));
+    ERR(-1 == chttpd_response_chunk_end(c));
     return 0;
 }
 
@@ -116,7 +113,7 @@ main() {
     struct chttpd_config config;
 
     chttpd_config_makedefaults(&config);
-    // config.connectionbuffer_mempages = 16;
+    config.connectionbuffer_mempages = 16;
     server = chttpd_new(&config);
     chttpd_route(server, "POST", "/chat", _chatA, NULL);
     chttpd_route(server, "GET", "/stream", _streamA, NULL);

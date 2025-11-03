@@ -2,6 +2,7 @@ include(CTest)
 list(APPEND testrules
   route
   request
+  chunked
 )
 
 

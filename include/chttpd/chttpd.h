@@ -148,8 +148,7 @@ chttpd_connection_search(struct chttpd_connection *c, const char *s);
 
 
 ssize_t
-chttpd_request_readchunkA(struct chttpd_connection *c, char *buff,
-        size_t max);
+chttpd_request_readchunkA(struct chttpd_connection *c, const char **start);
 
 
 ssize_t
@@ -158,6 +157,10 @@ chttpd_connection_readsearchA(struct chttpd_connection *c, const char *s);
 
 int
 chttpd_connection_atleastA(struct chttpd_connection *c, size_t count);
+
+int
+connection_readallA(struct chttpd_connection *c, char **out);
+
 
 
 #endif  // INCLUDE_CHTTPD_CHTTPD_H_

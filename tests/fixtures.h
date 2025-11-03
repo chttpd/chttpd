@@ -24,6 +24,7 @@
 #include "chttpd/chttpd.h"
 
 
+extern char content[];
 #define OK(e) if (e) return -1
 
 

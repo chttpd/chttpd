@@ -40,6 +40,7 @@
 
 
 #define BUFFSIZE 4096
+char content[BUFFSIZE];
 static char _buff[BUFFSIZE];
 static struct chttp_response *_resp  = NULL;
 static struct chttpd _chttpd = {
@@ -52,12 +53,57 @@ static struct chttpd _chttpd = {
 
 
 static int
+_chunkedA(const char *buff, int len, int avail, int fd) {
+    ssize_t s;
+    char *cursor = content;
+    const char *chunk;
+    size_t garbage;
+    ssize_t ret;
+
+    for (;;) {
+        if (avail == 0) {
+            return -1;
+        }
+
+        s = chttp_chunkedcodec_getchunk(buff, len, &chunk, &garbage);
+        if (s == -1) {
+            return -1;
+        }
+
+        if (s == -2) {
+            pcaio_relaxA(0);
+            ret = readA(fd, (void *)buff + len, avail);
+            if (ret <= 0) {
+                return -1;
+            }
+
+            len += ret;
+            avail -= ret;
+            continue;
+        }
+
+        if (s == 0) {
+            cursor[0] = 0;
+            break;
+        }
+
+        memcpy(cursor, chunk, s);
+        cursor += s;
+        buff += garbage;
+    }
+
+    return 0;
+}
+
+
+static int
 _clientA(int argc, void *argv[]) {
     int fd = (long)argv[0];
     ssize_t reqlen = (long)argv[1];
     ssize_t bytes;
     chttp_status_t status;
-    char *content;
+    char *header;
+    int headerlen;
 
     bytes = writeA(fd, _buff, reqlen);
     if (bytes < reqlen) {
@@ -70,18 +116,28 @@ _clientA(int argc, void *argv[]) {
         return -1;
     }
 
-    content = memmem(_buff, bytes, "\r\n\r\n", 4);
-    if (content == NULL) {
+    header = memmem(_buff, bytes, "\r\n\r\n", 4);
+    if (header == NULL) {
         return -1;
     }
 
-    content += 2;
-    if (chttp_response_parse(_resp, _buff, content - _buff)) {
+    header += 2;
+    headerlen = header - _buff;
+    if (chttp_response_parse(_resp, _buff, headerlen)) {
         ERROR("chttp_response_parse");
         return -1;
     }
 
     status = _resp->status;
+    pcaio_relaxA(0);
+
+    headerlen += 2;
+    if ((_resp->transferencoding & CHTTP_TE_CHUNKED)
+            && _chunkedA(_buff + headerlen, bytes - headerlen,
+                BUFFSIZE - headerlen, fd)) {
+        return -1;
+    }
+
     close(fd);
     return status;
 }
