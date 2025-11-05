@@ -20,13 +20,13 @@
 #include <string.h>
 
 /* local public */
-#include "carrot/carrot.h"
+#include "carrot/server.h"
 
 /* local private */
 #include "config.h"
 
 
-const struct carrot_config carrot_defaultconfig = {
+const struct carrot_server_config carrot_server_defaultconfig = {
     .bind = "127.0.0.1:8080",
     .backlog = 10,
     .requestbuffer_mempages = 1,
@@ -36,6 +36,7 @@ const struct carrot_config carrot_defaultconfig = {
 
 
 void
-carrot_config_makedefaults(struct carrot_config *c) {
-    memcpy(c, &carrot_defaultconfig, sizeof(carrot_defaultconfig));
+carrot_server_makedefaults(struct carrot_server_config *c) {
+    memcpy(c, &carrot_server_defaultconfig,
+            sizeof(carrot_server_defaultconfig));
 }

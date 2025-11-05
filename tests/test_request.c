@@ -21,14 +21,14 @@
 #include <cutest.h>
 
 /* local public */
-#include "carrot/carrot.h"
+#include "carrot/server.h"
 
 /* test private */
 #include "tests/fixtures.h"
 
 
 static int
-_indexA(struct carrot_connection *c, void *ptr) {
+_indexA(struct carrot_server_conn *c, void *ptr) {
     int i;
     struct chttp_request *r = c->request;
     struct chttp_packet p;
@@ -43,7 +43,7 @@ _indexA(struct carrot_connection *c, void *ptr) {
     }
 
     ERR(chttp_packet_close(&p));
-    ASSRT(0 < carrot_connection_sendpacket(c, &p));
+    ASSRT(0 < carrot_server_sendpacketA(c, &p));
     return 0;
 }
 

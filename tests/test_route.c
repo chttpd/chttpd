@@ -21,7 +21,7 @@
 #include <cutest.h>
 
 /* local public */
-#include "carrot/carrot.h"
+#include "carrot/server.h"
 
 /* local private */
 #include "router.h"

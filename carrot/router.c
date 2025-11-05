@@ -21,7 +21,7 @@
 #include <clog.h>
 
 /* local public */
-#include "carrot/carrot.h"
+#include "carrot/server.h"
 
 /* local private */
 #include "common.h"

@@ -21,7 +21,7 @@
 
 
 /* local public */
-#include "carrot/carrot.h"
+#include "carrot/server.h"
 
 
 /* private preprocessors */

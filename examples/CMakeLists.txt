@@ -1,5 +1,5 @@
 list(APPEND examples
-  quickstart
+  serverdemo
 )
 
 

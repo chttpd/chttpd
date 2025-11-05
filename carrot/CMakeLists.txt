@@ -6,20 +6,16 @@ add_library(addr OBJECT addr.c
 )
 add_library(config OBJECT config.c config.h.in)
 add_library(socket OBJECT socket.c socket.h)
-add_library(connection OBJECT connection.c connection.h)
 add_library(router OBJECT router.c router.h)
-add_library(response OBJECT response.c)
-add_library(request OBJECT request.c)
-add_library(main OBJECT main.c)
+add_library(server_conn OBJECT server_conn.c)
+add_library(server OBJECT server.c)
 add_library(carrot STATIC 
-  carrot.c ${PROJECT_SOURCE_DIR}/include/carrot/carrot.h
+  ${PROJECT_SOURCE_DIR}/include/carrot/server.h
   $<TARGET_OBJECTS:config>
   $<TARGET_OBJECTS:addr>
   $<TARGET_OBJECTS:socket>
-  $<TARGET_OBJECTS:connection>
   $<TARGET_OBJECTS:router>
-  $<TARGET_OBJECTS:response>
-  $<TARGET_OBJECTS:request>
-  $<TARGET_OBJECTS:main>
+  $<TARGET_OBJECTS:server_conn>
+  $<TARGET_OBJECTS:server>
 )
 target_link_libraries(carrot PUBLIC clog pcaio mrb chttp)

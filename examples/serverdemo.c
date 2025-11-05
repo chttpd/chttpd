@@ -23,7 +23,7 @@
 #include <clog.h>
 
 /* local public */
-#include "carrot/carrot.h"
+#include "carrot/server.h"
 
 
 #define ERR(c) if (c) return -1
@@ -31,7 +31,7 @@
 
 
 static int
-_chatA(struct carrot_connection *c, void *ptr) {
+_chatA(struct carrot_server_conn *c, void *ptr) {
     const char *buff;
     ssize_t bytes;
     struct chttp_packet p;
@@ -44,7 +44,7 @@ _chatA(struct carrot_connection *c, void *ptr) {
     ERR(chttp_packet_close(&p));
 
     for (;;) {
-        bytes = carrot_request_readchunkA(c, &buff);
+        bytes = carrot_server_recvchunkA(c, &buff);
         if (bytes == -2) {
             ERROR("connection buffer size is too low");
             break;
@@ -63,18 +63,18 @@ _chatA(struct carrot_connection *c, void *ptr) {
         total += bytes;
         INFO("echo chunksize: %ld", bytes);
         ERR(chttp_packet_write(&p, buff, bytes));
-        ASSRT(0 < carrot_connection_sendpacket(c, &p));
+        ASSRT(0 < carrot_server_sendpacketA(c, &p));
     }
 
     /* terminate */
     INFO("total: %ld", total);
-    ASSRT(0 < carrot_connection_sendpacket(c, &p));
+    ASSRT(0 < carrot_server_sendpacketA(c, &p));
     return 0;
 }
 
 
 static int
-_streamA(struct carrot_connection *c, void *ptr) {
+_streamA(struct carrot_server_conn *c, void *ptr) {
     struct chttp_packet p;
 
     ERR(chttp_packet_allocate(&p, 1, 1, CHTTP_TE_NONE));
@@ -85,23 +85,23 @@ _streamA(struct carrot_connection *c, void *ptr) {
 
     /* first chunk */
     ERR(chttp_packet_writef(&p, "Foo %s", "Bar"));
-    ASSRT(0 < carrot_connection_sendpacket(c, &p));
+    ASSRT(0 < carrot_server_sendpacketA(c, &p));
 
     /* second chunk */
     ERR(chttp_packet_writef(&p, " "));
     ERR(chttp_packet_writef(&p, "Baz %s", "Qux"));
     ERR(chttp_packet_writef(&p, "\r\n"));
-    ASSRT(0 < carrot_connection_sendpacket(c, &p));
+    ASSRT(0 < carrot_server_sendpacketA(c, &p));
 
     /* terminate */
-    ASSRT(0 < carrot_connection_sendpacket(c, &p));
+    ASSRT(0 < carrot_server_sendpacketA(c, &p));
     return 0;
 }
 
 
 static int
-_indexA(struct carrot_connection *c, void *ptr) {
-    int bytes = carrot_responseA(c, 200, NULL, "Hello carrot\r\n", 128);
+_indexA(struct carrot_server_conn *c, void *ptr) {
+    int bytes = carrot_server_responseA(c, 200, NULL, "Hello carrot\r\n", 128);
     DEBUG("bytes: %d", bytes);
     return 0;
 }
@@ -109,15 +109,15 @@ _indexA(struct carrot_connection *c, void *ptr) {
 
 int
 main() {
-    carrot_t server;
+    carrot_server_t server;
     clog_verbositylevel = CLOG_DEBUG;
-    struct carrot_config config;
+    struct carrot_server_config config;
 
-    carrot_config_makedefaults(&config);
+    carrot_server_makedefaults(&config);
     config.connectionbuffer_mempages = 16;
-    server = carrot_new(&config);
-    carrot_route(server, "POST", "/chat", _chatA, NULL);
-    carrot_route(server, "GET", "/stream", _streamA, NULL);
-    carrot_route(server, "GET", "/", _indexA, NULL);
-    return carrot_main(server);
+    server = carrot_server_new(&config);
+    carrot_server_route(server, "POST", "/chat", _chatA, NULL);
+    carrot_server_route(server, "GET", "/stream", _streamA, NULL);
+    carrot_server_route(server, "GET", "/", _indexA, NULL);
+    return carrot_server_main(server);
 }

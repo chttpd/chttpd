@@ -29,11 +29,10 @@
 #include <pcaio/modepoll.h>
 
 /* local public */
-#include "carrot/carrot.h"
+#include "carrot/server.h"
 
 /* local private */
 #include "common.h"
-#include "connection.h"
 
 /* test private */
 #include "fixtures.h"
@@ -43,8 +42,8 @@
 char content[BUFFSIZE];
 static char _buff[BUFFSIZE];
 static struct chttp_response *_resp  = NULL;
-static struct carrot _carrot = {
-    .config = &carrot_defaultconfig,
+static struct carrot_server _carrot = {
+    .config = &carrot_server_defaultconfig,
     .listenfd = -1,
     .router = {
         .count = 0,
@@ -179,7 +178,7 @@ serverfixture_teardown() {
 
     memset(&_carrot, 0, sizeof(_carrot));
     _carrot.listenfd = -1;
-    _carrot.config = &carrot_defaultconfig;
+    _carrot.config = &carrot_server_defaultconfig;
 }
 
 
@@ -215,8 +214,8 @@ request(const char *fmt, ...) {
             bytes);
     ASSRT(tasks[0]);
 
-    tasks[1] = pcaio_task_new(connectionA, &server_exitstatus, 3, &_carrot,
-            socks[1], &caddr);
+    tasks[1] = pcaio_task_new(carrot_server_connA, &server_exitstatus, 3,
+            &_carrot, socks[1], &caddr);
     ASSRT(tasks[1]);
 
     /* run event loop */
@@ -234,5 +233,5 @@ request(const char *fmt, ...) {
 int
 route(const char *verb, const char *path, carrot_handler_t handler,
         void *ptr) {
-    return carrot_route(&_carrot, verb, path, handler, ptr);
+    return carrot_server_route(&_carrot, verb, path, handler, ptr);
 }

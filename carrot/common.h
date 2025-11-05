@@ -23,10 +23,11 @@
 #include "config.h"
 
 /* local public */
-#include "carrot/carrot.h"
+#include "carrot/server.h"
 
 
 /* private preprocessors */
+#define MIN(a, b) ((a) < (b)? a: b)
 #define ERR(c) if (c) return -1
 #define ASSRT(c) if (!(c)) return -1
 
@@ -45,8 +46,8 @@ struct router {
 };
 
 
-struct carrot {
-    const struct carrot_config *config;
+struct carrot_server {
+    const struct carrot_server_config *config;
     int listenfd;
     struct router router;
 };
