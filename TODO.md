@@ -1,7 +1,7 @@
 ## high priority
 - HEAD http method
 - tcp timeout and keep-alive
-- delete chttpd_free function
+- delete carrot_free function
 - Form parsing
   - url formencodded 
   - multipart

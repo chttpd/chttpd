@@ -14,7 +14,7 @@ add_custom_target(profile_tests DEPENDS ${profilerules})
 
 include_directories(
   ${PROJECT_SOURCE_DIR}/include
-  ${PROJECT_SOURCE_DIR}/chttpd
+  ${PROJECT_SOURCE_DIR}/carrot
 )
 
 add_library(fixtures OBJECT fixtures.c fixtures.h)
@@ -29,7 +29,7 @@ foreach (t IN LISTS testrules)
     "${PROJECT_BINARY_DIR}"
     "${PROJECT_SOURCE_DIR}"
   )
-  target_link_libraries(${t} chttpd)
+  target_link_libraries(${t} carrot)
   add_test(NAME ${t} COMMAND ${t})
 
   add_custom_target(${t}-exec 

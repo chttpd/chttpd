@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.7)
-project(chttpd 
+project(carrot 
     VERSION 1.0.0
     LANGUAGES C
 )
@@ -16,12 +16,12 @@ include(config.cmake)
 # public include directory
 include_directories(
   ${CMAKE_SOURCE_DIR}/include
-  ${CMAKE_SOURCE_DIR}/chttpd
-  ${CMAKE_BINARY_DIR}/chttpd
+  ${CMAKE_SOURCE_DIR}/carrot
+  ${CMAKE_BINARY_DIR}/carrot
 )
 configure_file(
-  chttpd/config.h.in 
-  chttpd/config.h
+  carrot/config.h.in 
+  carrot/config.h
   @ONLY
 )
 
@@ -36,13 +36,13 @@ include(cmake/uninstall.cmake)
 
 
 # core tunneling and networking
-add_subdirectory(chttpd)
+add_subdirectory(carrot)
 
 
-install(TARGETS chttpd DESTINATION "lib")
+install(TARGETS carrot DESTINATION "lib")
 install(FILES 
-  ${PROJECT_SOURCE_DIR}/include/chttpd/chttpd.h 
-  DESTINATION "include/chttpd"
+  ${PROJECT_SOURCE_DIR}/include/carrot/carrot.h 
+  DESTINATION "include/carrot"
 )
 
 

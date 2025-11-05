@@ -1,18 +1,18 @@
 // Copyright 2025 Vahid Mardani
 /*
- * This file is part of chttpd.
- *  chttpd is free software: you can redistribute it and/or modify it under
+ * This file is part of carrot.
+ *  carrot is free software: you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation, either version 3 of the License, or (at your option)
  *  any later version.
  *
- *  chttpd is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  carrot is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with chttpd. If not, see <https://www.gnu.org/licenses/>.
+ *  with carrot. If not, see <https://www.gnu.org/licenses/>.
  *
  *  Author: Vahid Mardani <vahid.mardani@gmail.com>
  */
@@ -26,7 +26,7 @@
 #include <pcaio/modio.h>
 
 /* local public */
-#include "chttpd/chttpd.h"
+#include "carrot/carrot.h"
 
 /* local private */
 #include "common.h"
@@ -38,7 +38,7 @@
 
 
 static int
-_init(struct chttpd *s, struct chttpd_connection *c, int fd,
+_init(struct carrot *s, struct carrot_connection *c, int fd,
         union saddr *peer) {
     if (mrb_init(&c->ring, s->config->connectionbuffer_mempages)) {
         return -1;
@@ -57,14 +57,14 @@ _init(struct chttpd *s, struct chttpd_connection *c, int fd,
 
 
 static void
-_reset(struct chttpd_connection *c) {
+_reset(struct carrot_connection *c) {
     mrb_reset(&c->ring);
     chttp_request_reset(c->request);
 }
 
 
 static int
-_free(struct chttpd_connection *c) {
+_free(struct carrot_connection *c) {
     int ret = 0;
 
     ret |= mrb_deinit(&c->ring);
@@ -80,7 +80,7 @@ _free(struct chttpd_connection *c) {
  * The out ptr will set to the start of the received data on successfull read.
  */
 int
-chttpd_connection_readallA(struct chttpd_connection *c, char **out) {
+carrot_connection_readallA(struct carrot_connection *c, char **out) {
     ssize_t bytes;
     char *start = mrb_readerptr(&c->ring);
     pcaio_relaxA(0);
@@ -120,7 +120,7 @@ retry:
  *     count.
  */
 int
-chttpd_connection_atleastA(struct chttpd_connection *c, size_t count) {
+carrot_connection_atleastA(struct carrot_connection *c, size_t count) {
     if (count > c->ring.size) {
         return -2;
     }
@@ -129,7 +129,7 @@ chttpd_connection_atleastA(struct chttpd_connection *c, size_t count) {
         return 0;
     }
 
-    if (chttpd_connection_readallA(c, NULL) <= 0) {
+    if (carrot_connection_readallA(c, NULL) <= 0) {
         return -1;
     }
 
@@ -143,7 +143,7 @@ chttpd_connection_atleastA(struct chttpd_connection *c, size_t count) {
  *  n: length of found string.
  */
 ssize_t
-chttpd_connection_search(struct chttpd_connection *c, const char *s) {
+carrot_connection_search(struct carrot_connection *c, const char *s) {
     ssize_t ret;
 
     ret = mrb_search(&c->ring, s, strlen(s), 0, -1);
@@ -166,7 +166,7 @@ chttpd_connection_search(struct chttpd_connection *c, const char *s) {
  *  n: length of found string.
  */
 ssize_t
-chttpd_connection_readsearchA(struct chttpd_connection *c, const char *s) {
+carrot_connection_readsearchA(struct carrot_connection *c, const char *s) {
     size_t avail;
     char *chunk = mrb_readerptr(&c->ring);
     ssize_t chunksize = mrb_used(&c->ring);
@@ -192,7 +192,7 @@ chttpd_connection_readsearchA(struct chttpd_connection *c, const char *s) {
 
     while ((avail = mrb_available(&c->ring))) {
         lookbehind = MIN(mrb_used(&c->ring), slen - 1);
-        chunksize = chttpd_connection_readallA(c, &chunk);
+        chunksize = carrot_connection_readallA(c, &chunk);
         if (chunksize < 0) {
             return chunksize;
         }
@@ -216,7 +216,7 @@ chttpd_connection_readsearchA(struct chttpd_connection *c, const char *s) {
 
 
 ssize_t
-chttpd_connection_sendpacket(struct chttpd_connection *c,
+carrot_connection_sendpacket(struct carrot_connection *c,
         struct chttp_packet *p) {
     struct iovec v[4];
     int vcount = sizeof(v) / sizeof(struct iovec);
@@ -238,10 +238,10 @@ chttpd_connection_sendpacket(struct chttpd_connection *c,
 int
 connectionA(int argc, void *argv[]) {
     int ret = 0;
-    struct chttpd *s = argv[0];
+    struct carrot *s = argv[0];
     int fd = (long) argv[1];
     union saddr *peer = (union saddr *)argv[2];
-    struct chttpd_connection c;
+    struct carrot_connection c;
     ssize_t headerlen;
     chttp_status_t status;
     struct route *route;
@@ -254,7 +254,7 @@ connectionA(int argc, void *argv[]) {
     for (;;) {
         /* read as much as possible from the socket */
         /* FIXME: check if this is a head-only request */
-        headerlen = chttpd_connection_readsearchA(&c, "\r\n\r\n");
+        headerlen = carrot_connection_readsearchA(&c, "\r\n\r\n");
         if (headerlen <= 0) {
             /* connection error */
             ret = -1;
@@ -265,7 +265,7 @@ connectionA(int argc, void *argv[]) {
         status = chttp_request_parse(c.request, mrb_readerptr(&c.ring),
                 headerlen);
         if (status > 0) {
-            chttpd_response_errorA(&c, status, NULL);
+            carrot_response_errorA(&c, status, NULL);
             ret = -1;
             break;
         }
@@ -284,7 +284,7 @@ connectionA(int argc, void *argv[]) {
 
         route = router_find(&s->router, c.request->verb, c.request->path);
         if (route == NULL) {
-            chttpd_response_errorA(&c, 404, NULL);
+            carrot_response_errorA(&c, 404, NULL);
             continue;
         }
 
@@ -293,7 +293,7 @@ connectionA(int argc, void *argv[]) {
 
         if (route->handler(&c, route->ptr)) {
             // TODO: log the unhandled server error
-            chttpd_response_errorA(&c, 500, NULL);
+            carrot_response_errorA(&c, 500, NULL);
             ret = -1;
             break;
         }

@@ -1,18 +1,18 @@
 // Copyright 2025 Vahid Mardani
 /*
- * This file is part of chttpd.
- *  chttpd is free software: you can redistribute it and/or modify it under
+ * This file is part of carrot.
+ *  carrot is free software: you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation, either version 3 of the License, or (at your option)
  *  any later version.
  *
- *  chttpd is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  carrot is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with chttpd. If not, see <https://www.gnu.org/licenses/>.
+ *  with carrot. If not, see <https://www.gnu.org/licenses/>.
  *
  *  Author: Vahid Mardani <vahid.mardani@gmail.com>
  */
@@ -23,7 +23,7 @@
 #include <clog.h>
 
 /* local public */
-#include "chttpd/chttpd.h"
+#include "carrot/carrot.h"
 
 
 #define ERR(c) if (c) return -1
@@ -31,7 +31,7 @@
 
 
 static int
-_chatA(struct chttpd_connection *c, void *ptr) {
+_chatA(struct carrot_connection *c, void *ptr) {
     const char *buff;
     ssize_t bytes;
     struct chttp_packet p;
@@ -44,7 +44,7 @@ _chatA(struct chttpd_connection *c, void *ptr) {
     ERR(chttp_packet_close(&p));
 
     for (;;) {
-        bytes = chttpd_request_readchunkA(c, &buff);
+        bytes = carrot_request_readchunkA(c, &buff);
         if (bytes == -2) {
             ERROR("connection buffer size is too low");
             break;
@@ -63,18 +63,18 @@ _chatA(struct chttpd_connection *c, void *ptr) {
         total += bytes;
         INFO("echo chunksize: %ld", bytes);
         ERR(chttp_packet_write(&p, buff, bytes));
-        ASSRT(0 < chttpd_connection_sendpacket(c, &p));
+        ASSRT(0 < carrot_connection_sendpacket(c, &p));
     }
 
     /* terminate */
     INFO("total: %ld", total);
-    ASSRT(0 < chttpd_connection_sendpacket(c, &p));
+    ASSRT(0 < carrot_connection_sendpacket(c, &p));
     return 0;
 }
 
 
 static int
-_streamA(struct chttpd_connection *c, void *ptr) {
+_streamA(struct carrot_connection *c, void *ptr) {
     struct chttp_packet p;
 
     ERR(chttp_packet_allocate(&p, 1, 1, CHTTP_TE_NONE));
@@ -85,23 +85,23 @@ _streamA(struct chttpd_connection *c, void *ptr) {
 
     /* first chunk */
     ERR(chttp_packet_writef(&p, "Foo %s", "Bar"));
-    ASSRT(0 < chttpd_connection_sendpacket(c, &p));
+    ASSRT(0 < carrot_connection_sendpacket(c, &p));
 
     /* second chunk */
     ERR(chttp_packet_writef(&p, " "));
     ERR(chttp_packet_writef(&p, "Baz %s", "Qux"));
     ERR(chttp_packet_writef(&p, "\r\n"));
-    ASSRT(0 < chttpd_connection_sendpacket(c, &p));
+    ASSRT(0 < carrot_connection_sendpacket(c, &p));
 
     /* terminate */
-    ASSRT(0 < chttpd_connection_sendpacket(c, &p));
+    ASSRT(0 < carrot_connection_sendpacket(c, &p));
     return 0;
 }
 
 
 static int
-_indexA(struct chttpd_connection *c, void *ptr) {
-    int bytes = chttpd_responseA(c, 200, NULL, "Hello chttpd\r\n", 128);
+_indexA(struct carrot_connection *c, void *ptr) {
+    int bytes = carrot_responseA(c, 200, NULL, "Hello carrot\r\n", 128);
     DEBUG("bytes: %d", bytes);
     return 0;
 }
@@ -109,15 +109,15 @@ _indexA(struct chttpd_connection *c, void *ptr) {
 
 int
 main() {
-    chttpd_t server;
+    carrot_t server;
     clog_verbositylevel = CLOG_DEBUG;
-    struct chttpd_config config;
+    struct carrot_config config;
 
-    chttpd_config_makedefaults(&config);
+    carrot_config_makedefaults(&config);
     config.connectionbuffer_mempages = 16;
-    server = chttpd_new(&config);
-    chttpd_route(server, "POST", "/chat", _chatA, NULL);
-    chttpd_route(server, "GET", "/stream", _streamA, NULL);
-    chttpd_route(server, "GET", "/", _indexA, NULL);
-    return chttpd_main(server);
+    server = carrot_new(&config);
+    carrot_route(server, "POST", "/chat", _chatA, NULL);
+    carrot_route(server, "GET", "/stream", _streamA, NULL);
+    carrot_route(server, "GET", "/", _indexA, NULL);
+    return carrot_main(server);
 }

@@ -1,18 +1,18 @@
 // Copyright 2025 Vahid Mardani
 /*
- * This file is part of chttpd.
- *  chttpd is free software: you can redistribute it and/or modify it under
+ * This file is part of carrot.
+ *  carrot is free software: you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation, either version 3 of the License, or (at your option)
  *  any later version.
  *
- *  chttpd is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  carrot is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with chttpd. If not, see <https://www.gnu.org/licenses/>.
+ *  with carrot. If not, see <https://www.gnu.org/licenses/>.
  *
  *  Author: Vahid Mardani <vahid.mardani@gmail.com>
  */
@@ -29,7 +29,7 @@
 #include <pcaio/modepoll.h>
 
 /* local public */
-#include "chttpd/chttpd.h"
+#include "carrot/carrot.h"
 
 /* local private */
 #include "common.h"
@@ -43,8 +43,8 @@
 char content[BUFFSIZE];
 static char _buff[BUFFSIZE];
 static struct chttp_response *_resp  = NULL;
-static struct chttpd _chttpd = {
-    .config = &chttpd_defaultconfig,
+static struct carrot _carrot = {
+    .config = &carrot_defaultconfig,
     .listenfd = -1,
     .router = {
         .count = 0,
@@ -177,9 +177,9 @@ serverfixture_teardown() {
         _resp = NULL;
     }
 
-    memset(&_chttpd, 0, sizeof(_chttpd));
-    _chttpd.listenfd = -1;
-    _chttpd.config = &chttpd_defaultconfig;
+    memset(&_carrot, 0, sizeof(_carrot));
+    _carrot.listenfd = -1;
+    _carrot.config = &carrot_defaultconfig;
 }
 
 
@@ -215,7 +215,7 @@ request(const char *fmt, ...) {
             bytes);
     ASSRT(tasks[0]);
 
-    tasks[1] = pcaio_task_new(connectionA, &server_exitstatus, 3, &_chttpd,
+    tasks[1] = pcaio_task_new(connectionA, &server_exitstatus, 3, &_carrot,
             socks[1], &caddr);
     ASSRT(tasks[1]);
 
@@ -232,7 +232,7 @@ request(const char *fmt, ...) {
 
 
 int
-route(const char *verb, const char *path, chttpd_handler_t handler,
+route(const char *verb, const char *path, carrot_handler_t handler,
         void *ptr) {
-    return chttpd_route(&_chttpd, verb, path, handler, ptr);
+    return carrot_route(&_carrot, verb, path, handler, ptr);
 }

@@ -1,18 +1,18 @@
 // Copyright 2025 Vahid Mardani
 /*
- * This file is part of chttpd.
- *  chttpd is free software: you can redistribute it and/or modify it under
+ * This file is part of carrot.
+ *  carrot is free software: you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation, either version 3 of the License, or (at your option)
  *  any later version.
  *
- *  chttpd is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  carrot is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with chttpd. If not, see <https://www.gnu.org/licenses/>.
+ *  with carrot. If not, see <https://www.gnu.org/licenses/>.
  *
  *  Author: Vahid Mardani <vahid.mardani@gmail.com>
  */
@@ -22,11 +22,11 @@
 #include <pcaio/modepoll.h>
 
 /* local public */
-#include "chttpd/chttpd.h"
+#include "carrot/carrot.h"
 
 
 int
-chttpd_main(struct chttpd *s) {
+carrot_main(struct carrot *s) {
     int ret;
     struct pcaio_task *task;
     struct pcaio_iomodule *modepoll;
@@ -41,7 +41,7 @@ chttpd_main(struct chttpd *s) {
     }
 
     // TODO: task status
-    task = pcaio_task_new(chttpdA, NULL, 1, s);
+    task = pcaio_task_new(carrotA, NULL, 1, s);
     if (task == NULL) {
         return -1;
     }
@@ -50,7 +50,7 @@ chttpd_main(struct chttpd *s) {
     // TODO: only reflect the pcaio function result, and return task status
     //       instead
     ret = pcaio(1, &task, 1);
-    chttpd_free(s);
+    carrot_free(s);
 
     return ret;
 }
