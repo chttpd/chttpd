@@ -16,14 +16,19 @@
  *
  *  Author: Vahid Mardani <vahid.mardani@gmail.com>
  */
-#ifndef CHTTPD_PRIVATETYPES_H_
-#define CHTTPD_PRIVATETYPES_H_
+#ifndef CHTTPD_COMMON_H_
+#define CHTTPD_COMMON_H_
 
 /* local private */
 #include "config.h"
 
 /* local public */
 #include "chttpd/chttpd.h"
+
+
+/* private preprocessors */
+#define ERR(c) if (c) return -1
+#define ASSRT(c) if (!(c)) return -1
 
 
 struct route {
@@ -47,4 +52,4 @@ struct chttpd {
 };
 
 
-#endif  // CHTTPD_PRIVATETYPES_H_
+#endif  // CHTTPD_COMMON_H_

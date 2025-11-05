@@ -32,7 +32,7 @@
 #include "chttpd/chttpd.h"
 
 /* local private */
-#include "privatetypes.h"
+#include "common.h"
 #include "connection.h"
 
 /* test private */
@@ -65,7 +65,7 @@ _chunkedA(const char *buff, int len, int avail, int fd) {
             return -1;
         }
 
-        s = chttp_chunkedcodec_getchunk(buff, len, &chunk, &garbage);
+        s = chttp_chunked_parse(buff, len, &chunk, &garbage);
         if (s == -1) {
             return -1;
         }

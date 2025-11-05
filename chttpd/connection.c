@@ -29,7 +29,7 @@
 #include "chttpd/chttpd.h"
 
 /* local private */
-#include "privatetypes.h"
+#include "common.h"
 #include "router.h"
 #include "connection.h"
 
@@ -68,7 +68,9 @@ _free(struct chttpd_connection *c) {
     int ret = 0;
 
     ret |= mrb_deinit(&c->ring);
-    ret |= chttp_request_free(c->request);
+    free(c->request);
+
+    c->request = NULL;
     return ret;
 }
 
@@ -78,7 +80,7 @@ _free(struct chttpd_connection *c) {
  * The out ptr will set to the start of the received data on successfull read.
  */
 int
-connection_readallA(struct chttpd_connection *c, char **out) {
+chttpd_connection_readallA(struct chttpd_connection *c, char **out) {
     ssize_t bytes;
     char *start = mrb_readerptr(&c->ring);
     pcaio_relaxA(0);
@@ -109,23 +111,6 @@ retry:
 }
 
 
-// ssize_t
-// chttpd_connection_readallA(struct chttpd_connection *c) {
-//     size_t avail;
-//
-//     avail = mrb_available(&c->ring);
-//     if (!avail) {
-//         return -2;
-//     }
-//
-//     if (connection_readallA(c, avail) == -1) {
-//         return -1;
-//     }
-//
-//     return mrb_used(&c->ring);
-// }
-
-
 /** ensure atleast count bytes are exists in the connection's circular
  * buffer and tries to read the missing bytes.
  * returns:
@@ -144,7 +129,7 @@ chttpd_connection_atleastA(struct chttpd_connection *c, size_t count) {
         return 0;
     }
 
-    if (connection_readallA(c, NULL) <= 0) {
+    if (chttpd_connection_readallA(c, NULL) <= 0) {
         return -1;
     }
 
@@ -207,7 +192,7 @@ chttpd_connection_readsearchA(struct chttpd_connection *c, const char *s) {
 
     while ((avail = mrb_available(&c->ring))) {
         lookbehind = MIN(mrb_used(&c->ring), slen - 1);
-        chunksize = connection_readallA(c, &chunk);
+        chunksize = chttpd_connection_readallA(c, &chunk);
         if (chunksize < 0) {
             return chunksize;
         }
@@ -227,6 +212,26 @@ chttpd_connection_readsearchA(struct chttpd_connection *c, const char *s) {
     }
 
     return -2;
+}
+
+
+ssize_t
+chttpd_connection_sendpacket(struct chttpd_connection *c,
+        struct chttp_packet *p) {
+    struct iovec v[4];
+    int vcount = sizeof(v) / sizeof(struct iovec);
+    size_t totallen;
+    size_t written;
+
+    totallen = chttp_packet_iovec(p, v, &vcount);
+    written = writevA(c->fd, v, vcount);
+    if (written != totallen) {
+        // TODO: write the rest of the buffer later after pcaio_relaxA
+        return -1;
+    }
+
+    chttp_packet_reset(p);
+    return totallen;
 }
 
 

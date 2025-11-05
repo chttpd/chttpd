@@ -24,7 +24,7 @@
 #include "chttpd/chttpd.h"
 
 /* local private */
-#include "privatetypes.h"
+#include "common.h"
 #include "router.h"
 
 
@@ -35,7 +35,7 @@ router_find(struct router *rt, const char *verb, const char *path) {
 
     for (i = 0; i < rt->count; i++) {
         route = rt->routes + i;
-        if ((strncmp(route->path, path, strlen(path)) == 0)
+        if ((strcmp(route->path, path) == 0)
                 && (strcmp(route->verb, verb) == 0)) {
                 return route;
         }

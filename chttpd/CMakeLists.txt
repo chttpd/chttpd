@@ -8,8 +8,8 @@ add_library(config OBJECT config.c config.h.in)
 add_library(socket OBJECT socket.c socket.h)
 add_library(connection OBJECT connection.c connection.h)
 add_library(router OBJECT router.c router.h)
-add_library(response OBJECT response.c response.h)
-add_library(request OBJECT request.c request.h)
+add_library(response OBJECT response.c)
+add_library(request OBJECT request.c)
 add_library(main OBJECT main.c)
 add_library(chttpd STATIC 
   chttpd.c ${PROJECT_SOURCE_DIR}/include/chttpd/chttpd.h

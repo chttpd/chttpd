@@ -21,7 +21,7 @@
 
 
 /* local private */
-#include "privatetypes.h"
+#include "common.h"
 
 
 struct route *

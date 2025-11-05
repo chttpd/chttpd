@@ -22,7 +22,7 @@
 
 /* thirdparty */
 #include <mrb.h>
-#include <chttp.h>
+#include <chttp/chttp.h>
 
 /* local public */
 #include "chttpd/chttpd.h"

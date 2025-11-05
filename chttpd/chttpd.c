@@ -31,12 +31,11 @@
 #include "chttpd/addr.h"
 
 /* local private */
-#include "privatetypes.h"
+#include "common.h"
 #include "config.h"
 #include "socket.h"
 #include "router.h"
 #include "connection.h"
-#include "response.h"
 
 
 struct chttpd *

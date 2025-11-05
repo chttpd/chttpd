@@ -26,9 +26,6 @@
 /* local public */
 #include "chttpd/chttpd.h"
 
-/* local private */
-#include "request.h"
-
 
 /**
  * return the number of characters which would have been written to the target
@@ -44,7 +41,7 @@ chttpd_request_readchunkA(struct chttpd_connection *c, const char **start) {
     ssize_t ret;
 
 retry:
-    chunksize = chttp_chunkedcodec_getchunk(in, inlen, start, &garbage);
+    chunksize = chttp_chunked_parse(in, inlen, start, &garbage);
     if (chunksize == 0) {
         return 0;
     }
@@ -55,7 +52,7 @@ retry:
 
     if (chunksize == -2) {
         /* more data needed */
-        ret = connection_readallA(c, NULL);
+        ret = chttpd_connection_readallA(c, NULL);
         if (ret <= 0) {
             return  ret;
         }

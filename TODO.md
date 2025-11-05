@@ -1,5 +1,5 @@
 ## high priority
-- why protocol is (null) at connection.c:200
+- HEAD http method
 - tcp timeout and keep-alive
 - delete chttpd_free function
 - Form parsing

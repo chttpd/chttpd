@@ -29,5 +29,3 @@ socket_bind(const char *addr, union saddr *out);
 
 
 #endif  // CHTTPD_SOCKET_H_
-
-

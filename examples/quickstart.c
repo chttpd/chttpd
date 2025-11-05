@@ -26,21 +26,22 @@
 #include "chttpd/chttpd.h"
 
 
-#define ERR(e) if (e) return -1
-#define BS 0x10000
+#define ERR(c) if (c) return -1
+#define ASSRT(c) if (!(c)) return -1
 
 
 static int
 _chatA(struct chttpd_connection *c, void *ptr) {
     const char *buff;
     ssize_t bytes;
+    struct chttp_packet p;
     size_t total = 0;
 
-    ERR(chttpd_response_start(c, 200, NULL));
-    ERR(chttpd_response_contenttype(c, "text/plain", "utf-8"));
-    ERR(chttpd_response_header(c, "Transfer-Encoding: chunked"));
-    ERR(chttpd_response_header_close(c));
-    ERR(-1 ==  chttpd_response_header_flushA(c));
+    ERR(chttp_packet_allocate(&p, 1, 16, CHTTP_TE_NONE));
+    ERR(chttp_packet_startresponse(&p, 200, NULL));
+    ERR(chttp_packet_contenttype(&p, "text/plain", "utf-8"));
+    ERR(chttp_packet_transferencoding(&p, CHTTP_TE_CHUNKED));
+    ERR(chttp_packet_close(&p));
 
     for (;;) {
         bytes = chttpd_request_readchunkA(c, &buff);
@@ -61,39 +62,39 @@ _chatA(struct chttpd_connection *c, void *ptr) {
 
         total += bytes;
         INFO("echo chunksize: %ld", bytes);
-        ERR(0 >= chttpd_response_writechunkA(c, buff, bytes));
+        ERR(chttp_packet_write(&p, buff, bytes));
+        ASSRT(0 < chttpd_connection_sendpacket(c, &p));
     }
 
     /* terminate */
     INFO("total: %ld", total);
-    ERR(-1 == chttpd_response_chunk_end(c));
+    ASSRT(0 < chttpd_connection_sendpacket(c, &p));
     return 0;
 }
 
 
 static int
 _streamA(struct chttpd_connection *c, void *ptr) {
-    ERR(chttpd_response_start(c, 200, NULL));
-    ERR(chttpd_response_contenttype(c, "text/plain", "utf-8"));
-    ERR(chttpd_response_header(c, "Transfer-Encoding: chunked"));
-    ERR(chttpd_response_header_close(c));
-    ERR(-1 == chttpd_response_header_flushA(c));
+    struct chttp_packet p;
 
-    /* allocate chunk size */
-    ERR(-1 == chttpd_response_allocate(c, 128));
+    ERR(chttp_packet_allocate(&p, 1, 1, CHTTP_TE_NONE));
+    ERR(chttp_packet_startresponse(&p, 200, NULL));
+    ERR(chttp_packet_contenttype(&p, "text/plain", "utf-8"));
+    ERR(chttp_packet_transferencoding(&p, CHTTP_TE_CHUNKED));
+    ERR(chttp_packet_close(&p));
 
     /* first chunk */
-    ERR(-1 == chttpd_response_write(c, "Foo %s", "Bar"));
-    ERR(chttpd_response_flushchunkA(c));
+    ERR(chttp_packet_writef(&p, "Foo %s", "Bar"));
+    ASSRT(0 < chttpd_connection_sendpacket(c, &p));
 
     /* second chunk */
-    ERR(0 >= chttpd_response_write(c, " "));
-    ERR(0 >= chttpd_response_write(c, "Baz %s", "Qux"));
-    ERR(0 >= chttpd_response_write(c, "\r\n"));
-    ERR(chttpd_response_flushchunkA(c));
+    ERR(chttp_packet_writef(&p, " "));
+    ERR(chttp_packet_writef(&p, "Baz %s", "Qux"));
+    ERR(chttp_packet_writef(&p, "\r\n"));
+    ASSRT(0 < chttpd_connection_sendpacket(c, &p));
 
     /* terminate */
-    ERR(-1 == chttpd_response_chunk_end(c));
+    ASSRT(0 < chttpd_connection_sendpacket(c, &p));
     return 0;
 }
 

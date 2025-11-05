@@ -22,7 +22,7 @@
 
 /* thirdparty */
 #include <mrb.h>
-#include <chttp.h>
+#include <chttp/chttp.h>
 
 /* local public */
 #include "chttpd/addr.h"
@@ -88,59 +88,46 @@ chttpd_response_errorA(struct chttpd_connection *c, int status,
         const char *text);
 
 
-ssize_t
-chttpd_response_flushA(struct chttpd_connection *c);
+// ssize_t
+// chttpd_response_flushA(struct chttpd_connection *c);
+//
+//
+// int
+// chttpd_response_contenttype(struct chttpd_connection *c, const char *type,
+//         const char *charset);
+//
+//
+// int
+// chttpd_response_header(struct chttpd_connection *c, const char *fmt, ...);
+//
+//
+// ssize_t
+// chttpd_response_write(struct chttpd_connection *c, const char *fmt, ...);
+//
+//
+// int
+// chttpd_response_header_close(struct chttpd_connection *c);
 
 
-int
-chttpd_response_start(struct chttpd_connection *c, int status,
-        const char *text);
-
-
-int
-chttpd_response_contenttype(struct chttpd_connection *c, const char *type,
-        const char *charset);
-
-
-int
-chttpd_response_header(struct chttpd_connection *c, const char *fmt, ...);
-
-
-ssize_t
-chttpd_response_write(struct chttpd_connection *c, const char *fmt, ...);
-
-
-int
-chttpd_response_header_close(struct chttpd_connection *c);
-
-
-ssize_t
-chttpd_response_header_flushA(struct chttpd_connection *c);
-
-
-ssize_t
-chttpd_response_content_flushA(struct chttpd_connection *c);
-
-
-int
-chttpd_response_allocate(struct chttpd_connection *c, size_t size);
-
-
-ssize_t
-chttpd_response_flushchunkA(struct chttpd_connection *c);
-
-
-ssize_t
-chttpd_response_writechunkA(struct chttpd_connection *c, const char *budd,
-        size_t len);
-
-
-int
-chttpd_response_chunk_end(struct chttpd_connection *c);
-
-
-ssize_t
-chttpd_connection_readallA(struct chttpd_connection *c);
+// ssize_t
+// chttpd_response_header_flushA(struct chttpd_connection *c);
+//
+//
+// ssize_t
+// chttpd_response_content_flushA(struct chttpd_connection *c);
+//
+//
+// ssize_t
+// chttpd_response_flushchunkA(struct chttpd_connection *c);
+//
+//
+// ssize_t
+// chttpd_response_writechunkA(struct chttpd_connection *c, const char *budd,
+//         size_t len);
+//
+//
+// int
+// chttpd_response_chunk_end(struct chttpd_connection *c);
 
 
 ssize_t
@@ -158,9 +145,14 @@ chttpd_connection_readsearchA(struct chttpd_connection *c, const char *s);
 int
 chttpd_connection_atleastA(struct chttpd_connection *c, size_t count);
 
-int
-connection_readallA(struct chttpd_connection *c, char **out);
 
+int
+chttpd_connection_readallA(struct chttpd_connection *c, char **out);
+
+
+ssize_t
+chttpd_connection_sendpacket(struct chttpd_connection *c,
+        struct chttp_packet *p);
 
 
 #endif  // INCLUDE_CHTTPD_CHTTPD_H_

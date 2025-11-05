@@ -25,7 +25,7 @@
 
 /* local private */
 #include "router.h"
-#include "privatetypes.h"
+#include "common.h"
 
 /* test private */
 #include "tests/fixtures.h"
