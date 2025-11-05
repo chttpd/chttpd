@@ -31,7 +31,7 @@
 
 
 static int
-_chatA(struct carrot_server_conn *c, void *ptr) {
+_chatA(struct carrot_conn *c, void *ptr) {
     const char *buff;
     ssize_t bytes;
     struct chttp_packet p;
@@ -74,7 +74,7 @@ _chatA(struct carrot_server_conn *c, void *ptr) {
 
 
 static int
-_streamA(struct carrot_server_conn *c, void *ptr) {
+_streamA(struct carrot_conn *c, void *ptr) {
     struct chttp_packet p;
 
     ERR(chttp_packet_allocate(&p, 1, 1, CHTTP_TE_NONE));
@@ -100,7 +100,7 @@ _streamA(struct carrot_server_conn *c, void *ptr) {
 
 
 static int
-_indexA(struct carrot_server_conn *c, void *ptr) {
+_indexA(struct carrot_conn *c, void *ptr) {
     int bytes = carrot_server_responseA(c, 200, NULL, "Hello carrot\r\n", 128);
     DEBUG("bytes: %d", bytes);
     return 0;

@@ -33,6 +33,7 @@
 
 /* local private */
 #include "common.h"
+#include "server.h"
 
 /* test private */
 #include "fixtures.h"

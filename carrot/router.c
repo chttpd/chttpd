@@ -50,7 +50,7 @@ router_append(struct router *rt, const char *verb, const char *path,
         carrot_handler_t handler, void *ptr) {
     struct route *r;
 
-    if (rt->count >= CONFIG_CARROT_ROUTES_MAX) {
+    if (rt->count >= CONFIG_CARROT_SERVER_MAXROUTES) {
         return -1;
     }
 

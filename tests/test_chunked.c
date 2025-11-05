@@ -28,7 +28,7 @@
 
 
 static int
-_indexA(struct carrot_server_conn *c, void *ptr) {
+_indexA(struct carrot_conn *c, void *ptr) {
     struct chttp_packet p;
     const char *buff;
     ssize_t bytes;

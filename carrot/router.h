@@ -24,6 +24,20 @@
 #include "common.h"
 
 
+struct route {
+    const char *verb;
+    const char *path;
+    carrot_handler_t handler;
+    void *ptr;
+};
+
+
+struct router {
+    struct route routes[CONFIG_CARROT_SERVER_MAXROUTES];
+    unsigned char count;
+};
+
+
 struct route *
 router_find(struct router *rt, const char *verb, const char *path);
 

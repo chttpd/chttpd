@@ -36,6 +36,23 @@
 #include "config.h"
 #include "socket.h"
 #include "router.h"
+#include "server.h"
+
+
+const struct carrot_server_config carrot_server_defaultconfig = {
+    .bind = "127.0.0.1:8080",
+    .backlog = 10,
+    .requestbuffer_mempages = 1,
+    .connectionbuffer_mempages = 1,
+    .connections_max = 10,
+};
+
+
+void
+carrot_server_makedefaults(struct carrot_server_config *c) {
+    memcpy(c, &carrot_server_defaultconfig,
+            sizeof(carrot_server_defaultconfig));
+}
 
 
 struct carrot_server *
@@ -75,7 +92,7 @@ carrot_server_route(struct carrot_server *s, const char *verb, const char *path,
  * The out ptr will set to the start of the received data on successfull read.
  */
 int
-carrot_server_recvallA(struct carrot_server_conn *c, char **out) {
+carrot_server_recvallA(struct carrot_conn *c, char **out) {
     ssize_t bytes;
     char *start = mrb_readerptr(&c->ring);
     pcaio_relaxA(0);
@@ -112,7 +129,7 @@ retry:
  * -1 for error.
  */
 ssize_t
-carrot_server_recvchunkA(struct carrot_server_conn *c, const char **start) {
+carrot_server_recvchunkA(struct carrot_conn *c, const char **start) {
     ssize_t chunksize;
     size_t garbage;
     char *in = mrb_readerptr(&c->ring);
@@ -146,7 +163,7 @@ retry:
 
 
 ssize_t
-carrot_server_responseA(struct carrot_server_conn *c, int status,
+carrot_server_responseA(struct carrot_conn *c, int status,
         const char *text, const char *content, size_t contentlen) {
     struct chttp_packet p;
     ssize_t ret;
@@ -168,7 +185,7 @@ carrot_server_responseA(struct carrot_server_conn *c, int status,
 
 
 ssize_t
-carrot_server_sendpacketA(struct carrot_server_conn *c,
+carrot_server_sendpacketA(struct carrot_conn *c,
         struct chttp_packet *p) {
     struct iovec v[4];
     int vcount = sizeof(v) / sizeof(struct iovec);
@@ -188,7 +205,7 @@ carrot_server_sendpacketA(struct carrot_server_conn *c,
 
 
 ssize_t
-carrot_server_rejectA(struct carrot_server_conn *c, int status,
+carrot_server_rejectA(struct carrot_conn *c, int status,
         const char *text) {
     const char *content;
 
@@ -209,7 +226,7 @@ carrot_server_rejectA(struct carrot_server_conn *c, int status,
  *  n: length of found string.
  */
 ssize_t
-carrot_server_recvsearchA(struct carrot_server_conn *c, const char *s) {
+carrot_server_recvsearchA(struct carrot_conn *c, const char *s) {
     size_t avail;
     char *chunk = mrb_readerptr(&c->ring);
     ssize_t chunksize = mrb_used(&c->ring);
@@ -255,6 +272,90 @@ carrot_server_recvsearchA(struct carrot_server_conn *c, const char *s) {
     }
 
     return -2;
+}
+
+
+int
+carrot_server_connA(int argc, void *argv[]) {
+    int ret = 0;
+    struct carrot_server *s = argv[0];
+    int fd = (long) argv[1];
+    union saddr *peer = (union saddr *)argv[2];
+    struct carrot_conn c;
+    ssize_t headerlen;
+    chttp_status_t status;
+    struct route *route;
+
+    INFO("new connection: %s, fd: %d",  saddr2a(peer), fd);
+    ERR(mrb_init(&c.ring, s->config->connectionbuffer_mempages));
+    c.fd = fd;
+    c.request = chttp_request_new(s->config->requestbuffer_mempages);
+    if (c.request == NULL) {
+        mrb_deinit(&c.ring);
+        return -1;
+    }
+
+    /* preserve peer address */
+    memcpy(&c.peer, peer, sizeof(union saddr));
+
+    /* connection main loop */
+    for (;;) {
+        /* read as much as possible from the socket */
+        /* FIXME: check if this is a head-only request */
+        headerlen = carrot_server_recvsearchA(&c, "\r\n\r\n");
+        if (headerlen <= 0) {
+            /* connection error */
+            ret = -1;
+            break;
+        }
+
+        headerlen += 2;
+        status = chttp_request_parse(c.request, mrb_readerptr(&c.ring),
+                headerlen);
+        if (status > 0) {
+            carrot_server_rejectA(&c, status, NULL);
+            ret = -1;
+            break;
+        }
+
+        if (status < 0) {
+            ERROR("status: %d", status);
+            ret = -1;
+            break;
+        }
+
+        if (mrb_skip(&c.ring, headerlen + 2)) {
+            ERROR("mrb_skip");
+            ret = -1;
+            break;
+        }
+
+        route = router_find(&s->router, c.request->verb, c.request->path);
+        if (route == NULL) {
+            carrot_server_rejectA(&c, 404, NULL);
+            continue;
+        }
+
+        INFO("new request: %s %s %s, route: %p", c.request->verb,
+                c.request->path, c.request->query, route);
+
+        if (route->handler(&c, route->ptr)) {
+            // TODO: log the unhandled server error
+            carrot_server_rejectA(&c, 500, NULL);
+            ret = -1;
+            break;
+        }
+
+        /* make everything fresh for the next request */
+        mrb_reset(&c.ring);
+        chttp_request_reset(c.request);
+    }
+
+    /* free */
+    close(fd);
+    mrb_deinit(&c.ring);
+    free(c.request);
+    return ret;
 }
 
 

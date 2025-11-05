@@ -22,35 +22,11 @@
 /* local private */
 #include "config.h"
 
-/* local public */
-#include "carrot/server.h"
-
 
 /* private preprocessors */
 #define MIN(a, b) ((a) < (b)? a: b)
 #define ERR(c) if (c) return -1
 #define ASSRT(c) if (!(c)) return -1
-
-
-struct route {
-    const char *verb;
-    const char *path;
-    carrot_handler_t handler;
-    void *ptr;
-};
-
-
-struct router {
-    struct route routes[CONFIG_CARROT_ROUTES_MAX];
-    unsigned char count;
-};
-
-
-struct carrot_server {
-    const struct carrot_server_config *config;
-    int listenfd;
-    struct router router;
-};
 
 
 #endif  // CARROT_COMMON_H_

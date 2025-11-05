@@ -16,27 +16,19 @@
  *
  *  Author: Vahid Mardani <vahid.mardani@gmail.com>
  */
-/* standard */
-#include <string.h>
+#ifndef CARROT_SERVER_H_
+#define CARROT_SERVER_H_
 
-/* local public */
-#include "carrot/server.h"
 
 /* local private */
-#include "config.h"
+#include "router.h"
 
 
-const struct carrot_server_config carrot_server_defaultconfig = {
-    .bind = "127.0.0.1:8080",
-    .backlog = 10,
-    .requestbuffer_mempages = 1,
-    .connectionbuffer_mempages = 1,
-    .connections_max = 10,
+struct carrot_server {
+    const struct carrot_server_config *config;
+    int listenfd;
+    struct router router;
 };
 
 
-void
-carrot_server_makedefaults(struct carrot_server_config *c) {
-    memcpy(c, &carrot_server_defaultconfig,
-            sizeof(carrot_server_defaultconfig));
-}
+#endif  // CARROT_SERVER_H_
