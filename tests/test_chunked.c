@@ -28,7 +28,7 @@
 
 
 static int
-_indexA(struct carrot_conn *c, void *ptr) {
+_indexA(struct carrot_connection *c, void *ptr) {
     struct chttp_packet p;
     const char *buff;
     ssize_t bytes;
@@ -40,7 +40,7 @@ _indexA(struct carrot_conn *c, void *ptr) {
     ERR(chttp_packet_close(&p));
 
     for (;;) {
-        bytes = carrot_server_recvchunkA(c, &buff);
+        bytes = carrot_connection_recvchunkA(c, &buff);
         if (bytes == -2) {
             /* buffer size is too low */
             break;
@@ -57,11 +57,11 @@ _indexA(struct carrot_conn *c, void *ptr) {
         }
 
         ERR(chttp_packet_write(&p, buff, bytes));
-        ASSRT(0 < carrot_server_sendpacketA(c, &p));
+        ASSRT(0 < carrot_connection_sendpacketA(c, &p));
     }
 
     /* terminate */
-    ASSRT(0 < carrot_server_sendpacketA(c, &p));
+    ASSRT(0 < carrot_connection_sendpacketA(c, &p));
     return 0;
 }
 

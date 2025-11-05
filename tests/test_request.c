@@ -28,7 +28,7 @@
 
 
 static int
-_indexA(struct carrot_conn *c, void *ptr) {
+_indexA(struct carrot_connection *c, void *ptr) {
     int i;
     struct chttp_request *r = c->request;
     struct chttp_packet p;
@@ -43,7 +43,7 @@ _indexA(struct carrot_conn *c, void *ptr) {
     }
 
     ERR(chttp_packet_close(&p));
-    ASSRT(0 < carrot_server_sendpacketA(c, &p));
+    ASSRT(0 < carrot_connection_sendpacketA(c, &p));
     return 0;
 }
 

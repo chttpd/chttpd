@@ -31,7 +31,7 @@
 
 
 static int
-_chatA(struct carrot_conn *c, void *ptr) {
+_chatA(struct carrot_connection *c, void *ptr) {
     const char *buff;
     ssize_t bytes;
     struct chttp_packet p;
@@ -44,7 +44,7 @@ _chatA(struct carrot_conn *c, void *ptr) {
     ERR(chttp_packet_close(&p));
 
     for (;;) {
-        bytes = carrot_server_recvchunkA(c, &buff);
+        bytes = carrot_connection_recvchunkA(c, &buff);
         if (bytes == -2) {
             ERROR("connection buffer size is too low");
             break;
@@ -63,18 +63,18 @@ _chatA(struct carrot_conn *c, void *ptr) {
         total += bytes;
         INFO("echo chunksize: %ld", bytes);
         ERR(chttp_packet_write(&p, buff, bytes));
-        ASSRT(0 < carrot_server_sendpacketA(c, &p));
+        ASSRT(0 < carrot_connection_sendpacketA(c, &p));
     }
 
     /* terminate */
     INFO("total: %ld", total);
-    ASSRT(0 < carrot_server_sendpacketA(c, &p));
+    ASSRT(0 < carrot_connection_sendpacketA(c, &p));
     return 0;
 }
 
 
 static int
-_streamA(struct carrot_conn *c, void *ptr) {
+_streamA(struct carrot_connection *c, void *ptr) {
     struct chttp_packet p;
 
     ERR(chttp_packet_allocate(&p, 1, 1, CHTTP_TE_NONE));
@@ -85,22 +85,22 @@ _streamA(struct carrot_conn *c, void *ptr) {
 
     /* first chunk */
     ERR(chttp_packet_writef(&p, "Foo %s", "Bar"));
-    ASSRT(0 < carrot_server_sendpacketA(c, &p));
+    ASSRT(0 < carrot_connection_sendpacketA(c, &p));
 
     /* second chunk */
     ERR(chttp_packet_writef(&p, " "));
     ERR(chttp_packet_writef(&p, "Baz %s", "Qux"));
     ERR(chttp_packet_writef(&p, "\r\n"));
-    ASSRT(0 < carrot_server_sendpacketA(c, &p));
+    ASSRT(0 < carrot_connection_sendpacketA(c, &p));
 
     /* terminate */
-    ASSRT(0 < carrot_server_sendpacketA(c, &p));
+    ASSRT(0 < carrot_connection_sendpacketA(c, &p));
     return 0;
 }
 
 
 static int
-_indexA(struct carrot_conn *c, void *ptr) {
+_indexA(struct carrot_connection *c, void *ptr) {
     int bytes = carrot_server_responseA(c, 200, NULL, "Hello carrot\r\n", 128);
     DEBUG("bytes: %d", bytes);
     return 0;
