@@ -24,8 +24,12 @@
 #include "chttpd/chttpd.h"
 
 
+/* private preprocessors */
+#define ERR(c) if (c) return -1
+#define ASSRT(c) if (!(c)) return -1
+
+
 extern char content[];
-#define OK(e) if (e) return -1
 
 
 chttp_status_t

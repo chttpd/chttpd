@@ -31,17 +31,19 @@ static int
 _indexA(struct chttpd_connection *c, void *ptr) {
     int i;
     struct chttp_request *r = c->request;
+    struct chttp_packet p;
 
-    OK(-1 == chttpd_response_start(c, 200, NULL));
-    OK(chttpd_response_header(c, "x-headers: %d", r->headers.count));
+    ERR(chttp_packet_allocate(&p, 1, 1, CHTTP_TE_NONE));
+    ERR(chttp_packet_startresponse(&p, 200, NULL));
+    ERR(chttp_packet_headerf(&p, "x-headers: %d", r->headers.count));
 
     /* copy request headers to response headers */
     for (i = 0; i < r->headers.count; i++) {
-        OK(chttpd_response_header(c, r->headers.list[i]));
+        ERR(chttp_packet_headerf(&p, r->headers.list[i]));
     }
 
-    OK(chttpd_response_header_close(c));
-    OK(-1 == chttpd_response_flushA(c));
+    ERR(chttp_packet_close(&p));
+    ASSRT(0 < chttpd_connection_sendpacket(c, &p));
     return 0;
 }
 

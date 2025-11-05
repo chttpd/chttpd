@@ -27,22 +27,21 @@
 #include "tests/fixtures.h"
 
 
-#define BS 128
-
-
 static int
 _indexA(struct chttpd_connection *c, void *ptr) {
+    struct chttp_packet p;
     const char *buff;
     ssize_t bytes;
 
-    OK(chttpd_response_start(c, 200, NULL));
-    OK(chttpd_response_header(c, "Transfer-Encoding: chunked"));
-    OK(chttpd_response_header_close(c));
-    OK(0 >= chttpd_response_header_flushA(c));
+    ERR(chttp_packet_allocate(&p, 1, 16, CHTTP_TE_NONE));
+    ERR(chttp_packet_startresponse(&p, 200, NULL));
+    ERR(chttp_packet_contenttype(&p, "text/plain", "utf-8"));
+    ERR(chttp_packet_transferencoding(&p, CHTTP_TE_CHUNKED));
+    ERR(chttp_packet_close(&p));
 
     for (;;) {
         bytes = chttpd_request_readchunkA(c, &buff);
-        if (bytes > BS) {
+        if (bytes == -2) {
             /* buffer size is too low */
             break;
         }
@@ -57,11 +56,12 @@ _indexA(struct chttpd_connection *c, void *ptr) {
             break;
         }
 
-        OK(0 >= chttpd_response_writechunkA(c, buff, bytes));
+        ERR(chttp_packet_write(&p, buff, bytes));
+        ASSRT(0 < chttpd_connection_sendpacket(c, &p));
     }
 
     /* terminate */
-    OK(0 >= chttpd_response_chunk_end(c));
+    ASSRT(0 < chttpd_connection_sendpacket(c, &p));
     return 0;
 }
 

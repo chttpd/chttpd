@@ -205,27 +205,27 @@ request(const char *fmt, ...) {
     va_end(args);
 
     /* ensure the output is not truncated */
-    ASSRT(bytes >= BUFFSIZE);
-    ASSRT(pcaio_modepoll_use(2, &modepoll));
-    ASSRT(pcaio_modio_use(modepoll));
-    ASSRT(_sockpair(socks, &caddr));
+    ERR(bytes >= BUFFSIZE);
+    ERR(pcaio_modepoll_use(2, &modepoll));
+    ERR(pcaio_modio_use(modepoll));
+    ERR(_sockpair(socks, &caddr));
 
     DEBUG("caddr: %s", saddr2a(&caddr));
     tasks[0] = pcaio_task_new(_clientA, &client_exitstatus, 2, socks[0],
             bytes);
-    ASSRT(!tasks[0]);
+    ASSRT(tasks[0]);
 
     tasks[1] = pcaio_task_new(connectionA, &server_exitstatus, 3, &_chttpd,
             socks[1], &caddr);
-    ASSRT(!tasks[1]);
+    ASSRT(tasks[1]);
 
     /* run event loop */
-    ASSRT(pcaio(1, tasks, 2));
+    ERR(pcaio(1, tasks, 2));
 
     /* cleanup */
     close(socks[0]);
     close(socks[1]);
-    ASSRT(ret);
+    ERR(ret);
 
     return client_exitstatus;
 }
