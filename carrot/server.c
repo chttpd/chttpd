@@ -89,7 +89,7 @@ carrot_server_route(struct carrot_server *s, const char *verb, const char *path,
 
 ssize_t
 carrot_server_responseA(struct carrot_connection *c, int status,
-        const char *text, const char *content, size_t contentlen) {
+        const char *text, const char *content, size_t contentlen, int flags) {
     struct chttp_packet p;
     ssize_t ret;
 
@@ -97,10 +97,17 @@ carrot_server_responseA(struct carrot_connection *c, int status,
         text = chttp_status_text(status);
     }
 
+    if (contentlen == -1) {
+        contentlen = strlen(content);
+    }
+
     ERR(chttp_packet_allocate(&p, 1, 1, CHTTP_TE_NONE));
     ERR(chttp_packet_startresponse(&p, status, text));
     ERR(chttp_packet_contenttype(&p, "text/plain", "utf-8"));
     ERR(chttp_packet_write(&p, content, contentlen));
+    if (flags & CARROT_SRF_APPENDCRLF) {
+        ERR(chttp_packet_write(&p, "\r\n", 2));
+    }
     ERR(chttp_packet_close(&p));
     ret = carrot_connection_sendpacketA(c, &p);
     chttp_packet_free(&p);
@@ -115,8 +122,8 @@ carrot_server_rejectA(struct carrot_connection *c, int status,
     const char *content;
 
     content = chttp_status_text(status);
-    return carrot_server_responseA(c, status, text, content,
-            strlen(content) + 1);
+    return carrot_server_responseA(c, status, text, content, -1,
+            CARROT_SRF_APPENDCRLF);
 }
 
 

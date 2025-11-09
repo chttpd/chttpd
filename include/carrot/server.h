@@ -42,6 +42,11 @@ struct carrot_server_config {
 };
 
 
+enum {
+    CARROT_SRF_APPENDCRLF = 0x1,
+};
+
+
 extern const struct carrot_server_config carrot_server_defaultconfig;
 
 
@@ -64,7 +69,7 @@ carrot_server_route(struct carrot_server *s, const char *verb,
 
 ssize_t
 carrot_server_responseA(struct carrot_connection *c, int status,
-        const char *text, const char *content, size_t contentlen);
+        const char *text, const char *content, size_t contentlen, int flags);
 
 
 ssize_t

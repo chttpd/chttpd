@@ -101,7 +101,8 @@ _streamA(struct carrot_connection *c, void *ptr) {
 
 static int
 _indexA(struct carrot_connection *c, void *ptr) {
-    int bytes = carrot_server_responseA(c, 200, NULL, "Hello carrot\r\n", 128);
+    int bytes = carrot_server_responseA(c, 200, NULL, "Hello carrot", -1,
+            CARROT_SRF_APPENDCRLF);
     DEBUG("bytes: %d", bytes);
     return 0;
 }
