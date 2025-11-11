@@ -114,11 +114,18 @@ main() {
     clog_verbositylevel = CLOG_DEBUG;
     struct carrot_server_config config;
 
+    /* fill config variable with the default values, and override it */
     carrot_server_makedefaults(&config);
     config.connectionbuffer_mempages = 16;
+
+    /* create a server */
     server = carrot_server_new(&config);
+
+    /* add some routes */
     carrot_server_route(server, "POST", "/chat", _chatA, NULL);
     carrot_server_route(server, "GET", "/stream", _streamA, NULL);
     carrot_server_route(server, "GET", "/", _indexA, NULL);
+
+    /* handover the process to server's entrypoint */
     return carrot_server_main(server);
 }
