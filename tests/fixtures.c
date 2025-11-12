@@ -97,9 +97,7 @@ _chunkedA(const char *buff, int len, int avail, int fd) {
 
 
 static int
-_clientA(int argc, void *argv[]) {
-    int fd = (long)argv[0];
-    ssize_t reqlen = (long)argv[1];
+_clientA(int fd, ssize_t reqlen) {
     ssize_t bytes;
     chttp_status_t status;
     char *header;
@@ -215,7 +213,7 @@ request(const char *fmt, ...) {
             bytes);
     ASSRT(tasks[0]);
 
-    tasks[1] = pcaio_task_new(carrot_server_connA, &server_exitstatus, 3,
+    tasks[1] = pcaio_task_new(server_connA, &server_exitstatus, 3,
             &_carrot, socks[1], &caddr);
     ASSRT(tasks[1]);
 

@@ -31,4 +31,8 @@ struct carrot_server {
 };
 
 
+int
+server_connA(struct carrot_server *s, int fd, union saddr *peer);
+
+
 #endif  // CARROT_SERVER_H_

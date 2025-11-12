@@ -1,5 +1,6 @@
 list(APPEND examples
   serverdemo
+  # clientdemo
 )
 
 

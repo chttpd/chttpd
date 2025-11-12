@@ -110,7 +110,7 @@ _indexA(struct carrot_connection *c, void *ptr) {
 
 int
 main() {
-    carrot_server_t server;
+    carrot_server_t srv;
     clog_verbositylevel = CLOG_DEBUG;
     struct carrot_server_config config;
 
@@ -119,13 +119,13 @@ main() {
     config.connectionbuffer_mempages = 16;
 
     /* create a server */
-    server = carrot_server_new(&config);
+    srv = carrot_server_new(&config);
 
     /* add some routes */
-    carrot_server_route(server, "POST", "/chat", _chatA, NULL);
-    carrot_server_route(server, "GET", "/stream", _streamA, NULL);
-    carrot_server_route(server, "GET", "/", _indexA, NULL);
+    carrot_server_route(srv, "POST", "/chat", _chatA, NULL);
+    carrot_server_route(srv, "GET", "/stream", _streamA, NULL);
+    carrot_server_route(srv, "GET", "/", _indexA, NULL);
 
     /* handover the process to server's entrypoint */
-    return carrot_server_main(server);
+    return carrot_server_main(srv);
 }

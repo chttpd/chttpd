@@ -78,11 +78,7 @@ carrot_server_rejectA(struct carrot_connection *c, int status,
 
 
 int
-carrot_server_connA(int argc, void *argv[]);
-
-
-int
-carrot_serverA(int argc, void *argv[]);
+carrot_serverA(struct carrot_server *s);
 
 
 int

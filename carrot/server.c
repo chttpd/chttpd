@@ -128,11 +128,8 @@ carrot_server_rejectA(struct carrot_connection *c, int status,
 
 
 int
-carrot_server_connA(int argc, void *argv[]) {
+server_connA(struct carrot_server *s, int fd, union saddr *peer) {
     int ret = 0;
-    struct carrot_server *s = argv[0];
-    int fd = (long) argv[1];
-    union saddr *peer = (union saddr *)argv[2];
     struct carrot_connection c;
     ssize_t headerlen;
     chttp_status_t status;
@@ -212,8 +209,7 @@ carrot_server_connA(int argc, void *argv[]) {
 
 
 int
-carrot_serverA(int argc, void *argv[]) {
-    struct carrot_server *s = (struct carrot_server *) argv[0];
+carrot_serverA(struct carrot_server *s) {
     union saddr listenaddr;
     struct sockaddr_storage caddrbuff;
     union saddr *caddr = (union saddr *)&caddrbuff;
@@ -249,7 +245,7 @@ carrot_serverA(int argc, void *argv[]) {
             return -1;
         }
 
-        pcaio_fschedule(carrot_server_connA, NULL, 3, s, cfd, caddr);
+        pcaio_fschedule(server_connA, NULL, 3, s, cfd, caddr);
     }
 
     // TODO: move it to pcaio task disposation callback
