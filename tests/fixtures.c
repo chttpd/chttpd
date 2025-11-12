@@ -190,8 +190,8 @@ request(const char *fmt, ...) {
     struct pcaio_task *tasks[2];
     struct pcaio_iomodule *modepoll;
     union saddr caddr;
-    int client_exitstatus;
-    int server_exitstatus;
+    int client_status;
+    int server_status;
 
     /* reset */
     errno = 0;
@@ -209,12 +209,11 @@ request(const char *fmt, ...) {
     ERR(_sockpair(socks, &caddr));
 
     DEBUG("caddr: %s", saddr2a(&caddr));
-    tasks[0] = pcaio_task_new(_clientA, &client_exitstatus, 2, socks[0],
-            bytes);
+    tasks[0] = pcaio_task_new(_clientA, &client_status, 2, socks[0], bytes);
     ASSRT(tasks[0]);
 
-    tasks[1] = pcaio_task_new(server_connA, &server_exitstatus, 3,
-            &_carrot, socks[1], &caddr);
+    tasks[1] = pcaio_task_new(server_connA, &server_status, 3, &_carrot,
+            socks[1], &caddr);
     ASSRT(tasks[1]);
 
     /* run event loop */
@@ -225,7 +224,7 @@ request(const char *fmt, ...) {
     close(socks[1]);
     ERR(ret);
 
-    return client_exitstatus;
+    return client_status;
 }
 
 
