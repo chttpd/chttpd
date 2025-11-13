@@ -16,38 +16,107 @@
  *
  *  Author: Vahid Mardani <vahid.mardani@gmail.com>
  */
+
+
 /* standard */
 #include <stdio.h>
+#include <stdlib.h>
 #include <arpa/inet.h>
+
+/* thirdparty */
+#include <chttp/str.h>
 
 /* local public */
 #include "carrot/addr.h"
 
+/* local private */
+#include "common.h"
 
-// const char *
-// ipaddr2a(const struct ipaddr *addr) {
-//     char tmp[_BUFFLEN];
-//
-//     if (addr->family == AF_INET) {
-//         sprintf(_out, "%s",
-//                 inet_ntop(AF_INET, &addr->v4.s_addr, tmp, _BUFFLEN));
-//     }
-//     else if (addr->family == AF_INET6) {
-//         sprintf(_out, "%s",
-//                 inet_ntop(AF_INET6, &addr->v6.s6_addr, tmp, _BUFFLEN));
-//     }
-//     else {
-//         return NULL;
-//     }
-//
-//     return _out;
-// }
+
+void
+ipaddr_netmask(struct ipaddr *dst, unsigned char bits) {
+    // TODO: ipv6
+    dst->family = AF_INET;
+    dst->s_addr = htonl(~((1 << (32 - bits)) - 1));
+}
 
 
 int
-saddr2a(char *dst, size_t dstlen, const union saddr *saddr) {
+saddr_unixfromstr(union saddr *dst, const char *src) {
+    int max = 108;
+    int len;
+    char tmp[128];
+    char *start;
+    char *found;
+
+    ASSRT(src);
+    len = strlen(src);
+    if (len >= sizeof(tmp)) {
+        return -1;
+    }
+
+    strncpy(tmp, src, len);
+    start = chttp_str_trim(tmp, &len);
+    found = strstr(start, "unix://");
+    if ((found == NULL) || (found != start)) {
+        return -1;
+    }
+
+    len -= 7;
+    found += 7;
+    if (len > max) {
+        return -1;
+    }
+
+    strcpy(dst->sun_path, found);
+    dst->sun_family = AF_UNIX;
+    return 0;
+}
+
+
+int
+saddr_fromstr(union saddr *dst, const char *src) {
+    char tmp[64];
+    char *colon;
+    unsigned short port;
+
+    ASSRT(src);
+    strncpy(tmp, src, 64);
+    colon = strrchr(tmp, ':');
+    if (colon == NULL) {
+        return -1;
+    }
+
+    port = atoi(colon + 1);
+    if (port == 0) {
+        return -1;
+    }
+
+    port = htons(port);
+    colon[0] = 0;
+    if (inet_pton(AF_INET, tmp, &dst->sin_addr)) {
+        /* v4 */
+        dst->sin_family = AF_INET;
+        dst->sin_port = port;
+    }
+    else if (!in6addr_fromstr(&dst->sin6_addr, tmp)) {
+        /* v6 */
+        dst->sin6_family = AF_INET6;
+        dst->sin6_port = port;
+    }
+    else if (!saddr_unixfromstr(dst, tmp)) {
+        /* unix domain socket failed */
+        return -1;
+    }
+
+    return 0;
+}
+
+
+int
+saddr_tostr(char *dst, size_t dstlen, const union saddr *saddr) {
     int ret;
-    char tmp[32];
+    char tmp[64];
 
     if (saddr->ss_family == AF_UNIX) {
         ret = snprintf(dst, dstlen, "%s", saddr->sun_path);
@@ -67,6 +136,25 @@ saddr2a(char *dst, size_t dstlen, const union saddr *saddr) {
     }
 
     if (ret >= dstlen) {
+        return -1;
+    }
+
+    return 0;
+}
+
+
+int
+ipaddr_tostr(char *dst, size_t dstlen, const struct ipaddr *addr) {
+    const void *src;
+
+    if (addr->family == AF_INET) {
+        src = &addr->s_addr;
+    }
+    else {
+        src = &addr->s6_addr;
+    }
+
+    if (inet_ntop(addr->family, src, dst, dstlen) == NULL) {
         return -1;
     }
 
@@ -96,25 +184,40 @@ saddr2a(char *dst, size_t dstlen, const union saddr *saddr) {
 // }
 
 
-void
-subnetmask(unsigned char bits, struct ipaddr *dst) {
-    dst->family = AF_INET;
-    dst->v4.s_addr = htonl(~((1 << (32 - bits)) - 1));
+int
+ipaddr_fromstr(struct ipaddr *dst, const char *src) {
+    if (strchr(src, '.')) {
+        /* v4 */
+        ASSRT(1 == inet_pton(AF_INET, src, &dst->s_addr));
+        dst->family = AF_INET;
+        return 0;
+    }
+
+    /* v6 */
+    ASSRT(1 == inet_pton(AF_INET6, src, &dst->s6_addr));
+    dst->family = AF_INET6;
+    return 0;
 }
 
 
 int
-ipaddr_fromstr(struct ipaddr *dst, sa_family_t fam, const char *src) {
-    const char *dot;
+in6addr_fromstr(struct in6_addr *dst, const char *src) {
+    char tmp[64];
+    int len = strlen(src);
+    char *start;
 
-    dot = strchr(src, '.');
-    if (dot) {
-        /* v4 */
-
+    ASSRT(src);
+    len = strlen(src);
+    ASSRT(len < 64);
+    strncpy(tmp, src, len);
+    start = tmp;
+    if (start[0] == '[') {
+        ASSRT(start[len - 1] == ']');
+        start++;
+        start[len - 2] = 0;
     }
-    else {
-        /* v6 */
-    }
 
-    return -1;
+    /* v6 */
+    ASSRT(1 == inet_pton(AF_INET6, start, &dst->s6_addr));
+    return 0;
 }

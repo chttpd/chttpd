@@ -137,7 +137,7 @@ server_connA(struct carrot_server *s, int fd, union saddr *peer) {
     char tmp[32];
 
     /* render the peer address for logging purpose */
-    ERR(saddr2a(tmp, sizeof(tmp), peer));
+    ERR(saddr_tostr(tmp, sizeof(tmp), peer));
     INFO("new connection: %s, fd: %d", tmp, fd);
 
     ERR(mrb_init(&c.ring, s->config->connectionbuffer_mempages));
@@ -231,7 +231,7 @@ carrot_serverA(struct carrot_server *s) {
         return -1;
     }
 
-    ERR(saddr2a(tmp, sizeof(tmp), &listenaddr));
+    ERR(saddr_tostr(tmp, sizeof(tmp), &listenaddr));
     INFO("listening on: %s", tmp);
     for (;;) {
         socklen = sizeof(caddrbuff);

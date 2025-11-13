@@ -27,8 +27,6 @@
 #include "carrot/addr.h"
 
 
-// TODO: test addr.c
-
 // static void
 // test_saddr_slit() {
 //     // eqint(saddr_split(
@@ -36,22 +34,45 @@
 
 
 static void
-test_saddr2a() {
-    char buff[32];
+test_ipaddr_fromtostr() {
+    char buff[64];
+    struct ipaddr addr;
+
+    eqint(0, ipaddr_fromstr(&addr, "0.0.0.73"));
+    eqint(AF_INET, addr.family);
+    eqint(htonl(73), addr.s_addr);
+    eqint(0, ipaddr_tostr(buff, sizeof(buff), &addr));
+    eqstr("0.0.0.73", buff);
+
+    eqint(0, ipaddr_fromstr(&addr, "::1"));
+    eqint(AF_INET6, addr.family);
+    eqint(0, ipaddr_tostr(buff, sizeof(buff), &addr));
+    eqint(1, addr.s6_addr[15]);
+    eqstr("::1", buff);
+}
+
+
+static void
+test_saddr_fromtostr() {
+    char buff[64];
     union saddr saddr;
 
-    saddr.sin_port = htons(8080);
+    eqint(0, saddr_fromstr(&saddr, "[fe80::31fb]:53"));
+    eqint(0, saddr_tostr(buff, sizeof(buff), &saddr));
+    eqint(AF_INET6, saddr.sin6_family);
+    eqstr("[fe80::31fb]:53", buff);
 
-    /* inet_pton returns 1 on success */
-    eqint(1, inet_pton(AF_INET, "127.0.0.1", &saddr.sin_addr));
-    saddr.sa_family = AF_INET;
-    eqint(0, saddr2a(buff, sizeof(buff), &saddr));
+    eqint(0, saddr_fromstr(&saddr, "127.0.0.1:8080"));
+    eqint(0, saddr_tostr(buff, sizeof(buff), &saddr));
+    eqint(AF_INET, saddr.sin_family);
     eqstr("127.0.0.1:8080", buff);
+
 }
 
 
 int
 main() {
-    test_saddr2a();
+    test_ipaddr_fromtostr();
+    test_saddr_fromtostr();
     return EXIT_SUCCESS;
 }

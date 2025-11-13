@@ -34,8 +34,8 @@ struct ipaddr {
     /* AF_INET or AF_INET6 */
     sa_family_t family;
     union {
-        struct in_addr v4;
-        struct in6_addr v6;
+        struct in_addr;
+        struct in6_addr;
     };
 };
 
@@ -55,20 +55,28 @@ struct cidr {
 };
 
 
-int
-saddr2a(char *dst, size_t dstlen, const union saddr *addr);
-
-
-// const char *
-// ipaddr2a(const struct ipaddr *addr);
-
-
-// const char *
-// cidr2a(const struct cidr *cidr);
-
-
 void
-subnetmask(unsigned char bits, struct ipaddr *out);
+ipaddr_netmask(struct ipaddr *out, unsigned char bits);
+
+
+int
+saddr_fromstr(union saddr *dst, const char *src);
+
+
+int
+saddr_tostr(char *dst, size_t dstlen, const union saddr *addr);
+
+
+int
+ipaddr_fromstr(struct ipaddr *dst, const char *src);
+
+
+int
+in6addr_fromstr(struct in6_addr *dst, const char *src);
+
+
+int
+ipaddr_tostr(char *dst, size_t dstlen, const struct ipaddr *addr);
 
 
 #endif  // INCLUDE_CARROT_ADDR_H_
