@@ -32,7 +32,7 @@
 
 struct ipaddr {
     /* AF_INET or AF_INET6 */
-    int family;
+    sa_family_t family;
     union {
         struct in_addr v4;
         struct in6_addr v6;

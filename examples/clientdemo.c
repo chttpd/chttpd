@@ -36,8 +36,9 @@ _clinetA(struct carrot_clinet_config *cfg) {
     struct carrot_connection c;
     union saddr host;
 
-    carrot_connect(&c, );
+    // carrot_connect(&c, );
     // carrot_client_requestA(&c, "GET", "http://localhost:8080");
+    return -1;
 }
 
 

@@ -58,7 +58,7 @@ saddr2a(char *dst, size_t dstlen, const union saddr *saddr) {
                 ntohs(saddr->sin_port));
     }
     else if (saddr->ss_family == AF_INET6) {
-        ret = sprintf(dst, dstlen, "[%s]:%d",
+        ret = snprintf(dst, dstlen, "[%s]:%d",
                 inet_ntop(AF_INET6, &saddr->sin6_addr, tmp, sizeof(tmp)),
                 ntohs(saddr->sin6_port));
     }
@@ -100,4 +100,21 @@ void
 subnetmask(unsigned char bits, struct ipaddr *dst) {
     dst->family = AF_INET;
     dst->v4.s_addr = htonl(~((1 << (32 - bits)) - 1));
+}
+
+
+int
+ipaddr_fromstr(struct ipaddr *dst, sa_family_t fam, const char *src) {
+    const char *dot;
+
+    dot = strchr(src, '.');
+    if (dot) {
+        /* v4 */
+
+    }
+    else {
+        /* v6 */
+    }
+
+    return -1;
 }
