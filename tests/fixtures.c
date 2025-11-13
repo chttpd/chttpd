@@ -208,7 +208,7 @@ request(const char *fmt, ...) {
     ERR(pcaio_modio_use(modepoll));
     ERR(_sockpair(socks, &caddr));
 
-    DEBUG("caddr: %s", saddr2a(&caddr));
+    // DEBUG("caddr: %s", saddr2a(&caddr));
     tasks[0] = pcaio_task_new(_clientA, &client_status, 2, socks[0], bytes);
     ASSRT(tasks[0]);
 

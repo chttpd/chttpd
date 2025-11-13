@@ -2,6 +2,8 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 
 # client
+add_library(client OBJECT client.c client.h)
+
 
 # server
 add_library(router OBJECT router.c router.h)
@@ -22,5 +24,6 @@ add_library(carrot STATIC
   $<TARGET_OBJECTS:router>
   $<TARGET_OBJECTS:connection>
   $<TARGET_OBJECTS:server>
+  $<TARGET_OBJECTS:client>
 )
 target_link_libraries(carrot PUBLIC clog pcaio mrb chttp)

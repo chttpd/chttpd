@@ -134,8 +134,12 @@ server_connA(struct carrot_server *s, int fd, union saddr *peer) {
     ssize_t headerlen;
     chttp_status_t status;
     struct route *route;
+    char tmp[32];
 
-    INFO("new connection: %s, fd: %d",  saddr2a(peer), fd);
+    /* render the peer address for logging purpose */
+    ERR(saddr2a(tmp, sizeof(tmp), peer));
+    INFO("new connection: %s, fd: %d", tmp, fd);
+
     ERR(mrb_init(&c.ring, s->config->connectionbuffer_mempages));
     c.fd = fd;
     c.request = chttp_request_new(s->config->requestbuffer_mempages);
@@ -215,6 +219,7 @@ carrot_serverA(struct carrot_server *s) {
     union saddr *caddr = (union saddr *)&caddrbuff;
     socklen_t socklen;
     int cfd;
+    char tmp[32];
 
     s->listenfd = socket_bind(s->config->bind, &listenaddr);
     if (s->listenfd == -1) {
@@ -226,10 +231,12 @@ carrot_serverA(struct carrot_server *s) {
         return -1;
     }
 
-    INFO("listening on: %s", saddr2a(&listenaddr));
+    ERR(saddr2a(tmp, sizeof(tmp), &listenaddr));
+    INFO("listening on: %s", tmp);
     for (;;) {
         socklen = sizeof(caddrbuff);
-        cfd = accept4A(s->listenfd, &caddr->sa, &socklen, SOCK_NONBLOCK);
+        cfd = accept4A(s->listenfd, (struct sockaddr*)&caddr, &socklen,
+                SOCK_NONBLOCK);
         if (cfd == -1) {
             if (errno == ECONNABORTED) {
                 /* ignore and continue */
@@ -257,7 +264,7 @@ carrot_serverA(struct carrot_server *s) {
 int
 carrot_server_main(struct carrot_server *s) {
     int ret;
-    struct pcaio_task *task;
+    pcaio_task_t task;
     struct pcaio_iomodule *modepoll;
 
     /* register modules and tasks */

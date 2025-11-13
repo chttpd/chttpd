@@ -16,59 +16,42 @@
  *
  *  Author: Vahid Mardani <vahid.mardani@gmail.com>
  */
-#ifndef INCLUDE_CARROT_ADDR_H_
-#define INCLUDE_CARROT_ADDR_H_
-
-
-/* system */
-#include <sys/socket.h>
-#include <sys/un.h>
+/* standard */
+#include <unistd.h>
 #include <arpa/inet.h>
 
-/* posix */
-#include <netdb.h>
-#include <netinet/in.h>
+/* thirdparty */
+#include <cutest.h>
+
+/* local public */
+#include "carrot/addr.h"
 
 
-struct ipaddr {
-    /* AF_INET or AF_INET6 */
-    int family;
-    union {
-        struct in_addr v4;
-        struct in6_addr v6;
-    };
-};
+// TODO: test addr.c
+
+// static void
+// test_saddr_slit() {
+//     // eqint(saddr_split(
+// }
 
 
-union saddr {
-    struct sockaddr_storage;
-    struct sockaddr;
-    struct sockaddr_un;
-    struct sockaddr_in;
-    struct sockaddr_in6;
-};
+static void
+test_saddr2a() {
+    char buff[32];
+    union saddr saddr;
 
+    saddr.sin_port = htons(8080);
 
-struct cidr {
-    struct ipaddr addr;
-    uint8_t bits;
-};
+    /* inet_pton returns 1 on success */
+    eqint(1, inet_pton(AF_INET, "127.0.0.1", &saddr.sin_addr));
+    saddr.sa_family = AF_INET;
+    eqint(0, saddr2a(buff, sizeof(buff), &saddr));
+    eqstr("127.0.0.1:8080", buff);
+}
 
 
 int
-saddr2a(char *dst, size_t dstlen, const union saddr *addr);
-
-
-// const char *
-// ipaddr2a(const struct ipaddr *addr);
-
-
-// const char *
-// cidr2a(const struct cidr *cidr);
-
-
-void
-subnetmask(unsigned char bits, struct ipaddr *out);
-
-
-#endif  // INCLUDE_CARROT_ADDR_H_
+main() {
+    test_saddr2a();
+    return EXIT_SUCCESS;
+}

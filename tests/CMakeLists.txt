@@ -3,6 +3,7 @@ list(APPEND testrules
   route
   request
   chunked
+  addr
 )
 
 
