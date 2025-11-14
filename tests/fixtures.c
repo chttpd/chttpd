@@ -147,8 +147,7 @@ _sockpair(int socks[2], union saddr *caddr) {
         return -1;
     }
 
-    // TODO: mock socket address
-    memset(caddr, 0, sizeof(union saddr));
+    ERR(saddr_fromstr(caddr, "127.0.0.1:8080"));
     return 0;
 }
 

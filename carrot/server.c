@@ -137,14 +137,22 @@ server_connA(struct carrot_server *s, int fd, union saddr *peer) {
     char tmp[32];
 
     /* render the peer address for logging purpose */
-    ERR(saddr_tostr(tmp, sizeof(tmp), peer));
-    INFO("new connection: %s, fd: %d", tmp, fd);
+    if (saddr_tostr(tmp, sizeof(tmp), peer)) {
+        close(fd);
+        return -1;
+    }
 
-    ERR(mrb_init(&c.ring, s->config->connectionbuffer_mempages));
+    INFO("new connection: %s, fd: %d", tmp, fd);
+    if (mrb_init(&c.ring, s->config->connectionbuffer_mempages)) {
+        close(fd);
+        return -1;
+    }
+
     c.fd = fd;
     c.request = chttp_request_new(s->config->requestbuffer_mempages);
     if (c.request == NULL) {
         mrb_deinit(&c.ring);
+        close(fd);
         return -1;
     }
 
