@@ -48,4 +48,9 @@ void
 carrot_client_free(struct carrot_client *c);
 
 
+int
+carrot_connectA(struct carrot_connection *c, struct carrot_client_config *cfg,
+        const char *saddr);
+
+
 #endif  // INCLUDE_CARROT_CLIENT_H_

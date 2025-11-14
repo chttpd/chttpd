@@ -69,65 +69,6 @@ retry:
 }
 
 
-/**
- * return the number of characters which would have been written to the target
- * buffer and -2 if enought space had been available. otherwise, chunksize and
- * -1 for error.
- */
-ssize_t
-carrot_connection_recvchunkA(struct carrot_connection *c, const char **start) {
-    ssize_t chunksize;
-    size_t garbage;
-    char *in = mrb_readerptr(&c->ring);
-    size_t inlen = mrb_used(&c->ring);
-    ssize_t ret;
-
-retry:
-    chunksize = chttp_chunked_parse(in, inlen, start, &garbage);
-    if (chunksize == 0) {
-        return 0;
-    }
-
-    if (chunksize == -1) {
-        return -1;
-    }
-
-    if (chunksize == -2) {
-        /* more data needed */
-        ret = carrot_connection_recvallA(c, NULL);
-        if (ret <= 0) {
-            return  ret;
-        }
-
-        inlen += ret;
-        goto retry;
-    }
-
-    mrb_skip(&c->ring, garbage);
-    return chunksize;
-}
-
-
-ssize_t
-carrot_connection_sendpacketA(struct carrot_connection *c,
-        struct chttp_packet *p) {
-    struct iovec v[4];
-    int vcount = sizeof(v) / sizeof(struct iovec);
-    size_t totallen;
-    size_t written;
-
-    totallen = chttp_packet_iovec(p, v, &vcount);
-    written = writevA(c->fd, v, vcount);
-    if (written != totallen) {
-        // TODO: write the rest of the buffer later after pcaio_relaxA
-        return -1;
-    }
-
-    chttp_packet_reset(p);
-    return totallen;
-}
-
-
 /** wait until read error, buffer become full or find the s inside the input
  * buffer.
  * search inside the circular buffer for the given expression.
@@ -185,4 +126,63 @@ carrot_connection_recvsearchA(struct carrot_connection *c, const char *s) {
     }
 
     return -2;
+}
+
+
+/**
+ * return the number of characters which would have been written to the target
+ * buffer and -2 if enought space had been available. otherwise, chunksize and
+ * -1 for error.
+ */
+ssize_t
+carrot_connection_recvchunkA(struct carrot_connection *c, const char **start) {
+    ssize_t chunksize;
+    size_t garbage;
+    char *in = mrb_readerptr(&c->ring);
+    size_t inlen = mrb_used(&c->ring);
+    ssize_t ret;
+
+retry:
+    chunksize = chttp_chunked_parse(in, inlen, start, &garbage);
+    if (chunksize == 0) {
+        return 0;
+    }
+
+    if (chunksize == -1) {
+        return -1;
+    }
+
+    if (chunksize == -2) {
+        /* more data needed */
+        ret = carrot_connection_recvallA(c, NULL);
+        if (ret <= 0) {
+            return  ret;
+        }
+
+        inlen += ret;
+        goto retry;
+    }
+
+    mrb_skip(&c->ring, garbage);
+    return chunksize;
+}
+
+
+ssize_t
+carrot_connection_sendpacketA(struct carrot_connection *c,
+        struct chttp_packet *p) {
+    struct iovec v[4];
+    int vcount = sizeof(v) / sizeof(struct iovec);
+    size_t totallen;
+    size_t written;
+
+    totallen = chttp_packet_iovec(p, v, &vcount);
+    written = writevA(c->fd, v, vcount);
+    if (written != totallen) {
+        // TODO: write the rest of the buffer later after pcaio_relaxA
+        return -1;
+    }
+
+    chttp_packet_reset(p);
+    return totallen;
 }

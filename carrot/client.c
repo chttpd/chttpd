@@ -29,6 +29,7 @@
 /* thirdparty */
 #include <clog.h>
 #include <pcaio/pcaio.h>
+#include <pcaio/modio.h>
 
 /* local public */
 #include "carrot/client.h"
@@ -52,13 +53,44 @@ carrot_client_makedefaults(struct carrot_client_config *c) {
 
 
 int
-carrot_connectA(struct carrot_client_config *cfg, const char *saddr) {
-    // struct addrinfo hints;
-    // struct addrinfo *result;
-    // const char *node;
-    // const char *service;
+carrot_connectA(struct carrot_connection *c, struct carrot_client_config *cfg,
+        const char *saddr) {
+    struct addrinfo *result;
+    struct addrinfo *info;
+    int fd;
+    char host[128];
 
-    // ERR(saddr_split(saddr, &node, &service));
-    // getaddrinfo(node, service, &hints, &result)
-    return -1;
+    ERR(saddr_resolveA(&result, saddr));
+    for (info = result; info; info = info->ai_next) {
+        saddr_tostr(host, sizeof(host), (union saddr *)info->ai_addr);
+        INFO("trying: %s", host);
+        fd = socket(info->ai_family, info->ai_socktype, info->ai_protocol);
+        if (fd == -1) {
+            /* try the next address */
+            continue;
+        }
+
+        if (connectA(fd, info->ai_addr, info->ai_addrlen) != -1) {
+            /* success */
+            break;
+        }
+
+        close(fd);
+    }
+
+    freeaddrinfo(result);
+    if (info == NULL) {
+        ERROR("connection failed: %s", host);
+        return -1;
+    }
+
+    ERR(mrb_init(&c->ring, cfg->connectionbuffer_mempages));
+    c->fd = fd;
+    c->response = chttp_response_new(cfg->responsebuffer_mempages);
+    if (c->response == NULL) {
+        mrb_deinit(&c->ring);
+        return -1;
+    }
+
+    return 0;
 }

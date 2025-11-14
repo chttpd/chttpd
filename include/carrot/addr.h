@@ -83,4 +83,10 @@ int
 saddr_split(const char **node, const char **service, char *in);
 
 
+/** freeaddrinfo must be called later to freeup the result
+ */
+int
+saddr_resolveA(struct addrinfo **result, const char *src);
+
+
 #endif  // INCLUDE_CARROT_ADDR_H_

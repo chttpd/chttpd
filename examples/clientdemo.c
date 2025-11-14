@@ -22,6 +22,8 @@
 /* thirdparty */
 #include <clog.h>
 #include <pcaio/pcaio.h>
+#include <pcaio/modio.h>
+#include <pcaio/modepoll.h>
 
 /* local public */
 #include "carrot/client.h"
@@ -32,13 +34,27 @@
 
 
 static int
-_clinetA(struct carrot_clinet_config *cfg) {
+_clientA(struct carrot_client_config *cfg, const char *hostaddr) {
+    int ret;
     struct carrot_connection c;
-    union saddr host;
+    struct chttp_packet p;
 
-    // carrot_connect(&c, );
-    // carrot_client_requestA(&c, "GET", "http://localhost:8080");
-    return -1;
+    INFO("connecting to: %s", hostaddr);
+    ERR(carrot_connectA(&c, cfg, hostaddr));
+    // carrot_client_requestA(&c, "GET", "/");
+
+    /* build and send a request */
+    ERR(chttp_packet_allocate(&p, 1, 1, CHTTP_TE_NONE));
+    ERR(chttp_packet_startrequest(&p, "GET", "/"));
+    ERR(chttp_packet_contenttype(&p, "text/plain", "utf-8"));
+    ERR(chttp_packet_writef(&p, "Hello carrot\r\n"));
+    ERR(chttp_packet_close(&p));
+    ret = carrot_connection_sendpacketA(&c, &p);
+    chttp_packet_free(&p);
+    ERR(ret);
+
+    /* wait and read the response */
+    return 0;
 }
 
 
@@ -60,7 +76,7 @@ main() {
     ERR(pcaio_modio_use(modepoll));
 
     /* create a task for the clinet */
-    clinet = pcaio_task_new(_clientA, NULL, 1, &c);
+    client = pcaio_task_new(_clientA, NULL, 2, &c, "localhost:8080");
     ASSRT(client);
 
     /* execute and wait for pcaio event loop */
