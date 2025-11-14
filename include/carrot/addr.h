@@ -55,6 +55,18 @@ struct cidr {
 };
 
 
+int
+ipaddr_fromstr(struct ipaddr *dst, const char *src);
+
+
+int
+in6addr_fromstr(struct in6_addr *dst, const char *src);
+
+
+int
+ipaddr_tostr(char *dst, size_t dstlen, const struct ipaddr *addr);
+
+
 void
 ipaddr_netmask(struct ipaddr *out, unsigned char bits);
 
@@ -68,15 +80,7 @@ saddr_tostr(char *dst, size_t dstlen, const union saddr *addr);
 
 
 int
-ipaddr_fromstr(struct ipaddr *dst, const char *src);
-
-
-int
-in6addr_fromstr(struct in6_addr *dst, const char *src);
-
-
-int
-ipaddr_tostr(char *dst, size_t dstlen, const struct ipaddr *addr);
+saddr_split(const char **node, const char **service, char *in);
 
 
 #endif  // INCLUDE_CARROT_ADDR_H_

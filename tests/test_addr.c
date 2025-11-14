@@ -27,10 +27,21 @@
 #include "carrot/addr.h"
 
 
-// static void
-// test_saddr_slit() {
-//     // eqint(saddr_split(
-// }
+static void
+test_saddr_slit() {
+    const char *node;
+    const char *service;
+    char in[32] = "localhost:http";
+
+    eqint(0, saddr_split(&node, &service, in));
+    eqstr("localhost", node);
+    eqstr("http", service);
+
+    eqint(-1, saddr_split(&node, &service, ":bar"));
+    eqint(-1, saddr_split(&node, &service, "foo:"));
+    eqint(-1, saddr_split(&node, &service, ":"));
+    eqint(-1, saddr_split(&node, &service, "foo"));
+}
 
 
 static void
@@ -66,12 +77,12 @@ test_saddr_fromtostr() {
     eqint(0, saddr_tostr(buff, sizeof(buff), &saddr));
     eqint(AF_INET, saddr.sin_family);
     eqstr("127.0.0.1:8080", buff);
-
 }
 
 
 int
 main() {
+    test_saddr_slit();
     test_ipaddr_fromtostr();
     test_saddr_fromtostr();
     return EXIT_SUCCESS;

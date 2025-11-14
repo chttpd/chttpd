@@ -21,10 +21,17 @@
 /* standard */
 #include <stdio.h>
 #include <stdlib.h>
+#include <errno.h>
+
+/* posix */
 #include <arpa/inet.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netdb.h>
 
 /* thirdparty */
 #include <chttp/str.h>
+#include <pcaio/modio.h>
 
 /* local public */
 #include "carrot/addr.h"
@@ -38,6 +45,64 @@ ipaddr_netmask(struct ipaddr *dst, unsigned char bits) {
     // TODO: ipv6
     dst->family = AF_INET;
     dst->s_addr = htonl(~((1 << (32 - bits)) - 1));
+}
+
+
+int
+ipaddr_tostr(char *dst, size_t dstlen, const struct ipaddr *addr) {
+    const void *src;
+
+    if (addr->family == AF_INET) {
+        src = &addr->s_addr;
+    }
+    else {
+        src = &addr->s6_addr;
+    }
+
+    if (inet_ntop(addr->family, src, dst, dstlen) == NULL) {
+        return -1;
+    }
+
+    return 0;
+}
+
+
+int
+ipaddr_fromstr(struct ipaddr *dst, const char *src) {
+    if (strchr(src, '.')) {
+        /* v4 */
+        ASSRT(1 == inet_pton(AF_INET, src, &dst->s_addr));
+        dst->family = AF_INET;
+        return 0;
+    }
+
+    /* v6 */
+    ASSRT(1 == inet_pton(AF_INET6, src, &dst->s6_addr));
+    dst->family = AF_INET6;
+    return 0;
+}
+
+
+int
+in6addr_fromstr(struct in6_addr *dst, const char *src) {
+    char tmp[64];
+    int len = strlen(src);
+    char *start;
+
+    ASSRT(src);
+    len = strlen(src);
+    ASSRT(len < 64);
+    strncpy(tmp, src, len);
+    start = tmp;
+    if (start[0] == '[') {
+        ASSRT(start[len - 1] == ']');
+        start++;
+        start[len - 2] = 0;
+    }
+
+    /* v6 */
+    ASSRT(1 == inet_pton(AF_INET6, start, &dst->s6_addr));
+    return 0;
 }
 
 
@@ -78,19 +143,18 @@ int
 saddr_fromstr(union saddr *dst, const char *src) {
     char tmp[64];
     char *colon;
+    int srclen;
     unsigned short port;
 
     ASSRT(src);
-    strncpy(tmp, src, 64);
+    srclen = strlen(src);
+    ASSRT(srclen < sizeof(tmp));
+    strncpy(tmp, src, srclen);
     colon = strrchr(tmp, ':');
-    if (colon == NULL) {
-        return -1;
-    }
+    ASSRT(colon);
 
     port = atoi(colon + 1);
-    if (port == 0) {
-        return -1;
-    }
+    ASSRT(port);
 
     port = htons(port);
     colon[0] = 0;
@@ -135,89 +199,53 @@ saddr_tostr(char *dst, size_t dstlen, const union saddr *saddr) {
         return -1;
     }
 
-    if (ret >= dstlen) {
-        return -1;
-    }
-
+    ASSRT(ret < dstlen);
     return 0;
 }
 
 
 int
-ipaddr_tostr(char *dst, size_t dstlen, const struct ipaddr *addr) {
-    const void *src;
+saddr_split(const char **node, const char **service, char *in) {
+    char *colon;
 
-    if (addr->family == AF_INET) {
-        src = &addr->s_addr;
-    }
-    else {
-        src = &addr->s6_addr;
-    }
+    ASSRT(in);
+    colon = strrchr(in, ':');
+    ASSRT(colon && (colon != in));
+    ASSRT(*(colon + 1));
 
-    if (inet_ntop(addr->family, src, dst, dstlen) == NULL) {
-        return -1;
-    }
-
+    *service = colon + 1;
+    colon[0] = 0;
+    *node = in;
     return 0;
 }
 
 
-// const char *
-// cidr2a(const struct cidr *cidr) {
-//     char tmp[_BUFFLEN];
-//
-//     if (cidr->addr.family == AF_INET) {
-//         sprintf(_out, "%s/%d",
-//                 inet_ntop(AF_INET, &cidr->addr.v4.s_addr, tmp, _BUFFLEN),
-//                 cidr->bits);
-//     }
-//     else if (cidr->addr.family == AF_INET6) {
-//         sprintf(_out, "%s/%d",
-//                 inet_ntop(AF_INET6, &cidr->addr.v6.s6_addr, tmp, _BUFFLEN),
-//                 cidr->bits);
-//     }
-//     else {
-//         return NULL;
-//     }
-//
-//     return _out;
-// }
-
-
+/** freeaddrinfo must be called later to freeup the result
+ */
 int
-ipaddr_fromstr(struct ipaddr *dst, const char *src) {
-    if (strchr(src, '.')) {
-        /* v4 */
-        ASSRT(1 == inet_pton(AF_INET, src, &dst->s_addr));
-        dst->family = AF_INET;
-        return 0;
-    }
-
-    /* v6 */
-    ASSRT(1 == inet_pton(AF_INET6, src, &dst->s6_addr));
-    dst->family = AF_INET6;
-    return 0;
-}
-
-
-int
-in6addr_fromstr(struct in6_addr *dst, const char *src) {
+saddr_resolveA(struct addrinfo **result, const char *src) {
+    int ret;
+    int srclen;
+    const char *node;
+    const char *service;
     char tmp[64];
-    int len = strlen(src);
-    char *start;
+    struct addrinfo hints;
 
     ASSRT(src);
-    len = strlen(src);
-    ASSRT(len < 64);
-    strncpy(tmp, src, len);
-    start = tmp;
-    if (start[0] == '[') {
-        ASSRT(start[len - 1] == ']');
-        start++;
-        start[len - 2] = 0;
+    srclen = strlen(src);
+    ASSRT(srclen < sizeof(tmp));
+    strncpy(tmp, src, srclen);
+    ERR(saddr_split(&node, &service, tmp));
+
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+    ret = getaddrinfoA(node, service, &hints, result);
+    if (ret) {
+        errno = ret;
+        return -1;
     }
 
-    /* v6 */
-    ASSRT(1 == inet_pton(AF_INET6, start, &dst->s6_addr));
+    errno = 0;
     return 0;
 }
