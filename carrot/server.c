@@ -149,7 +149,7 @@ server_connA(struct carrot_server *s, int fd, union saddr *peer) {
     }
 
     /* preserve peer address */
-    memcpy(&c.peer, peer, sizeof(union saddr));
+    c.peer = *peer;
 
     /* connection main loop */
     for (;;) {

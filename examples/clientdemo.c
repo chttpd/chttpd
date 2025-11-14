@@ -53,7 +53,9 @@ _clientA(struct carrot_client_config *cfg, const char *hostaddr) {
     chttp_packet_free(&p);
     ERR(ret);
 
+    // ERR(carrot_client_waitresponseA(c));
     /* wait and read the response */
+    ERR(carrot_disconect(&c));
     return 0;
 }
 

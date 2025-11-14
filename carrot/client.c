@@ -53,16 +53,30 @@ carrot_client_makedefaults(struct carrot_client_config *c) {
 
 
 int
+carrot_disconect(struct carrot_connection *c) {
+    close(c->fd);
+    mrb_deinit(&c->ring);
+    if (c->response) {
+        free(c->response);
+    }
+
+    return 0;
+}
+
+
+int
 carrot_connectA(struct carrot_connection *c, struct carrot_client_config *cfg,
-        const char *saddr) {
+        const char *target) {
     struct addrinfo *result;
     struct addrinfo *info;
+    union saddr *peer;
     int fd;
     char host[128];
 
-    ERR(saddr_resolveA(&result, saddr));
+    ERR(saddr_resolveA(&result, target));
     for (info = result; info; info = info->ai_next) {
-        saddr_tostr(host, sizeof(host), (union saddr *)info->ai_addr);
+        peer = (union saddr *)info->ai_addr;
+        saddr_tostr(host, sizeof(host), peer);
         INFO("trying: %s", host);
         fd = socket(info->ai_family, info->ai_socktype, info->ai_protocol);
         if (fd == -1) {
@@ -78,14 +92,17 @@ carrot_connectA(struct carrot_connection *c, struct carrot_client_config *cfg,
         close(fd);
     }
 
+    /* preserve the host address and freeup the address info linked list */
+    c->fd = fd;
+    c->peer = *peer;
     freeaddrinfo(result);
     if (info == NULL) {
         ERROR("connection failed: %s", host);
         return -1;
     }
 
+    /* initialize and allocate the connection */
     ERR(mrb_init(&c->ring, cfg->connectionbuffer_mempages));
-    c->fd = fd;
     c->response = chttp_response_new(cfg->responsebuffer_mempages);
     if (c->response == NULL) {
         mrb_deinit(&c->ring);

@@ -40,17 +40,13 @@ void
 carrot_client_makedefaults(struct carrot_client_config *c);
 
 
-struct carrot_client *
-carrot_client_new(const struct carrot_client_config *c);
-
-
-void
-carrot_client_free(struct carrot_client *c);
-
-
 int
 carrot_connectA(struct carrot_connection *c, struct carrot_client_config *cfg,
         const char *saddr);
+
+
+int
+carrot_disconect(struct carrot_connection *c);
 
 
 #endif  // INCLUDE_CARROT_CLIENT_H_
