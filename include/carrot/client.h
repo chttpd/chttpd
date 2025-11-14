@@ -49,4 +49,8 @@ int
 carrot_disconect(struct carrot_connection *c);
 
 
+int
+carrot_client_waitresponseA(struct carrot_connection *c);
+
+
 #endif  // INCLUDE_CARROT_CLIENT_H_

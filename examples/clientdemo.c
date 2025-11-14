@@ -18,6 +18,7 @@
  */
 /* standard */
 #include <stddef.h>
+#include <stdio.h>
 
 /* thirdparty */
 #include <clog.h>
@@ -38,6 +39,8 @@ _clientA(struct carrot_client_config *cfg, const char *hostaddr) {
     int ret;
     struct carrot_connection c;
     struct chttp_packet p;
+    struct chttp_response *r;
+    char *content;
 
     INFO("connecting to: %s", hostaddr);
     ERR(carrot_connectA(&c, cfg, hostaddr));
@@ -51,10 +54,23 @@ _clientA(struct carrot_client_config *cfg, const char *hostaddr) {
     ERR(chttp_packet_close(&p));
     ret = carrot_connection_sendpacketA(&c, &p);
     chttp_packet_free(&p);
-    ERR(ret);
+    ASSRT(ret > 0);
 
-    // ERR(carrot_client_waitresponseA(c));
-    /* wait and read the response */
+    ERR(carrot_client_waitresponseA(&c));
+    r = c.response;
+    printf("%d %s\r\n", r->status, r->text);
+
+    if (r->contentlength > mrb_used(&c.ring)) {
+        if (carrot_connection_recvallA(&c, &content) <= 0) {
+            goto failed;
+        }
+    }
+    printf("%.*s\r\n", (int)r->contentlength, mrb_readerptr(&c.ring));
+    // /* make everything fresh for the next request */
+    // mrb_reset(&c.ring);
+    // chttp_response_reset(c.request);
+
+failed:
     ERR(carrot_disconect(&c));
     return 0;
 }

@@ -111,3 +111,20 @@ carrot_connectA(struct carrot_connection *c, struct carrot_client_config *cfg,
 
     return 0;
 }
+
+
+int
+carrot_client_waitresponseA(struct carrot_connection *c) {
+    ssize_t hlen;
+
+    /* read header */
+    hlen = carrot_connection_recvsearchA(c, "\r\n\r\n");
+    ERR(hlen <= 0);
+    hlen += 2;
+
+    /* parse */
+    ERR(chttp_response_parse(c->response, mrb_readerptr(&c->ring), hlen));
+    ERR(mrb_skip(&c->ring, hlen + 2));
+
+    return 0;
+}

@@ -128,16 +128,18 @@ carrot_server_rejectA(struct carrot_connection *c, int status,
 
 
 int
-server_connA(struct carrot_server *s, int fd, union saddr *peer) {
+server_connA(struct carrot_server *s, int fd) {
     int ret = 0;
     struct carrot_connection c;
     ssize_t headerlen;
     chttp_status_t status;
     struct route *route;
+    socklen_t addrlen = sizeof(union saddr);
     char tmp[32];
 
     /* render the peer address for logging purpose */
-    if (saddr_tostr(tmp, sizeof(tmp), peer)) {
+    ERR(getpeername(fd, (struct sockaddr *)&c.peer, &addrlen));
+    if (saddr_tostr(tmp, sizeof(tmp), &c.peer)) {
         close(fd);
         return -1;
     }
@@ -155,9 +157,6 @@ server_connA(struct carrot_server *s, int fd, union saddr *peer) {
         close(fd);
         return -1;
     }
-
-    /* preserve peer address */
-    c.peer = *peer;
 
     /* connection main loop */
     for (;;) {
@@ -223,11 +222,8 @@ server_connA(struct carrot_server *s, int fd, union saddr *peer) {
 int
 carrot_serverA(struct carrot_server *s) {
     union saddr listenaddr;
-    struct sockaddr_storage caddrbuff;
-    union saddr *caddr = (union saddr *)&caddrbuff;
-    socklen_t socklen;
     int cfd;
-    char tmp[32];
+    char tmp[64];
 
     s->listenfd = socket_bind(s->config->bind, &listenaddr);
     if (s->listenfd == -1) {
@@ -242,9 +238,7 @@ carrot_serverA(struct carrot_server *s) {
     ERR(saddr_tostr(tmp, sizeof(tmp), &listenaddr));
     INFO("listening on: %s", tmp);
     for (;;) {
-        socklen = sizeof(caddrbuff);
-        cfd = accept4A(s->listenfd, (struct sockaddr*)&caddr, &socklen,
-                SOCK_NONBLOCK);
+        cfd = accept4A(s->listenfd, NULL, NULL, SOCK_NONBLOCK);
         if (cfd == -1) {
             if (errno == ECONNABORTED) {
                 /* ignore and continue */
@@ -260,7 +254,7 @@ carrot_serverA(struct carrot_server *s) {
             return -1;
         }
 
-        pcaio_fschedule(server_connA, NULL, 3, s, cfd, caddr);
+        pcaio_fschedule(server_connA, NULL, 2, s, cfd);
     }
 
     // TODO: move it to pcaio task disposation callback

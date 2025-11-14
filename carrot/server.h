@@ -32,7 +32,7 @@ struct carrot_server {
 
 
 int
-server_connA(struct carrot_server *s, int fd, union saddr *peer);
+server_connA(struct carrot_server *s, int fd);
 
 
 #endif  // CARROT_SERVER_H_
