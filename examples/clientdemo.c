@@ -36,26 +36,29 @@
 
 static int
 _clientA(struct carrot_client_config *cfg, const char *hostaddr) {
+    int i;
     int ret = 0;
     struct carrot_connection c;
     struct chttp_packet p;
     struct chttp_response *r;
-
     ERR(carrot_client_connectA(&c, cfg, hostaddr));
     r = c.response;
 
     /* build and send a request */
-    ERR(chttp_packet_allocate(&p, 1, 1, CHTTP_TE_NONE));
+    ERR(chttp_packet_allocate(&p, 1, 0, CHTTP_TE_NONE));
     chttp_packet_startrequest(&p, "GET", "/");
-    chttp_packet_contenttype(&p, "text/plain", "utf-8");
-    chttp_packet_writef(&p, "Hello carrot\r\n");
+    chttp_packet_headerf(&p, "Host: %s", "google.com");
+    chttp_packet_headerf(&p, "Accept: */*");
     chttp_packet_close(&p);
 
     ret = carrot_client_queryA(&c, &p);
     chttp_packet_free(&p);
     if (ret == 0) {
         printf("%d %s\r\n", r->status, r->text);
-        printf("%.*s", (int)r->contentlength, mrb_readerptr(&c.ring));
+        for (i = 0; i < r->headers.count; i++) {
+            printf("%s\r\n", r->headers.list[i]);
+        }
+        printf("\r\n%.*s", (int)r->contentlength, mrb_readerptr(&c.ring));
     }
 
     ERR(carrot_client_disconnect(&c));
@@ -82,6 +85,7 @@ main() {
 
     /* create a task for the clinet */
     client = pcaio_task_new(_clientA, NULL, 2, &c, "google.com:80");
+    // client = pcaio_task_new(_clientA, NULL, 2, &c, "localhost:8080");
     ASSRT(client);
 
     /* execute and wait for pcaio event loop */
