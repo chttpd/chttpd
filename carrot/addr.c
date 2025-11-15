@@ -32,6 +32,7 @@
 /* thirdparty */
 #include <chttp/str.h>
 #include <pcaio/modio.h>
+#include <clog.h>
 
 /* local public */
 #include "carrot/addr.h"
@@ -205,7 +206,7 @@ saddr_tostr(char *dst, size_t dstlen, const union saddr *saddr) {
 
 
 int
-saddr_split(const char **node, const char **service, char *in) {
+saddr_split(char **node, char **service, char *in) {
     char *colon;
 
     ASSRT(in);
@@ -224,10 +225,9 @@ saddr_split(const char **node, const char **service, char *in) {
  */
 int
 saddr_resolveA(struct addrinfo **result, const char *src) {
-    int ret;
     int srclen;
-    const char *node;
-    const char *service;
+    char *node;
+    char *service;
     char tmp[64];
     struct addrinfo hints;
 
@@ -240,9 +240,9 @@ saddr_resolveA(struct addrinfo **result, const char *src) {
     memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
-    ret = getaddrinfoA(node, service, &hints, result);
-    if (ret) {
-        errno = ret;
+    hints.ai_flags = 0;
+    hints.ai_protocol = 0;
+    if (getaddrinfoA(node, service, &hints, result)) {
         return -1;
     }
 

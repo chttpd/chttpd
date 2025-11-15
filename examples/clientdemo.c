@@ -36,43 +36,30 @@
 
 static int
 _clientA(struct carrot_client_config *cfg, const char *hostaddr) {
-    int ret;
+    int ret = 0;
     struct carrot_connection c;
     struct chttp_packet p;
     struct chttp_response *r;
-    char *content;
 
-    INFO("connecting to: %s", hostaddr);
-    ERR(carrot_connectA(&c, cfg, hostaddr));
-    // carrot_client_requestA(&c, "GET", "/");
+    ERR(carrot_client_connectA(&c, cfg, hostaddr));
+    r = c.response;
 
     /* build and send a request */
     ERR(chttp_packet_allocate(&p, 1, 1, CHTTP_TE_NONE));
-    ERR(chttp_packet_startrequest(&p, "GET", "/"));
-    ERR(chttp_packet_contenttype(&p, "text/plain", "utf-8"));
-    ERR(chttp_packet_writef(&p, "Hello carrot\r\n"));
-    ERR(chttp_packet_close(&p));
-    ret = carrot_connection_sendpacketA(&c, &p);
+    chttp_packet_startrequest(&p, "GET", "/");
+    chttp_packet_contenttype(&p, "text/plain", "utf-8");
+    chttp_packet_writef(&p, "Hello carrot\r\n");
+    chttp_packet_close(&p);
+
+    ret = carrot_client_queryA(&c, &p);
     chttp_packet_free(&p);
-    ASSRT(ret > 0);
-
-    ERR(carrot_client_waitresponseA(&c));
-    r = c.response;
-    printf("%d %s\r\n", r->status, r->text);
-
-    if (r->contentlength > mrb_used(&c.ring)) {
-        if (carrot_connection_recvallA(&c, &content) <= 0) {
-            goto failed;
-        }
+    if (ret == 0) {
+        printf("%d %s\r\n", r->status, r->text);
+        printf("%.*s", (int)r->contentlength, mrb_readerptr(&c.ring));
     }
-    printf("%.*s\r\n", (int)r->contentlength, mrb_readerptr(&c.ring));
-    // /* make everything fresh for the next request */
-    // mrb_reset(&c.ring);
-    // chttp_response_reset(c.request);
 
-failed:
-    ERR(carrot_disconect(&c));
-    return 0;
+    ERR(carrot_client_disconnect(&c));
+    return ret;
 }
 
 
@@ -94,7 +81,7 @@ main() {
     ERR(pcaio_modio_use(modepoll));
 
     /* create a task for the clinet */
-    client = pcaio_task_new(_clientA, NULL, 2, &c, "localhost:8080");
+    client = pcaio_task_new(_clientA, NULL, 2, &c, "google.com:80");
     ASSRT(client);
 
     /* execute and wait for pcaio event loop */

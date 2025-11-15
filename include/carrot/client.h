@@ -41,16 +41,20 @@ carrot_client_makedefaults(struct carrot_client_config *c);
 
 
 int
-carrot_connectA(struct carrot_connection *c, struct carrot_client_config *cfg,
-        const char *saddr);
+carrot_client_connectA(struct carrot_connection *c,
+        struct carrot_client_config *cfg, const char *saddr);
 
 
 int
-carrot_disconect(struct carrot_connection *c);
+carrot_client_disconnect(struct carrot_connection *c);
 
 
 int
 carrot_client_waitresponseA(struct carrot_connection *c);
+
+
+int
+carrot_client_queryA(struct carrot_connection *c, struct chttp_packet *p);
 
 
 #endif  // INCLUDE_CARROT_CLIENT_H_

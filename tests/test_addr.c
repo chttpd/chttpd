@@ -29,8 +29,8 @@
 
 static void
 test_saddr_slit() {
-    const char *node;
-    const char *service;
+    char *node;
+    char *service;
     char in[32] = "localhost:http";
 
     eqint(0, saddr_split(&node, &service, in));

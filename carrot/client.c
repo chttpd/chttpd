@@ -53,7 +53,7 @@ carrot_client_makedefaults(struct carrot_client_config *c) {
 
 
 int
-carrot_disconect(struct carrot_connection *c) {
+carrot_client_disconnect(struct carrot_connection *c) {
     close(c->fd);
     mrb_deinit(&c->ring);
     if (c->response) {
@@ -65,25 +65,25 @@ carrot_disconect(struct carrot_connection *c) {
 
 
 int
-carrot_connectA(struct carrot_connection *c, struct carrot_client_config *cfg,
-        const char *target) {
+carrot_client_connectA(struct carrot_connection *c,
+        struct carrot_client_config *cfg, const char *target) {
     struct addrinfo *result;
     struct addrinfo *info;
     union saddr *peer;
     int fd;
     char host[128];
 
+    INFO("connecting to: %s", target);
     ERR(saddr_resolveA(&result, target));
     for (info = result; info; info = info->ai_next) {
         peer = (union saddr *)info->ai_addr;
-        saddr_tostr(host, sizeof(host), peer);
-        INFO("trying: %s", host);
         fd = socket(info->ai_family, info->ai_socktype, info->ai_protocol);
         if (fd == -1) {
             /* try the next address */
             continue;
         }
 
+        pcaio_relaxA(0);
         if (connectA(fd, info->ai_addr, info->ai_addrlen) != -1) {
             /* success */
             break;
@@ -95,6 +95,8 @@ carrot_connectA(struct carrot_connection *c, struct carrot_client_config *cfg,
     /* preserve the host address and freeup the address info linked list */
     c->fd = fd;
     c->peer = *peer;
+    saddr_tostr(host, sizeof(host), peer);
+    INFO("Connected: %s", host);
     freeaddrinfo(result);
     if (info == NULL) {
         ERROR("connection failed: %s", host);
@@ -125,6 +127,23 @@ carrot_client_waitresponseA(struct carrot_connection *c) {
     /* parse */
     ERR(chttp_response_parse(c->response, mrb_readerptr(&c->ring), hlen));
     ERR(mrb_skip(&c->ring, hlen + 2));
+
+    return 0;
+}
+
+
+int
+carrot_client_queryA(struct carrot_connection *c, struct chttp_packet *p) {
+    struct chttp_response *r;
+
+    ERR(0 >= carrot_connection_sendpacketA(c, p));
+    ERR(carrot_client_waitresponseA(c));
+    r = c->response;
+
+    if ((r->contentlength > mrb_used(&c->ring)) &&
+            (carrot_connection_recvallA(c, NULL) <= 0)) {
+        return -1;
+    }
 
     return 0;
 }

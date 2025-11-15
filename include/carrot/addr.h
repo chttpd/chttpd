@@ -80,7 +80,7 @@ saddr_tostr(char *dst, size_t dstlen, const union saddr *addr);
 
 
 int
-saddr_split(const char **node, const char **service, char *in);
+saddr_split(char **node, char **service, char *in);
 
 
 /** freeaddrinfo must be called later to freeup the result
